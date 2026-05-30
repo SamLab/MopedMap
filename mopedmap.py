@@ -537,12 +537,36 @@ def find_geojson_feature(region_name_lower, geojson_lookup):
     return None
 
 
+def parse_post_time(time_str):
+    if not time_str:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    try:
+        return datetime.strptime(time_str, '%d.%m.%Y %H:%M').replace(tzinfo=timezone(timedelta(hours=3)))
+    except:
+        return datetime.min.replace(tzinfo=timezone.utc)
+
+
+def dedup_markers(markers):
+    seen = {}
+    for m in markers:
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1))
+        existing = seen.get(key)
+        if existing:
+            if parse_post_time(m.get('time', '')) > parse_post_time(existing.get('time', '')):
+                seen[key] = m
+        else:
+            seen[key] = m
+    return list(seen.values())
+
+
 def generate_html(posts_data, filename=None, geojson_lookup=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
+    # Keep only the latest post per city
+    posts_data = dedup_markers(posts_data)
     # Extract region geometries for active fill types
     # Map city name -> region name via CITY_DB subject field
-    region_map = {}  # region_name_lower -> (feature, type_priority)
+    region_map = {}  # region_name_lower -> feature
     type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'sighting': 3, 'attention': 4}
     for item in posts_data:
         has_radius = item.get('radius_km')
@@ -552,7 +576,12 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             region_name = None
             if city_name in CITY_DB:
                 region_name = CITY_DB[city_name].get('subject', '').lower().strip()
-            if region_name and geojson_lookup and region_name not in region_map:
+            if region_name and geojson_lookup:
+                existing = region_map.get(region_name)
+                if existing:
+                    existing_time = existing['properties'].get('popup_time', '')
+                    if parse_post_time(item.get('time', '')) <= parse_post_time(existing_time):
+                        continue
                 feat = find_geojson_feature(region_name, geojson_lookup)
                 if feat:
                     feat_copy = json.loads(json.dumps(feat))
