@@ -468,7 +468,8 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .header .info {{ font-size: 13px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
-.popup-text {{ font-size: 12px; max-height: 150px; overflow-y: auto; line-height: 1.4; }}
+.popup-text {{ font-size: 12px; max-height: 250px; overflow-y: auto; line-height: 1.4; word-break: break-word; }}
+.leaflet-popup-content {{ max-width: 380px !important; }}
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
@@ -669,7 +670,7 @@ def process_posts(posts):
                 m = {
                     "lat": src["lat"], "lon": src["lon"],
                     "name": src["name"], "type": post_type,
-                    "text": post[:120] + ("..." if len(post) > 120 else ""),
+                    "text": post[:300] + ("..." if len(post) > 300 else ""),
                     "direction": [dst["lat"], dst["lon"]],
                     "dest_name": dst["name"],
                     "source": source, "time": post_time,
@@ -683,7 +684,7 @@ def process_posts(posts):
                 marker = {
                     "lat": loc["lat"], "lon": loc["lon"],
                     "name": loc["name"], "type": post_type,
-                    "text": post[:120] + ("..." if len(post) > 120 else ""),
+                    "text": post[:300] + ("..." if len(post) > 300 else ""),
                     "source": source, "time": post_time,
                 }
                 if loc.get("radius_km"):
