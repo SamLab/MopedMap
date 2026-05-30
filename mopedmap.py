@@ -610,7 +610,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     region_map[region_name] = feat_copy
     # Mark items that have polygon fills so JS can skip their point markers
     # Keep markers for sighting (triangle), rocket (purple), clear — they carry distinct info
-    always_show = {'sighting', 'rocket', 'clear'}
+    always_show = {'sighting', 'rocket', 'clear', 'interception'}
     for item in posts_data:
         if item.get('is_region') and item.get('type') not in always_show:
             city_name = item.get('name', '').lower().strip()
@@ -675,9 +675,9 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <div class="footer">
   <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
-  <span style="color:#f5a623;font-size:13px">▲</span> Фиксация
+  <span style="color:#000000;font-size:13px">▲</span> Фиксация
   <span class="dot" style="color:#eab308">●</span> Внимание
-  <span class="dot" style="color:#f97316">●</span> Перехват
+  <span style="color:#f97316;font-size:12px">■</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
   <span class="dot" style="color:#4ade80">●</span> Отбой
   <span class="dot" style="color:#60a5fa">●</span> Инфо
@@ -713,7 +713,7 @@ const isSpecial = (name) => specialNames.some(s => name.includes(s));
 const styleMap = {{
   danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
   aviation: {{ color: '#06b6d4', size: 14, glow: '#06b6d4' }},
-  sighting: {{ color: '#f5a623', size: 12, glow: null }},
+  sighting: {{ color: '#000000', size: 12, glow: null }},
   clear: {{ color: '#4ade80', size: 12, glow: null }},
   attention: {{ color: '#eab308', size: 12, glow: null }},
   interception: {{ color: '#f97316', size: 12, glow: '#f97316' }},
@@ -776,7 +776,9 @@ data.forEach(item => {{
     ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
     : item.type === 'sighting'
       ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
-      : 'border-radius:50%;';
+      : item.type === 'interception'
+        ? 'border-radius:2px;'
+        : 'border-radius:50%;';
   const html = `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
 
   const marker = L.marker([item.lat, item.lon], {{
