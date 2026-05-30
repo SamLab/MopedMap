@@ -212,8 +212,8 @@ CHANNELS = [
 
 
 def clean_message_text(raw, channel=""):
-    clean = re.sub(r'<[^>]+>', '', raw)
-    clean = clean.replace('<br>', '\n').replace('<br/>', '\n').strip()
+    clean = raw.replace('<br>', '\n').replace('<br/>', '\n')
+    clean = re.sub(r'<[^>]+>', ' ', clean).strip()
     clean = re.sub(r'\s+', ' ', clean)
     clean = re.split(r'📡', clean)[0].strip()
     clean = re.sub(r'@locatorru.*$', '', clean).strip()
