@@ -446,10 +446,131 @@ def classify_post(text):
     return "info"
 
 
-def generate_html(posts_data, filename=None):
+# ── GeoJSON region boundaries ──────────────────────────────────────────
+GEOJSON_URL = 'https://raw.githubusercontent.com/Hubbitus/RussiaRegions.geojson/master/RussiaRegions.geojson'
+
+
+def simplify_coords(coords, precision=2):
+    if isinstance(coords[0], list):
+        if isinstance(coords[0][0], list):
+            return [simplify_coords(c, precision) for c in coords]
+        else:
+            return [[round(x, precision), round(y, precision)] for x, y in coords]
+    return coords
+
+
+def load_region_geojson():
+    """Download and simplify GeoJSON, return dict name_lower→feature."""
+    try:
+        r = requests.get(GEOJSON_URL, timeout=60)
+        data = r.json()
+    except Exception:
+        print("  Не удалось загрузить GeoJSON регионов")
+        return {}
+    lookup = {}
+    for f in data['features']:
+        name = f['properties'].get('NAME', '').strip()
+        if not name:
+            continue
+        geom = f['geometry']
+        if geom['type'] == 'MultiPolygon':
+            geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
+        elif geom['type'] == 'Polygon':
+            geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
+        else:
+            continue
+        lookup[name.lower()] = {
+            'type': 'Feature',
+            'properties': {'NAME': name},
+            'geometry': {'type': geom['type'], 'coordinates': geom['coordinates']}
+        }
+    print(f"  Загружено {len(lookup)} регионов из GeoJSON")
+    return lookup
+
+
+REGION_GEOJSON_MAP = {
+    'адыгея': 'республика адыгея',
+    'башкортостан': 'республика башкортостан',
+    'бурятия': 'республика бурятия',
+    'дагестан': 'республика дагестан',
+    'ингушетия': 'республика ингушетия',
+    'кабардино-балкария': 'кабардино-балкарская республика',
+    'калмыкия': 'республика калмыкия',
+    'карачаево-черкессия': 'карачаево-черкесская республика',
+    'карелия': 'республика карелия',
+    'коми': 'республика коми',
+    'марий эл': 'республика марий эл',
+    'мордовия': 'республика мордовия',
+    'якутия': 'республика саха (якутия)',
+    'северная осетия': 'республика северная осетия-алания',
+    'татарстан': 'республика татарстан (татарстан)',
+    'тыва': 'республика тыва',
+    'удмуртия': 'удмуртская республика',
+    'хакасия': 'республика хакасия',
+    'чувашия': 'чувашская республика - чувашия',
+    'чечня': 'чеченская республика',
+    'ханты-мансийский автономный округ': 'ханты-мансийский автономный округ - югра',
+}
+
+
+def find_geojson_feature(region_name_lower, geojson_lookup):
+    """Match a region alias to GeoJSON feature by name."""
+    nl = region_name_lower.strip()
+    # Direct match
+    if nl in geojson_lookup:
+        return geojson_lookup[nl]
+    # With республика prefix
+    if not nl.startswith('республика '):
+        test = 'республика ' + nl
+        if test in geojson_lookup:
+            return geojson_lookup[test]
+    # Without республика prefix
+    if nl.startswith('республика '):
+        test = nl[len('республика '):]
+        if test in geojson_lookup:
+            return geojson_lookup[test]
+    # Special map
+    if nl in REGION_GEOJSON_MAP:
+        key = REGION_GEOJSON_MAP[nl]
+        if key in geojson_lookup:
+            return geojson_lookup[key]
+    return None
+
+
+def generate_html(posts_data, filename=None, geojson_lookup=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
+    # Extract region geometries for active fill types
+    # Map city name -> region name via CITY_DB subject field
+    region_map = {}  # region_name_lower -> (feature, type_priority)
+    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'sighting': 3, 'attention': 4}
+    for item in posts_data:
+        has_radius = item.get('radius_km')
+        item_type = item.get('type')
+        if has_radius and item_type in type_priority:
+            city_name = item.get('name', '').lower().strip()
+            region_name = None
+            if city_name in CITY_DB:
+                region_name = CITY_DB[city_name].get('subject', '').lower().strip()
+            if region_name and geojson_lookup and region_name not in region_map:
+                feat = find_geojson_feature(region_name, geojson_lookup)
+                if feat:
+                    feat_copy = json.loads(json.dumps(feat))
+                    feat_copy['properties']['alert_type'] = item_type
+                    region_map[region_name] = feat_copy
+    # Mark items that have polygon fills so JS can skip their point markers
+    for item in posts_data:
+        if item.get('radius_km'):
+            city_name = item.get('name', '').lower().strip()
+            if city_name in CITY_DB:
+                rn = CITY_DB[city_name].get('subject', '').lower().strip()
+                if rn in region_map:
+                    item['no_marker'] = True
+
     markers_json = json.dumps(posts_data, ensure_ascii=False)
+
+    region_features = list(region_map.values())
+    region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
@@ -553,28 +674,40 @@ const seen = new Set();
 
 const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
 
-const fillTypes = {{ danger: true, rocket: true, aviation: true, sighting: true, attention: true }};
+const regionGeoJSON = {region_geojson};
+
+// Draw region polygon fills
+L.geoJSON(regionGeoJSON, {{
+  style: function(feature) {{
+    const alertType = feature.properties.alert_type || 'danger';
+    const s = styleMap[alertType] || styleMap.danger;
+    return {{
+      color: s.color, fillColor: s.color,
+      fillOpacity: 0.15, weight: 1, opacity: 0.3
+    }};
+  }}
+}}).addTo(map);
 
 data.forEach(item => {{
   if (item.type === 'info' && !isSpecial(item.name)) return;
+  const special = isSpecial(item.name);
+  const s = styleMap[item.type] || styleMap.info;
+
+  // Pulsing ring for Yaroslavl real posts (shown even for region entries)
+  if (special && item.text !== 'Постоянный маркер') {{
+    const ringIcon = L.divIcon({{
+      html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
+      className: '', iconSize: [60, 60], iconAnchor: [30, 30]
+    }});
+    L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }}).addTo(map);
+  }}
+
+  if (item.no_marker) return;
+
   const key = item.lat.toFixed(1) + ',' + item.lon.toFixed(1);
   if (seen.has(key)) return;
   seen.add(key);
 
-  // Draw fill circle for regions with active alerts
-  if (item.radius_km && fillTypes[item.type]) {{
-    L.circle([item.lat, item.lon], {{
-      radius: item.radius_km * 1000,
-      color: styleMap[item.type].color,
-      fillColor: styleMap[item.type].color,
-      fillOpacity: 0.15,
-      weight: 1,
-      opacity: 0.3
-    }}).addTo(map);
-  }}
-
-  const special = isSpecial(item.name);
-  const s = styleMap[item.type] || styleMap.info;
   const size = special ? s.size + 6 : s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
   const border = special ? '3px solid #00f5ff' : '2px solid #333';
@@ -593,15 +726,6 @@ data.forEach(item => {{
     popupHtml += `<div class="popup-source">→ ${{item.dest_name || '?'}}</div>`;
   }}
   marker.bindPopup(popupHtml);
-
-  // Pulsing ring for Yaroslavl real posts
-  if (special && item.text !== 'Постоянный маркер') {{
-    const ringIcon = L.divIcon({{
-      html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
-      className: '', iconSize: [60, 60], iconAnchor: [30, 30]
-    }});
-    L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }}).addTo(map);
-  }}
 
   bounds.push([item.lat, item.lon]);
 }});
@@ -786,7 +910,10 @@ def main():
         print("Не найдено локаций в тексте")
         return
 
-    filename = generate_html(all_markers)
+    print("Загрузка границ регионов...")
+    geojson_lookup = load_region_geojson()
+
+    filename = generate_html(all_markers, geojson_lookup=geojson_lookup)
     abs_path = os.path.abspath(filename)
     print(f"\nСгенерирована карта: file://{abs_path}")
     print(f"Локаций на карте: {len(all_markers)}")
