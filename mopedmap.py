@@ -489,7 +489,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
-.leaflet-control-attribution a[title="A JS library for interactive maps"] {{ display: none; }}
+
 </style>
 </head>
 <body>
@@ -510,13 +510,15 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [55.0, 50.0], zoom: 4, zoomControl: true }});
+const map = L.map('map', {{ center: [55.0, 50.0], zoom: 4, zoomControl: true, attributionControl: false }});
 
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   subdomains: 'abcd',
   maxZoom: 19
 }}).addTo(map);
+
+L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
 
