@@ -633,7 +633,7 @@ const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
 let closestName = '';
 data.forEach(item => {{
-  if (item.type !== 'info') {{
+  if (item.type !== 'info' && item.type !== 'clear') {{
     const d = map.distance(yarLatLng, [item.lat, item.lon]);
     if (d < minDist) {{ minDist = d; closestName = item.name; }}
   }}
