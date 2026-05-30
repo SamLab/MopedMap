@@ -673,7 +673,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <div class="footer">
   <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
-  <span class="dot" style="color:#f5a623">●</span> Фиксация
+  <span style="color:#f5a623;font-size:13px">▲</span> Фиксация
   <span class="dot" style="color:#eab308">●</span> Внимание
   <span class="dot" style="color:#f97316">●</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
@@ -772,7 +772,9 @@ data.forEach(item => {{
   const extraGlow = special ? 'box-shadow:0 0 16px #00f5ff;' : glow;
   const shape = special
     ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
-    : 'border-radius:50%;';
+    : item.type === 'sighting'
+      ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
+      : 'border-radius:50%;';
   const html = `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
 
   const marker = L.marker([item.lat, item.lon], {{
