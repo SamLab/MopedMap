@@ -259,7 +259,7 @@ HOURS_FILTER = 4
 CHANNELS = [
     {"url": "https://t.me/s/locatorru", "name": "locatorru"},
     {"url": "https://t.me/s/vrv_radar", "name": "vrv_radar"},
-    {"url": "https://t.me/s/radarrussia", "name": "radarrussia"},
+
     {"url": "https://t.me/s/radarrussiia", "name": "radarrussiia"},
     {"url": "https://t.me/s/radarYR", "name": "radarYR"},
     {"url": "https://t.me/s/russiamonitoring_radar_bpla", "name": "russiamonitoring_radar_bpla"},
@@ -661,7 +661,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[region_name] = feat_copy
     # Mark items that should not render a point marker
-    always_show = {'sighting', 'rocket', 'clear', 'interception'}
+    always_show = {'sighting', 'clear', 'interception'}
     for item in posts_data:
         if item.get('is_region') and item.get('type') not in always_show:
             city_name = item.get('name', '').lower().strip()
