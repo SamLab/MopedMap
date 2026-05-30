@@ -456,7 +456,7 @@ def generate_html(posts_data, filename=None):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LocatorRU — Карта угроз</title>
+<title>YarLocator — Карта угроз</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -494,7 +494,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </head>
 <body>
 <div class="header">
-  <h1>&#x1F4E1; LocatorRU <span id="dist-info" style="font-size:13px;color:#d32f2f;font-weight:normal"></span></h1>
+  <h1>&#x1F4E1; YarLocator <span id="dist-info" style="font-size:13px;color:#d32f2f;font-weight:normal"></span></h1>
   <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
