@@ -23,7 +23,7 @@ for c in cities_data:
         "subject": c["subject"],
     }
 
-def make_region_alias(alias, city_name, lat, lon, radius_km=60):
+def make_region_alias(alias, city_name, lat, lon):
     ck = city_name.lower()
     if ck in CITY_DB:
         lat = CITY_DB[ck]["lat"]
@@ -34,41 +34,41 @@ def make_region_alias(alias, city_name, lat, lon, radius_km=60):
         "lat": lat,
         "lon": lon,
         "type": "region",
-        "radius_km": radius_km,
+        "is_region": True,
     }
 
 
-def make_region_alias_with_cases(alias, city_name, lat, lon, radius_km=60):
+def make_region_alias_with_cases(alias, city_name, lat, lon):
     """Generate region alias with common case variants."""
-    result = [make_region_alias(alias, city_name, lat, lon, radius_km)]
+    result = [make_region_alias(alias, city_name, lat, lon)]
     a = alias.lower()
     # область -> области (genitive)
     if a.endswith("ая область"):
         stem = a[:-10]
-        result.append(make_region_alias(stem + "ой области", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ой области", city_name, lat, lon))
     elif a.endswith("ая обл"):
         stem = a[:-6]
-        result.append(make_region_alias(stem + "ой обл", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ой обл", city_name, lat, lon))
     elif a.endswith("ская область"):
         stem = a[:-12]
-        result.append(make_region_alias(stem + "ской области", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ской области", city_name, lat, lon))
     elif a.endswith("ская обл"):
         stem = a[:-8]
-        result.append(make_region_alias(stem + "ской обл", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ской обл", city_name, lat, lon))
     # край -> края (genitive)
     elif a.endswith("ий край"):
         stem = a[:-7]
-        result.append(make_region_alias(stem + "его края", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "его края", city_name, lat, lon))
     elif a.endswith("ский край"):
         stem = a[:-9]
-        result.append(make_region_alias(stem + "ского края", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ского края", city_name, lat, lon))
     # округ -> округа
     elif a.endswith("ий округ"):
         stem = a[:-8]
-        result.append(make_region_alias(stem + "его округа", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "его округа", city_name, lat, lon))
     elif a.endswith("ский округ"):
         stem = a[:-10]
-        result.append(make_region_alias(stem + "ского округа", city_name, lat, lon, radius_km))
+        result.append(make_region_alias(stem + "ского округа", city_name, lat, lon))
     return result
 
 REGION_ALIASES = [
@@ -76,18 +76,18 @@ REGION_ALIASES = [
     make_region_alias("неклиновский р-н", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
-    make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173, 30),
-    make_region_alias_with_cases("московская обл", "Москва", 55.7558, 37.6173, 30),
-    make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351, 35),
-    make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351, 35),
-    make_region_alias_with_cases("краснодарский край", "Краснодар", 45.0355, 38.9753, 80),
-    make_region_alias_with_cases("ставропольский край", "Ставрополь", 45.0448, 41.9692, 70),
-    make_region_alias_with_cases("приморский край", "Владивосток", 43.1056, 131.8735, 100),
-    make_region_alias_with_cases("хабаровский край", "Хабаровск", 48.4802, 135.0719, 120),
-    make_region_alias_with_cases("алтайский край", "Барнаул", 53.3474, 83.7783, 80),
-    make_region_alias_with_cases("забайкальский край", "Чита", 52.0333, 113.5, 100),
-    make_region_alias_with_cases("камчатский край", "Петропавловск-Камчатский", 53.0167, 158.65, 150),
-    make_region_alias_with_cases("пермский край", "Пермь", 58.0105, 56.2502, 80),
+    make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173),
+    make_region_alias_with_cases("московская обл", "Москва", 55.7558, 37.6173),
+    make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351),
+    make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351),
+    make_region_alias_with_cases("краснодарский край", "Краснодар", 45.0355, 38.9753),
+    make_region_alias_with_cases("ставропольский край", "Ставрополь", 45.0448, 41.9692),
+    make_region_alias_with_cases("приморский край", "Владивосток", 43.1056, 131.8735),
+    make_region_alias_with_cases("хабаровский край", "Хабаровск", 48.4802, 135.0719),
+    make_region_alias_with_cases("алтайский край", "Барнаул", 53.3474, 83.7783),
+    make_region_alias_with_cases("забайкальский край", "Чита", 52.0333, 113.5),
+    make_region_alias_with_cases("камчатский край", "Петропавловск-Камчатский", 53.0167, 158.65),
+    make_region_alias_with_cases("пермский край", "Пермь", 58.0105, 56.2502),
     make_region_alias("крым", "Симферополь", 44.9521, 34.1024),
     make_region_alias("республика крым", "Симферополь", 44.9521, 34.1024),
     make_region_alias("адыгея", "Майкоп", 44.6833, 40.1167),
@@ -176,16 +176,16 @@ REGION_ALIASES = [
     make_region_alias_with_cases("архангельская область", "Архангельск", 64.5395, 40.5173),
     make_region_alias_with_cases("астраханская область", "Астрахань", 46.3333, 48.0333),
     make_region_alias_with_cases("мурманская область", "Мурманск", 68.9792, 33.0925),
-    make_region_alias_with_cases("тюменская область", "Тюмень", 57.1535, 65.5423, 100),
-    make_region_alias_with_cases("херсонская область", "Херсон", 46.6354, 32.6169, 50),
-    make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396, 50),
+    make_region_alias_with_cases("тюменская область", "Тюмень", 57.1535, 65.5423),
+    make_region_alias_with_cases("херсонская область", "Херсон", 46.6354, 32.6169),
+    make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
     make_region_alias("днр", "Донецк", 48.0159, 37.8028),
     make_region_alias("лнр", "Луганск", 48.574, 39.3078),
-    make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019, 150),
-    make_region_alias_with_cases("ханты-мансийский автономный округ", "Ханты-Мансийск", 61.0024, 69.0099, 120),
-    make_region_alias_with_cases("чукотский автономный округ", "Анадырь", 64.7333, 177.5167, 150),
-    make_region_alias_with_cases("еврейская автономная область", "Биробиджан", 48.7833, 132.9333, 40),
-    make_region_alias_with_cases("ненецкий автономный округ", "Нарьян-Мар", 67.6385, 53.0067, 100),
+    make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019),
+    make_region_alias_with_cases("ханты-мансийский автономный округ", "Ханты-Мансийск", 61.0024, 69.0099),
+    make_region_alias_with_cases("чукотский автономный округ", "Анадырь", 64.7333, 177.5167),
+    make_region_alias_with_cases("еврейская автономная область", "Биробиджан", 48.7833, 132.9333),
+    make_region_alias_with_cases("ненецкий автономный округ", "Нарьян-Мар", 67.6385, 53.0067),
 ]
 
 ALL_PATTERNS = []
@@ -334,13 +334,13 @@ def extract_locations(text):
             lat = entry["lat"]
             lon = entry["lon"]
             ftype = entry["type"]
-            radius_km = entry.get("radius_km")
+            is_region = entry.get("is_region", False)
         else:
             name = entry["name"]
             lat = entry["lat"]
             lon = entry["lon"]
             ftype = "city"
-            radius_km = None
+            is_region = False
 
         start = 0
         while True:
@@ -365,8 +365,8 @@ def extract_locations(text):
                 matched_spans.add((idx, end))
                 r = {"name": name, "lat": lat, "lon": lon,
                      "type": ftype, "matched": text[idx:end]}
-                if radius_km is not None:
-                    r["radius_km"] = radius_km
+                if is_region:
+                    r["is_region"] = True
                 results.append(r)
                 break
             start = idx + 1
@@ -375,7 +375,7 @@ def extract_locations(text):
     found_keys = set()
     for r in results:
         name_key = r["name"].lower()
-        has_radius = bool(r.get("radius_km"))
+        has_radius = bool(r.get("is_region"))
         item_key = (name_key, has_radius)
         coord_key = round(r["lat"], 1), round(r["lon"], 1)
         if item_key in found_keys:
@@ -566,7 +566,7 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), bool(m.get('radius_km')), m.get('type', 'info'))
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('is_region', False), m.get('type', 'info'))
         existing = seen.get(key)
         if existing:
             if parse_post_time(m.get('time', '')) > parse_post_time(existing.get('time', '')):
@@ -586,9 +586,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     region_map = {}  # region_name_lower -> feature
     type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'sighting': 3, 'attention': 4}
     for item in posts_data:
-        has_radius = item.get('radius_km')
+        is_region = item.get('is_region', False)
         item_type = item.get('type')
-        if has_radius and item_type in type_priority:
+        if is_region and item_type in type_priority:
             city_name = item.get('name', '').lower().strip()
             region_name = None
             if city_name in CITY_DB:
@@ -609,8 +609,10 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[region_name] = feat_copy
     # Mark items that have polygon fills so JS can skip their point markers
+    # Keep markers for sighting (triangle), rocket (purple), clear — they carry distinct info
+    always_show = {'sighting', 'rocket', 'clear'}
     for item in posts_data:
-        if item.get('radius_km'):
+        if item.get('is_region') and item.get('type') not in always_show:
             city_name = item.get('name', '').lower().strip()
             if city_name in CITY_DB:
                 rn = CITY_DB[city_name].get('subject', '').lower().strip()
@@ -923,8 +925,8 @@ def process_posts(posts):
                     "dest_name": dst["name"],
                     "source": source, "time": post_time,
                 }
-                if src.get("radius_km"):
-                    m["radius_km"] = src["radius_km"]
+                if src.get("is_region"):
+                    m["is_region"] = True
                 all_markers.append(m)
         else:
             locations = extract_locations(post)
@@ -935,8 +937,8 @@ def process_posts(posts):
                     "text": post[:300] + ("..." if len(post) > 300 else ""),
                     "source": source, "time": post_time,
                 }
-                if loc.get("radius_km"):
-                    marker["radius_km"] = loc["radius_km"]
+                if loc.get("is_region"):
+                    marker["is_region"] = True
                 all_markers.append(marker)
 
     if filtered:
