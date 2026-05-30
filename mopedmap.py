@@ -494,7 +494,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </head>
 <body>
 <div class="header">
-  <h1>&#x1F4E1; LocatorRU</h1>
+  <h1>&#x1F4E1; LocatorRU <span id="dist-info" style="font-size:13px;color:#d32f2f;font-weight:normal"></span></h1>
   <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
@@ -626,6 +626,20 @@ data.filter(item => item.direction).forEach(item => {{
 
 if (bounds.length > 0) {{
   map.fitBounds(bounds, {{ padding: [40, 40], maxZoom: 6 }});
+}}
+
+// Closest threat to Yaroslavl
+const yarLatLng = L.latLng(YAROSLAVL_COORDS);
+let minDist = Infinity;
+data.forEach(item => {{
+  if (item.type !== 'info') {{
+    const d = map.distance(yarLatLng, [item.lat, item.lon]);
+    if (d < minDist) minDist = d;
+  }}
+}});
+if (minDist < Infinity) {{
+  const distKm = (minDist / 1000).toFixed(0);
+  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км`;
 }}
 
 L.control({{ position: 'bottomright' }}).onAdd = function() {{
