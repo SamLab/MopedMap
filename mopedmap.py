@@ -677,7 +677,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
   <span style="color:#000000;font-size:13px">▲</span> Фиксация
   <span class="dot" style="color:#eab308">●</span> Внимание
-  <span style="color:#f97316;font-size:12px">■</span> Перехват
+  <span style="color:#f97316;font-size:12px">✕</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
   <span class="dot" style="color:#4ade80">●</span> Отбой
   <span class="dot" style="color:#60a5fa">●</span> Инфо
@@ -776,10 +776,10 @@ data.forEach(item => {{
     ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
     : item.type === 'sighting'
       ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
-      : item.type === 'interception'
-        ? 'border-radius:2px;'
-        : 'border-radius:50%;';
-  const html = `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
+      : 'border-radius:50%;';
+  const html = item.type === 'interception'
+    ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
+    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
 
   const marker = L.marker([item.lat, item.lon], {{
     icon: L.divIcon({{ html, className: '', iconSize: [size + 8, size + 8] }})
