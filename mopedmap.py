@@ -557,6 +557,10 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 if feat:
                     feat_copy = json.loads(json.dumps(feat))
                     feat_copy['properties']['alert_type'] = item_type
+                    feat_copy['properties']['popup_name'] = item.get('name', '')
+                    feat_copy['properties']['popup_text'] = item.get('text', '')
+                    feat_copy['properties']['popup_source'] = item.get('source', '')
+                    feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[region_name] = feat_copy
     # Mark items that have polygon fills so JS can skip their point markers
     for item in posts_data:
@@ -685,6 +689,14 @@ L.geoJSON(regionGeoJSON, {{
       color: s.color, fillColor: s.color,
       fillOpacity: 0.15, weight: 1, opacity: 0.3
     }};
+  }},
+  onEachFeature: function(feature, layer) {{
+    const p = feature.properties;
+    if (p.popup_text) {{
+      const label = typeLabel[p.alert_type] || p.alert_type || '';
+      let html = `<div class="popup-name">${{p.popup_name || ''}}</div><div class="popup-text">${{p.popup_text}}</div><div class="popup-source">${{label}}${{p.popup_source ? ' · ' + p.popup_source : ''}}${{p.popup_time ? ' · ' + p.popup_time : ''}}</div>`;
+      layer.bindPopup(html);
+    }}
   }}
 }}).addTo(map);
 
