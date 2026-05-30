@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocatorRU — Карта угроз</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; }
+#map { height: calc(100vh - 50px); width: 100%; }
+.header { height: 50px; display: flex; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; }
+.header h1 { font-size: 18px; color: #d32f2f; }
+.header .info { font-size: 13px; color: #777; margin-left: auto; }
+.legend { background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }
+.legend i { width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }
+.popup-text { font-size: 12px; max-height: 150px; overflow-y: auto; line-height: 1.4; }
+.popup-name { font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }
+.popup-source { color: #666; font-size: 11px; margin-top: 4px; }
+.dest-tooltip { background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>&#x1F4E1; LocatorRU</h1>
+  <span class="info">Угрозы БПЛА | 1 точек | 30.05.2026 09:56</span>
+</div>
+<div id="map"></div>
+<script>
+const map = L.map('map', { center: [55.0, 50.0], zoom: 4, zoomControl: true });
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+const data = [{"lat": 51.71667, "lon": 36.18333, "name": "Курск", "type": "danger", "text": "Курск - опасность"}];
+
+// Always show Yaroslavl as a star marker
+const YAROSLAVL_COORDS = [57.6261, 39.8845];
+const defaultData = data.find(d => d.name === 'Ярославль');
+if (!defaultData) {
+  data.push({
+    lat: YAROSLAVL_COORDS[0], lon: YAROSLAVL_COORDS[1],
+    name: 'Ярославль', type: 'info',
+    text: 'Постоянный маркер'
+  });
+}
+
+const specialNames = ['Ярославль', 'Ярославская область'];
+const isSpecial = (name) => specialNames.some(s => name.includes(s));
+
+const styleMap = {
+  danger: { color: '#e94560', size: 14, glow: '#e94560' },
+  sighting: { color: '#f5a623', size: 12, glow: null },
+  clear: { color: '#4ade80', size: 12, glow: null },
+  attention: { color: '#a855f7', size: 12, glow: null },
+  interception: { color: '#f97316', size: 12, glow: '#f97316' },
+  rocket: { color: '#ef4444', size: 16, glow: '#ef4444' },
+  info: { color: '#60a5fa', size: 10, glow: null }
+};
+
+const bounds = [];
+const seen = new Set();
+
+const typeLabel = { danger: 'Опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' };
+
+const fillTypes = { danger: true, rocket: true, sighting: true, attention: true };
+
+data.forEach(item => {
+  if (item.type === 'info' && !isSpecial(item.name)) return;
+  const key = item.lat.toFixed(1) + ',' + item.lon.toFixed(1);
+  if (seen.has(key)) return;
+  seen.add(key);
+
+  // Draw fill circle for regions with active alerts
+  if (item.radius_km && fillTypes[item.type]) {
+    L.circle([item.lat, item.lon], {
+      radius: item.radius_km * 1000,
+      color: styleMap[item.type].color,
+      fillColor: styleMap[item.type].color,
+      fillOpacity: 0.15,
+      weight: 1,
+      opacity: 0.3
+    }).addTo(map);
+  }
+
+  const special = isSpecial(item.name);
+  const s = styleMap[item.type] || styleMap.info;
+  const size = special ? s.size + 6 : s.size;
+  const glow = s.glow ? `box-shadow:0 0 ${s.size > 12 ? 10 : 6}px ${s.glow};` : '';
+  const border = special ? '3px solid #00f5ff' : '2px solid #333';
+  const extraGlow = special ? 'box-shadow:0 0 16px #00f5ff;' : glow;
+  const shape = special
+    ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
+    : 'border-radius:50%;';
+  const html = `<div style="background:${s.color};width:${size}px;height:${size}px;border:${border};${shape}${extraGlow}"></div>`;
+
+  const marker = L.marker([item.lat, item.lon], {
+    icon: L.divIcon({ html, className: '', iconSize: [size + 8, size + 8] })
+  }).addTo(map);
+
+  let popupHtml = `<div class="popup-name">${item.name}</div><div class="popup-text">${item.text}</div><div class="popup-source">${typeLabel[item.type] || item.type}</div>`;
+  if (item.direction) {
+    popupHtml += `<div class="popup-source">→ ${item.dest_name || '?'}</div>`;
+  }
+  marker.bindPopup(popupHtml);
+  bounds.push([item.lat, item.lon]);
+});
+
+// Draw direction arrows
+data.filter(item => item.direction).forEach(item => {
+  const from = [item.lat, item.lon];
+  const to = item.direction;
+  const s = styleMap[item.type] || styleMap.info;
+  const color = s.color;
+
+  L.polyline([from, to], {
+    color, weight: 1.5, opacity: 0.35, dashArray: '4, 6'
+  }).addTo(map);
+
+  L.circleMarker(to, {
+    radius: 6, color, weight: 1.5, fill: false, dashArray: '2, 3', opacity: 0.5
+  }).addTo(map).bindTooltip(item.dest_name || '?', {
+    permanent: false, direction: 'top', offset: [0, -4],
+    className: 'dest-tooltip'
+  });
+});
+
+if (bounds.length > 0) {
+  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 6 });
+}
+
+L.control({ position: 'bottomright' }).onAdd = function() {
+  const div = L.DomUtil.create('div', 'legend');
+  div.innerHTML = '<b>Легенда</b><br>' +
+    '<i style="background:#e94560"></i> Опасность<br>' +
+    '<i style="background:#f5a623"></i> Фиксация<br>' +
+    '<i style="background:#4ade80"></i> Отбой<br>' +
+    '<i style="background:#a855f7"></i> Внимание<br>' +
+    '<i style="background:#f97316"></i> Перехват<br>' +
+    '<i style="background:#ef4444"></i> Ракетная опасность<br>' +
+    '<hr style="border-color:#333;margin:6px 0">' +
+    '<span style="display:inline-block;width:12px;height:12px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#333;border:2px solid #00f5ff;vertical-align:middle;margin-right:6px"></span> Ярославль и область' +
+    '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span>';
+  return div;
+}.addTo(map);
+</script>
+</body>
+</html>
