@@ -475,7 +475,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <body>
 <div class="header">
   <h1>&#x1F4E1; LocatorRU</h1>
-  <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {time.strftime('%d.%m.%Y %H:%M')}</span>
+  <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
 <script>
