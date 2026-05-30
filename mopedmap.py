@@ -74,6 +74,7 @@ def make_region_alias_with_cases(alias, city_name, lat, lon):
 REGION_ALIASES = [
     make_region_alias("неклиновский район", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias("неклиновский р-н", "Ростов-на-Дону", 47.2357, 39.7015),
+    make_region_alias("ростов на дону", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173),
@@ -238,6 +239,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radarr_yar.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру\s*$', '', clean).strip()
+    clean = re.sub(r'Мониторинг\.РФ\s*\|\s*Мы в MAX', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
     return clean.strip()
