@@ -872,7 +872,7 @@ data.filter(item => item.direction).forEach(item => {{
   }}).addTo(map).bindTooltip(item.dest_name || '?', {{
     permanent: false, direction: 'top', offset: [0, -4],
     className: 'dest-tooltip'
-  }});
+  }}).bindPopup('<div class="popup-name">' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + ' → ' + item.name + '</div>');
 }});
 
 if (bounds.length > 0) {{
