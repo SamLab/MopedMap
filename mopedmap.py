@@ -566,7 +566,7 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), bool(m.get('radius_km')))
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), bool(m.get('radius_km')), m.get('type', 'info'))
         existing = seen.get(key)
         if existing:
             if parse_post_time(m.get('time', '')) > parse_post_time(existing.get('time', '')):
