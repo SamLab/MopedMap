@@ -461,9 +461,9 @@ def generate_html(posts_data, filename=None):
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; }}
-#map {{ height: calc(100vh - 92px); width: 100%; }}
-.footer {{ height: 32px; display: flex; align-items: center; padding: 0 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 8px; overflow: hidden; }}
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; display: flex; flex-direction: column; height: 100vh; }}
+#map {{ flex: 1; width: 100%; min-height: 0; }}
+.footer {{ display: flex; align-items: center; padding: 6px 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 6px; flex-wrap: wrap; }}
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
 @keyframes pulse-ring {{
