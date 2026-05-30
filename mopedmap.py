@@ -359,14 +359,16 @@ def extract_locations(text):
             start = idx + 1
 
     unique = {}
-    found_names = set()
+    found_keys = set()
     for r in results:
         name_key = r["name"].lower()
+        has_radius = bool(r.get("radius_km"))
+        item_key = (name_key, has_radius)
         coord_key = round(r["lat"], 1), round(r["lon"], 1)
-        if name_key in found_names:
+        if item_key in found_keys:
             continue
-        found_names.add(name_key)
-        unique[coord_key] = r
+        found_keys.add(item_key)
+        unique[(coord_key, has_radius)] = r
     return list(unique.values())
 
 
@@ -551,7 +553,7 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1))
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), bool(m.get('radius_km')))
         existing = seen.get(key)
         if existing:
             if parse_post_time(m.get('time', '')) > parse_post_time(existing.get('time', '')):
