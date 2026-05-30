@@ -489,6 +489,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+.leaflet-control-attribution a[title="A JS library for interactive maps"] {{ display: none; }}
 </style>
 </head>
 <body>
