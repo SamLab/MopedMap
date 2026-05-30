@@ -239,9 +239,9 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radarr_yar.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру\s*$', '', clean).strip()
-    clean = re.sub(r'Мониторинг\.РФ\s*\|\s*Мы в MAX', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
+    clean = re.sub(r'Мониторинг\.РФ\s*\|\s*Мы в MAX', '', clean).strip()
     return clean.strip()
 
 
