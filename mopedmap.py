@@ -72,6 +72,8 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, radius_km=60):
     return result
 
 REGION_ALIASES = [
+    make_region_alias("неклиновский район", "Ростов-на-Дону", 47.2357, 39.7015),
+    make_region_alias("неклиновский р-н", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173, 30),
