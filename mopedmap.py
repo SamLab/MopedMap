@@ -431,12 +431,12 @@ def classify_post(text):
         return "clear"
     elif "ракетн" in text_lower:
         return "rocket"
-    elif "авиацион" in text_lower:
-        return "aviation"
     elif "уничтожен" in text_lower or "сбит" in text_lower or "перехват" in text_lower:
         return "interception"
     elif "отражени" in text_lower:
         return "interception"
+    elif "авиацион" in text_lower and "бпла" not in text_lower and "беспилот" not in text_lower:
+        return "aviation"
     elif "опасность" in text_lower or "угроз" in text_lower:
         return "danger"
     elif "фиксаци" in text_lower:
