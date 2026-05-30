@@ -74,6 +74,20 @@ def make_region_alias_with_cases(alias, city_name, lat, lon):
 REGION_ALIASES = [
     make_region_alias("неклиновский район", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias("неклиновский р-н", "Ростов-на-Дону", 47.2357, 39.7015),
+    make_region_alias("малоархангельский район", "Малоархангельск", 52.4, 36.5),
+    make_region_alias("малоархангельский р-н", "Малоархангельск", 52.4, 36.5),
+    make_region_alias("дмитровский район", "Дмитровск", 52.5055, 35.1415),
+    make_region_alias("дмитровский р-н", "Дмитровск", 52.5055, 35.1415),
+    make_region_alias("россошанский район", "Россошь", 50.2, 39.5833),
+    make_region_alias("россошанский р-н", "Россошь", 50.2, 39.5833),
+    make_region_alias("ейский район", "Ейск", 46.7106, 38.2778),
+    make_region_alias("ейский р-н", "Ейск", 46.7106, 38.2778),
+    make_region_alias("матвеево-курганский район", "Матвеев Курган", 47.564, 38.875),
+    make_region_alias("матвеево-курганский р-н", "Матвеев Курган", 47.564, 38.875),
+    make_region_alias("азовский район", "Азов", 47.1, 39.4167),
+    make_region_alias("азовский р-н", "Азов", 47.1, 39.4167),
+    make_region_alias("орловский район", "Орёл", 52.9678, 36.0696),
+    make_region_alias("орловский р-н", "Орёл", 52.9678, 36.0696),
     make_region_alias("ростов на дону", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
@@ -783,8 +797,10 @@ data.forEach(item => {{
     ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
     : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
 
+  const zOffset = (item.type === 'sighting' || item.type === 'interception') ? 2000 : 0;
   const marker = L.marker([item.lat, item.lon], {{
-    icon: L.divIcon({{ html, className: '', iconSize: [size + 8, size + 8] }})
+    icon: L.divIcon({{ html, className: '', iconSize: [size + 8, size + 8] }}),
+    zIndexOffset: zOffset
   }}).addTo(map);
 
   let popupHtml = `<div class="popup-name">${{item.name}}</div><div class="popup-text">${{item.text}}</div><div class="popup-source">${{typeLabel[item.type] || item.type}}${{item.source ? ' · ' + item.source : ''}}${{item.time ? ' · ' + item.time : ''}}</div>`;
