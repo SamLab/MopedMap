@@ -462,7 +462,10 @@ def generate_html(posts_data, filename=None):
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; }}
-#map {{ height: calc(100vh - 50px); width: 100%; }}
+#map {{ height: calc(100vh - 80px); width: 100%; }}
+.footer {{ height: 32px; display: flex; align-items: center; padding: 0 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 8px; overflow: hidden; }}
+.footer span {{ white-space: nowrap; }}
+.footer .dot {{ font-size: 16px; line-height: 1; }}
 .header {{ height: 50px; display: flex; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; }}
 .header h1 {{ font-size: 18px; color: #d32f2f; }}
 .header .info {{ font-size: 13px; color: #777; margin-left: auto; }}
@@ -481,6 +484,17 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
+<div class="footer">
+  <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
+  <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
+  <span class="dot" style="color:#f5a623">●</span> Фиксация
+  <span class="dot" style="color:#eab308">●</span> Внимание
+  <span class="dot" style="color:#f97316">●</span> Перехват
+  <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
+  <span class="dot" style="color:#4ade80">●</span> Отбой
+  <span class="dot" style="color:#60a5fa">●</span> Инфо
+  <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
+</div>
 <script>
 const map = L.map('map', {{ center: [55.0, 50.0], zoom: 4, zoomControl: true }});
 
