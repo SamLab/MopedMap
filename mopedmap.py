@@ -479,9 +479,9 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   animation: pulse-ring 2s ease-in-out infinite;
   pointer-events: none;
 }}
-.header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; flex-wrap: wrap; }}
-.header h1 {{ font-size: 16px; color: #d32f2f; white-space: nowrap; }}
-.header .info {{ font-size: 12px; color: #777; margin-left: auto; white-space: nowrap; }}
+.header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; gap: 6px; flex-wrap: wrap; overflow: hidden; }}
+.header h1 {{ font-size: 15px; color: #d32f2f; white-space: nowrap; }}
+.header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
 .popup-text {{ font-size: 12px; max-height: 250px; overflow-y: auto; line-height: 1.4; word-break: break-word; }}
@@ -489,12 +489,13 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+@media (max-width:600px) {{ .header {{ font-size: 12px; }} .info {{ font-size: 10px; }} .header h1 {{ font-size: 13px; }} #dist-info {{ font-size: 11px !important; }} }}
 
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>&#x1F4E1; YarLocator <span id="dist-info" style="font-size:13px;color:#d32f2f;font-weight:normal"></span></h1>
+  <h1>&#x1F4E1; YarLocator <span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
   <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
