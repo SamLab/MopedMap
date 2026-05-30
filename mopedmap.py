@@ -747,6 +747,10 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
 
+// Priority order: sighting first (triangle over circle), then interception, then rest
+const typeOrder = {{ sighting: 0, interception: 1, rocket: 2, danger: 3, aviation: 4, attention: 5, clear: 6, info: 7 }};
+data.sort((a, b) => (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99));
+
 // Always show Yaroslavl as a star marker
 const YAROSLAVL_COORDS = [57.553, 39.850];
 const defaultData = data.find(d => d.name === 'Ярославль');
@@ -773,6 +777,7 @@ const styleMap = {{
 }};
 
 const bounds = [];
+const seen = new Set();
 
 const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
 
@@ -813,6 +818,10 @@ data.forEach(item => {{
   }}
 
   if (item.no_marker) return;
+
+  const key = item.lat.toFixed(1) + ',' + item.lon.toFixed(1);
+  if (seen.has(key)) return;
+  seen.add(key);
 
   const size = special ? s.size + 6 : s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
