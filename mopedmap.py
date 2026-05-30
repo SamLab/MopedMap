@@ -450,7 +450,7 @@ def classify_post(text):
         return "clear"
     elif "ракетн" in text_lower:
         return "rocket"
-    elif "уничтожен" in text_lower or "сбит" in text_lower or "перехват" in text_lower:
+    elif "уничтожен" in text_lower or "сбит" in text_lower or "перехват" in text_lower or "пво" in text_lower:
         return "interception"
     elif "отражени" in text_lower:
         return "interception"
@@ -458,7 +458,7 @@ def classify_post(text):
         return "aviation"
     elif "опасность" in text_lower or "угроз" in text_lower:
         return "danger"
-    elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower:
+    elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower or "пуск" in text_lower:
         return "sighting"
     elif "внимание" in text_lower:
         return "attention"
