@@ -271,7 +271,7 @@ def fetch_channel(url, name):
                 continue
             clean = clean_message_text(msg_html, name)
             if clean and len(clean) > 10:
-                posts.append(clean)
+                posts.append((clean, name, dt))
                 page_posts += 1
 
         if page_posts == 0 or oldest_id is None:
@@ -496,7 +496,7 @@ if (!defaultData) {{
   data.push({{
     lat: YAROSLAVL_COORDS[0], lon: YAROSLAVL_COORDS[1],
     name: 'Ярославль', type: 'info',
-    text: 'Постоянный маркер'
+    text: 'Постоянный маркер', source: '', time: ''
   }});
 }}
 
@@ -553,7 +553,7 @@ data.forEach(item => {{
     icon: L.divIcon({{ html, className: '', iconSize: [size + 8, size + 8] }})
   }}).addTo(map);
 
-  let popupHtml = `<div class="popup-name">${{item.name}}</div><div class="popup-text">${{item.text}}</div><div class="popup-source">${{typeLabel[item.type] || item.type}}</div>`;
+  let popupHtml = `<div class="popup-name">${{item.name}}</div><div class="popup-text">${{item.text}}</div><div class="popup-source">${{typeLabel[item.type] || item.type}}${{item.source ? ' · ' + item.source : ''}}${{item.time ? ' · ' + item.time : ''}}</div>`;
   if (item.direction) {{
     popupHtml += `<div class="popup-source">→ ${{item.dest_name || '?'}}</div>`;
   }}
@@ -636,7 +636,18 @@ def is_summary_post(text):
 def process_posts(posts):
     all_markers = []
     filtered = 0
-    for post in posts:
+    msk = timezone(timedelta(hours=3))
+    for post_item in posts:
+        if isinstance(post_item, tuple):
+            if len(post_item) == 3:
+                post, source, dt = post_item
+                post_time = dt.astimezone(msk).strftime('%d.%m.%Y %H:%M')
+            else:
+                post, source = post_item
+                post_time = ""
+        else:
+            post, source = post_item, ""
+            post_time = ""
         if is_summary_post(post):
             filtered += 1
             continue
@@ -657,21 +668,23 @@ def process_posts(posts):
                     "text": post[:120] + ("..." if len(post) > 120 else ""),
                     "direction": [dst["lat"], dst["lon"]],
                     "dest_name": dst["name"],
+                    "source": source, "time": post_time,
                 }
                 if src.get("radius_km"):
                     m["radius_km"] = src["radius_km"]
                 all_markers.append(m)
-    else:
-        locations = extract_locations(post)
-        for loc in locations:
-            marker = {
-                "lat": loc["lat"], "lon": loc["lon"],
-                "name": loc["name"], "type": post_type,
-                "text": post[:120] + ("..." if len(post) > 120 else ""),
-            }
-            if loc.get("radius_km"):
-                marker["radius_km"] = loc["radius_km"]
-            all_markers.append(marker)
+        else:
+            locations = extract_locations(post)
+            for loc in locations:
+                marker = {
+                    "lat": loc["lat"], "lon": loc["lon"],
+                    "name": loc["name"], "type": post_type,
+                    "text": post[:120] + ("..." if len(post) > 120 else ""),
+                    "source": source, "time": post_time,
+                }
+                if loc.get("radius_km"):
+                    marker["radius_km"] = loc["radius_km"]
+                all_markers.append(marker)
 
     if filtered:
         print(f"  Отфильтровано {filtered} сводок/объявлений")
