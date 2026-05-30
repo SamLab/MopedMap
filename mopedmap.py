@@ -586,7 +586,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     # Extract region geometries for active fill types
     # Map city name -> region name via CITY_DB subject field
     region_map = {}  # region_name_lower -> feature
-    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'sighting': 3, 'attention': 4}
+    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4}
     for item in posts_data:
         is_region = item.get('is_region', False)
         item_type = item.get('type')
@@ -679,7 +679,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
   <span style="color:#000000;font-size:13px">▲</span> Фиксация
   <span class="dot" style="color:#eab308">●</span> Внимание
-  <span style="color:#f97316;font-size:12px">✕</span> Перехват
+  <span style="color:#000000;font-size:14px;font-weight:bold">✕</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
   <span class="dot" style="color:#4ade80">●</span> Отбой
   <span class="dot" style="color:#60a5fa">●</span> Инфо
@@ -718,7 +718,7 @@ const styleMap = {{
   sighting: {{ color: '#000000', size: 12, glow: null }},
   clear: {{ color: '#4ade80', size: 12, glow: null }},
   attention: {{ color: '#eab308', size: 12, glow: null }},
-  interception: {{ color: '#f97316', size: 12, glow: '#f97316' }},
+  interception: {{ color: '#000000', size: 12, glow: null }},
   rocket: {{ color: '#a855f7', size: 16, glow: '#a855f7' }},
   info: {{ color: '#60a5fa', size: 10, glow: null }}
 }};
