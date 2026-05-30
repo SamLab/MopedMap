@@ -2,7 +2,7 @@ name: Deploy map to Pages
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/7 * * * *'
   push:
     branches: [main]
   workflow_dispatch:
