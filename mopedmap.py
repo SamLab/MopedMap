@@ -507,9 +507,9 @@ const styleMap = {{
   danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
   sighting: {{ color: '#f5a623', size: 12, glow: null }},
   clear: {{ color: '#4ade80', size: 12, glow: null }},
-  attention: {{ color: '#a855f7', size: 12, glow: null }},
+  attention: {{ color: '#eab308', size: 12, glow: null }},
   interception: {{ color: '#f97316', size: 12, glow: '#f97316' }},
-  rocket: {{ color: '#ef4444', size: 16, glow: '#ef4444' }},
+  rocket: {{ color: '#a855f7', size: 16, glow: '#a855f7' }},
   info: {{ color: '#60a5fa', size: 10, glow: null }}
 }};
 
@@ -587,12 +587,12 @@ if (bounds.length > 0) {{
 L.control({{ position: 'bottomright' }}).onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
   div.innerHTML = '<b>Легенда</b><br>' +
-    '<i style="background:#e94560"></i> Опасность<br>' +
+    '<i style="background:#e94560"></i> Опасность БПЛА<br>' +
     '<i style="background:#f5a623"></i> Фиксация<br>' +
     '<i style="background:#4ade80"></i> Отбой<br>' +
-    '<i style="background:#a855f7"></i> Внимание<br>' +
+    '<i style="background:#eab308"></i> Внимание<br>' +
     '<i style="background:#f97316"></i> Перехват<br>' +
-    '<i style="background:#ef4444"></i> Ракетная опасность<br>' +
+    '<i style="background:#a855f7"></i> Ракетная опасность<br>' +
     '<hr style="border-color:#333;margin:6px 0">' +
     '<span style="display:inline-block;width:12px;height:12px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#333;border:2px solid #00f5ff;vertical-align:middle;margin-right:6px"></span> Ярославль и область' +
     '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span>';
