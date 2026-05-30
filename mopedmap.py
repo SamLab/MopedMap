@@ -632,15 +632,23 @@ if (bounds.length > 0) {{
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
 let closestName = '';
+let closestTime = '';
 data.forEach(item => {{
   if (item.type !== 'info' && item.type !== 'clear') {{
     const d = map.distance(yarLatLng, [item.lat, item.lon]);
-    if (d < minDist) {{ minDist = d; closestName = item.name; }}
+    if (d < minDist) {{ minDist = d; closestName = item.name; closestTime = item.time; }}
   }}
 }});
 if (minDist < Infinity) {{
   const distKm = (minDist / 1000).toFixed(0);
-  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{closestName}})`;
+  let ago = '';
+  if (closestTime) {{
+    const [dd, mm, yyyy, hh, mi] = closestTime.match(/(\\d+)/g);
+    const postDate = new Date(+yyyy, +mm - 1, +dd, +hh, +mi);
+    const mins = Math.round((Date.now() - postDate) / 60000);
+    if (mins > 0) ago = `, ${{mins}} мин назад`;
+  }}
+  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{closestName}}${{ago}})`;
 }}
 
 L.control({{ position: 'bottomright' }}).onAdd = function() {{
