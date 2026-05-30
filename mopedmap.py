@@ -83,6 +83,7 @@ REGION_ALIASES = [
     make_region_alias("ейский район", "Ейск", 46.7106, 38.2778),
     make_region_alias("ейский р-н", "Ейск", 46.7106, 38.2778),
     make_region_alias("матвеев-курган", "Матвеев Курган", 47.564, 38.875),
+    make_region_alias("матвеев курган", "Матвеев Курган", 47.564, 38.875),
     make_region_alias("матвеево-курганский район", "Матвеев Курган", 47.564, 38.875),
     make_region_alias("матвеево-курганский р-н", "Матвеев Курган", 47.564, 38.875),
     make_region_alias("азовский район", "Азов", 47.1, 39.4167),
@@ -677,6 +678,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     for item in posts_data:
         key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
         types_at_coord = coord_types.get(key, set())
+        if item.get('type') == 'sighting' and 'interception' in types_at_coord:
+            item['no_marker'] = True
         if item.get('type') in ('danger', 'attention') and 'sighting' in types_at_coord:
             item['no_marker'] = True
 
