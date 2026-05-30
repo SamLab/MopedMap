@@ -466,6 +466,19 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .footer {{ height: 32px; display: flex; align-items: center; padding: 0 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 8px; overflow: hidden; }}
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
+@keyframes pulse-ring {{
+  0% {{ transform: scale(1); opacity: 0.4; }}
+  50% {{ transform: scale(2.5); opacity: 0.1; }}
+  100% {{ transform: scale(1); opacity: 0.4; }}
+}}
+.pulse-ring {{
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid var(--pulse-color, #00f5ff);
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse-ring 2s ease-in-out infinite;
+  pointer-events: none;
+}}
 .header {{ height: 50px; display: flex; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; }}
 .header h1 {{ font-size: 18px; color: #d32f2f; }}
 .header .info {{ font-size: 13px; color: #777; margin-left: auto; }}
@@ -576,6 +589,16 @@ data.forEach(item => {{
     popupHtml += `<div class="popup-source">→ ${{item.dest_name || '?'}}</div>`;
   }}
   marker.bindPopup(popupHtml);
+
+  // Pulsing ring for Yaroslavl real posts
+  if (special && item.text !== 'Постоянный маркер') {{
+    const ringIcon = L.divIcon({{
+      html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
+      className: '', iconSize: [60, 60], iconAnchor: [30, 30]
+    }});
+    L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }}).addTo(map);
+  }}
+
   bounds.push([item.lat, item.lon]);
 }});
 
