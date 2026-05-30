@@ -200,7 +200,7 @@ ALL_PATTERNS.sort(key=lambda x: -x[0])
 from datetime import datetime, timezone, timedelta
 
 
-HOURS_FILTER = 8
+HOURS_FILTER = 4
 
 
 CHANNELS = [
