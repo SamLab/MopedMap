@@ -523,7 +523,7 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 const data = {markers_json};
 
 // Always show Yaroslavl as a star marker
-const YAROSLAVL_COORDS = [57.6261, 39.8845];
+const YAROSLAVL_COORDS = [57.553, 39.850];
 const defaultData = data.find(d => d.name === 'Ярославль');
 if (!defaultData) {{
   data.push({{
