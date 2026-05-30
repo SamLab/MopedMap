@@ -431,6 +431,8 @@ def classify_post(text):
         return "clear"
     elif "ракетн" in text_lower:
         return "rocket"
+    elif "авиацион" in text_lower:
+        return "aviation"
     elif "уничтожен" in text_lower or "сбит" in text_lower or "перехват" in text_lower:
         return "interception"
     elif "отражени" in text_lower:
@@ -505,6 +507,7 @@ const isSpecial = (name) => specialNames.some(s => name.includes(s));
 
 const styleMap = {{
   danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
+  aviation: {{ color: '#06b6d4', size: 14, glow: '#06b6d4' }},
   sighting: {{ color: '#f5a623', size: 12, glow: null }},
   clear: {{ color: '#4ade80', size: 12, glow: null }},
   attention: {{ color: '#eab308', size: 12, glow: null }},
@@ -516,9 +519,9 @@ const styleMap = {{
 const bounds = [];
 const seen = new Set();
 
-const typeLabel = {{ danger: 'Опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
+const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
 
-const fillTypes = {{ danger: true, rocket: true, sighting: true, attention: true }};
+const fillTypes = {{ danger: true, rocket: true, aviation: true, sighting: true, attention: true }};
 
 data.forEach(item => {{
   if (item.type === 'info' && !isSpecial(item.name)) return;
@@ -588,6 +591,7 @@ L.control({{ position: 'bottomright' }}).onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
   div.innerHTML = '<b>Легенда</b><br>' +
     '<i style="background:#e94560"></i> Опасность БПЛА<br>' +
+    '<i style="background:#06b6d4"></i> Авиационная опасность<br>' +
     '<i style="background:#f5a623"></i> Фиксация<br>' +
     '<i style="background:#4ade80"></i> Отбой<br>' +
     '<i style="background:#eab308"></i> Внимание<br>' +
