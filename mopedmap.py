@@ -659,8 +659,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     feat_copy['properties']['popup_source'] = item.get('source', '')
                     feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[region_name] = feat_copy
-    # Mark items that have polygon fills so JS can skip their point markers
-    # Keep markers for sighting (triangle), rocket (purple), clear — they carry distinct info
+    # Mark items that should not render a point marker
     always_show = {'sighting', 'rocket', 'clear', 'interception'}
     for item in posts_data:
         if item.get('is_region') and item.get('type') not in always_show:
@@ -669,6 +668,17 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 rn = CITY_DB[city_name].get('subject', '').lower().strip()
                 if rn in region_map:
                     item['no_marker'] = True
+
+    # If sighting exists at the same coords as danger/attention, hide the danger/attention
+    coord_types = {}
+    for item in posts_data:
+        key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
+        coord_types.setdefault(key, set()).add(item.get('type'))
+    for item in posts_data:
+        key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
+        types_at_coord = coord_types.get(key, set())
+        if item.get('type') in ('danger', 'attention') and 'sighting' in types_at_coord:
+            item['no_marker'] = True
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
@@ -747,10 +757,6 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
 
-// Priority order: sighting first (triangle over circle), then interception, then rest
-const typeOrder = {{ sighting: 0, interception: 1, rocket: 2, danger: 3, aviation: 4, attention: 5, clear: 6, info: 7 }};
-data.sort((a, b) => (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99));
-
 // Always show Yaroslavl as a star marker
 const YAROSLAVL_COORDS = [57.553, 39.850];
 const defaultData = data.find(d => d.name === 'Ярославль');
@@ -777,7 +783,6 @@ const styleMap = {{
 }};
 
 const bounds = [];
-const seen = new Set();
 
 const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
 
@@ -818,10 +823,6 @@ data.forEach(item => {{
   }}
 
   if (item.no_marker) return;
-
-  const key = item.lat.toFixed(1) + ',' + item.lon.toFixed(1);
-  if (seen.has(key)) return;
-  seen.add(key);
 
   const size = special ? s.size + 6 : s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
