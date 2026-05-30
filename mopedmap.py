@@ -631,15 +631,16 @@ if (bounds.length > 0) {{
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
+let closestName = '';
 data.forEach(item => {{
   if (item.type !== 'info') {{
     const d = map.distance(yarLatLng, [item.lat, item.lon]);
-    if (d < minDist) minDist = d;
+    if (d < minDist) {{ minDist = d; closestName = item.name; }}
   }}
 }});
 if (minDist < Infinity) {{
   const distKm = (minDist / 1000).toFixed(0);
-  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км`;
+  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{closestName}})`;
 }}
 
 L.control({{ position: 'bottomright' }}).onAdd = function() {{
