@@ -462,7 +462,7 @@ def generate_html(posts_data, filename=None):
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; }}
-#map {{ height: calc(100vh - 80px); width: 100%; }}
+#map {{ height: calc(100vh - 92px); width: 100%; }}
 .footer {{ height: 32px; display: flex; align-items: center; padding: 0 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 8px; overflow: hidden; }}
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
@@ -479,9 +479,9 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   animation: pulse-ring 2s ease-in-out infinite;
   pointer-events: none;
 }}
-.header {{ height: 50px; display: flex; align-items: center; padding: 0 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; }}
-.header h1 {{ font-size: 18px; color: #d32f2f; }}
-.header .info {{ font-size: 13px; color: #777; margin-left: auto; }}
+.header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 10px; flex-wrap: wrap; }}
+.header h1 {{ font-size: 16px; color: #d32f2f; white-space: nowrap; }}
+.header .info {{ font-size: 12px; color: #777; margin-left: auto; white-space: nowrap; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
 .popup-text {{ font-size: 12px; max-height: 250px; overflow-y: auto; line-height: 1.4; word-break: break-word; }}
