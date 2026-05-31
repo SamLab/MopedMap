@@ -507,7 +507,7 @@ def classify_post(text):
         return "interception"
     elif "авиацион" in text_lower and "бпла" not in text_lower and "беспилот" not in text_lower:
         return "aviation"
-    elif "опасность" in text_lower or "угроз" in text_lower:
+    elif "меры безопасности" in text_lower or "опасность" in text_lower or "угроз" in text_lower:
         return "danger"
     elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower or "пуск" in text_lower:
         return "sighting"
@@ -700,6 +700,19 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             for it in items:
                 if it.get('type') in ('danger', 'attention'):
                     it['no_marker'] = True
+        # danger vs interception: within 1h → interception wins; 1h+ older → danger wins
+        if 'danger' in types and 'interception' in types:
+            danger_items = [it for it in items if it.get('type') == 'danger']
+            int_items = [it for it in items if it.get('type') == 'interception']
+            latest_danger = max(parse_post_time(it.get('time', '')) for it in danger_items)
+            latest_int = max(parse_post_time(it.get('time', '')) for it in int_items)
+            diff = (latest_danger - latest_int).total_seconds()
+            if diff >= 3600:
+                for it in int_items:
+                    it['no_marker'] = True  # interception 1h+ older → danger wins
+            else:
+                for it in danger_items:
+                    it['no_marker'] = True  # within 1h → interception wins
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
