@@ -671,18 +671,35 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 if rn in region_map:
                     item['no_marker'] = True
 
-    # If sighting exists at the same coords as danger/attention, hide the danger/attention
-    coord_types = {}
+    # Priority at same coordinates
+    coord_items = {}
     for item in posts_data:
         key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
-        coord_types.setdefault(key, set()).add(item.get('type'))
-    for item in posts_data:
-        key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
-        types_at_coord = coord_types.get(key, set())
-        if item.get('type') == 'sighting' and 'interception' in types_at_coord:
-            item['no_marker'] = True
-        if item.get('type') in ('danger', 'attention') and 'sighting' in types_at_coord:
-            item['no_marker'] = True
+        coord_items.setdefault(key, []).append(item)
+    for key, items in coord_items.items():
+        types = {it.get('type') for it in items}
+        # clear vs sighting: latest times decide
+        if 'clear' in types and 'sighting' in types:
+            clear_items = [it for it in items if it.get('type') == 'clear']
+            sighting_items = [it for it in items if it.get('type') == 'sighting']
+            latest_clear = max(parse_post_time(it.get('time', '')) for it in clear_items)
+            latest_sighting = max(parse_post_time(it.get('time', '')) for it in sighting_items)
+            if latest_clear >= latest_sighting and (latest_clear - latest_sighting).total_seconds() >= 3600:
+                for it in sighting_items:
+                    it['no_marker'] = True  # clear 1h+ newer → clear wins
+            else:
+                for it in clear_items:
+                    it['no_marker'] = True  # same time or <1h → sighting wins
+        # interception hides sighting
+        if 'interception' in types and 'sighting' in types:
+            for it in items:
+                if it.get('type') == 'sighting':
+                    it['no_marker'] = True
+        # sighting hides danger/attention
+        if 'sighting' in types:
+            for it in items:
+                if it.get('type') in ('danger', 'attention'):
+                    it['no_marker'] = True
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
