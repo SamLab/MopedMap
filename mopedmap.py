@@ -847,8 +847,8 @@ data.forEach(item => {{
   const special = isSpecial(item.name);
   const s = styleMap[item.type] || styleMap.info;
 
-  // Pulsing ring for Yaroslavl real posts (shown even for region entries)
-  if (special && item.text !== 'Постоянный маркер') {{
+  // Pulsing ring for Yaroslavl real posts (only for threat types, not clear/info)
+  if (special && item.text !== 'Постоянный маркер' && item.type !== 'clear' && item.type !== 'info') {{
     const ringIcon = L.divIcon({{
       html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
       className: '', iconSize: [60, 60], iconAnchor: [30, 30]
