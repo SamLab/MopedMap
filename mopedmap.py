@@ -507,9 +507,9 @@ def classify_post(text):
         return "interception"
     elif "авиацион" in text_lower and "бпла" not in text_lower and "беспилот" not in text_lower:
         return "aviation"
-    elif "меры безопасности" in text_lower or "опасность" in text_lower or "угроз" in text_lower:
+    elif "меры безопасности" in text_lower or "пуск" in text_lower or "опасность" in text_lower or "угроз" in text_lower:
         return "danger"
-    elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower or "пуск" in text_lower:
+    elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower:
         return "sighting"
     elif "внимание" in text_lower:
         return "attention"
@@ -971,6 +971,7 @@ SUMMARY_PATTERNS = [
     r'результатом воздействия пво',
     r'министерство обороны',
     r'ночью средствами пво',
+    r'впервые регионы.*подверглись массовым ракетным атакам',
 ]
 
 
