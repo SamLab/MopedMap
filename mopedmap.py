@@ -829,16 +829,13 @@ updatePulseVisibility();
 
 const data = {markers_json};
 
-// Always show Yaroslavl as a star marker
-const YAROSLAVL_COORDS = [57.553, 39.850];
-const defaultData = data.find(d => d.name === 'Ярославль');
-if (!defaultData) {{
-  data.push({{
-    lat: YAROSLAVL_COORDS[0], lon: YAROSLAVL_COORDS[1],
-    name: 'Ярославль', type: 'info',
-    text: 'Постоянный маркер', source: '', time: ''
-  }});
-}}
+// Always show Yaroslavl as a star marker at Luchinskoye
+const YAROSLAVL_COORDS = [57.552927, 39.850605];
+data.push({{
+  lat: YAROSLAVL_COORDS[0], lon: YAROSLAVL_COORDS[1],
+  name: 'Ярославль', type: 'info',
+  text: 'Постоянный маркер', source: '', time: ''
+}});
 
 const specialNames = ['Ярославль', 'Ярославская область'];
 const isSpecial = (name) => specialNames.some(s => name.includes(s));
