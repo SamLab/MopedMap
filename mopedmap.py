@@ -805,7 +805,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [55.0, 50.0], zoom: 4, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: [55.7558, 37.6173], zoom: 5, zoomControl: true, attributionControl: false }});
 
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
