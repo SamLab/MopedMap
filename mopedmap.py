@@ -888,7 +888,7 @@ data.forEach(item => {{
       html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
       className: '', iconSize: [60, 60], iconAnchor: [30, 30]
     }});
-    const ringMarker = L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }});
+    const ringMarker = L.marker(YAROSLAVL_COORDS, {{ icon: ringIcon, interactive: false }});
     ringMarker.addTo(pulseLayer);
   }}
 
