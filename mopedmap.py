@@ -815,6 +815,18 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
 
 L.control.attribution({{ prefix: false }}).addTo(map);
 
+// Pulring ring layer — visible only at zoom >= 7
+const pulseLayer = L.layerGroup().addTo(map);
+const updatePulseVisibility = () => {{
+  if (map.getZoom() >= 7) {{
+    if (!map.hasLayer(pulseLayer)) map.addLayer(pulseLayer);
+  }} else {{
+    if (map.hasLayer(pulseLayer)) map.removeLayer(pulseLayer);
+  }}
+}};
+map.on('zoomend', updatePulseVisibility);
+updatePulseVisibility();
+
 const data = {markers_json};
 
 // Always show Yaroslavl as a star marker
@@ -873,13 +885,14 @@ data.forEach(item => {{
   const special = isSpecial(item.name);
   const s = styleMap[item.type] || styleMap.info;
 
-  // Pulsing ring for Yaroslavl real posts (only for threat types, not clear/info)
+  // Pulsing ring for Yaroslavl real posts (only at zoom >= 7, threat types only)
   if (special && item.text !== 'Постоянный маркер' && item.type !== 'clear' && item.type !== 'info') {{
     const ringIcon = L.divIcon({{
       html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
       className: '', iconSize: [60, 60], iconAnchor: [30, 30]
     }});
-    L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }}).addTo(map);
+    const ringMarker = L.marker([item.lat, item.lon], {{ icon: ringIcon, interactive: false }});
+    ringMarker.addTo(pulseLayer);
   }}
 
   if (item.no_marker) return;
