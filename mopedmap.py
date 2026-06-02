@@ -805,7 +805,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [56.1333, 40.4167], zoom: 6, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: [54.6095, 39.7126], zoom: 6, zoomControl: true, attributionControl: false }});
 
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -928,7 +928,7 @@ data.filter(item => item.direction).forEach(item => {{
 }});
 
 if (bounds.length > 0) {{
-  map.setView([56.1333, 40.4167], 6);
+  map.setView([54.6095, 39.7126], 6);
 }}
 
 // Closest threat to Yaroslavl
