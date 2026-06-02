@@ -672,6 +672,17 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     feat_copy['properties']['popup_source'] = item.get('source', '')
                     feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[region_name] = feat_copy
+                # Also fill city-level polygon if different from region (e.g. Москва & Московская область)
+                if city_name != region_name:
+                    city_feat = find_geojson_feature(city_name, geojson_lookup)
+                    if city_feat and city_name not in region_map:
+                        city_copy = json.loads(json.dumps(city_feat))
+                        city_copy['properties']['alert_type'] = item_type
+                        city_copy['properties']['popup_name'] = item.get('name', '')
+                        city_copy['properties']['popup_text'] = item.get('text', '')
+                        city_copy['properties']['popup_source'] = item.get('source', '')
+                        city_copy['properties']['popup_time'] = item.get('time', '')
+                        region_map[city_name] = city_copy
     # Mark items that should not render a point marker
     always_show = {'sighting', 'clear', 'interception'}
     for item in posts_data:
