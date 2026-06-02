@@ -893,6 +893,8 @@ data.forEach(item => {{
   }}
 
   if (item.no_marker) return;
+  // For Yaroslavl: skip plain circle marker for danger/attention/clear/info; keep distinctive ones
+  if (special && item.text !== 'Постоянный маркер' && !['sighting','interception','rocket','aviation'].includes(item.type)) return;
 
   const size = special ? s.size + 6 : s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
