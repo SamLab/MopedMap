@@ -23,12 +23,12 @@ for c in cities_data:
         "subject": c["subject"],
     }
 
-def make_region_alias(alias, city_name, lat, lon):
+def make_region_alias(alias, city_name, lat, lon, subject=None):
     ck = city_name.lower()
     if ck in CITY_DB:
         lat = CITY_DB[ck]["lat"]
         lon = CITY_DB[ck]["lon"]
-    return {
+    result = {
         "pattern": alias.lower(),
         "name": city_name,
         "lat": lat,
@@ -36,36 +36,39 @@ def make_region_alias(alias, city_name, lat, lon):
         "type": "region",
         "is_region": True,
     }
+    if subject:
+        result["subject"] = subject
+    return result
 
 
-def make_region_alias_with_cases(alias, city_name, lat, lon):
+def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
     """Generate region alias with common case variants."""
-    result = [make_region_alias(alias, city_name, lat, lon)]
+    result = [make_region_alias(alias, city_name, lat, lon, subject)]
     a = alias.lower()
     # область -> области (genitive)
     if a.endswith("ая область"):
         stem = a[:-10]
-        result.append(make_region_alias(stem + "ой области", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ой области", city_name, lat, lon, subject))
     elif a.endswith("ая обл"):
         stem = a[:-6]
-        result.append(make_region_alias(stem + "ой обл", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ой обл", city_name, lat, lon, subject))
     elif a.endswith("ская область"):
         stem = a[:-12]
-        result.append(make_region_alias(stem + "ской области", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ской области", city_name, lat, lon, subject))
     elif a.endswith("ская обл"):
         stem = a[:-8]
-        result.append(make_region_alias(stem + "ской обл", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ской обл", city_name, lat, lon, subject))
     # край -> края (genitive)
     elif a.endswith("ий край"):
         stem = a[:-7]
-        result.append(make_region_alias(stem + "его края", city_name, lat, lon))
+        result.append(make_region_alias(stem + "его края", city_name, lat, lon, subject))
     elif a.endswith("ский край"):
         stem = a[:-9]
-        result.append(make_region_alias(stem + "ского края", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ского края", city_name, lat, lon, subject))
     # округ -> округа
     elif a.endswith("ий округ"):
         stem = a[:-8]
-        result.append(make_region_alias(stem + "его округа", city_name, lat, lon))
+        result.append(make_region_alias(stem + "его округа", city_name, lat, lon, subject))
     elif a.endswith("ский округ"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ского округа", city_name, lat, lon))
@@ -130,10 +133,10 @@ REGION_ALIASES = [
     make_region_alias("ростов на дону", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
-    make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173),
-    make_region_alias_with_cases("московская обл", "Москва", 55.7558, 37.6173),
-    make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351),
-    make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351),
+    make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173, subject="Московская область"),
+    make_region_alias_with_cases("московская обл", "Москва", 55.7558, 37.6173, subject="Московская область"),
+    make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
+    make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
     make_region_alias_with_cases("краснодарский край", "Краснодар", 45.0355, 38.9753),
     make_region_alias_with_cases("ставропольский край", "Ставрополь", 45.0448, 41.9692),
     make_region_alias_with_cases("приморский край", "Владивосток", 43.1056, 131.8735),
@@ -422,6 +425,12 @@ def extract_locations(text):
                      "type": ftype, "matched": text[idx:end]}
                 if is_region:
                     r["is_region"] = True
+                if isinstance(entry, dict) and "subject" in entry:
+                    r["subject"] = entry["subject"]
+                elif not is_region and not (isinstance(entry, dict) and "type" in entry):
+                    ck = name.lower()
+                    if ck in CITY_DB:
+                        r["subject"] = CITY_DB[ck]["subject"]
                 results.append(r)
                 break
             start = idx + 1
@@ -645,8 +654,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         item_type = item.get('type')
         if is_region and item_type in type_priority:
             city_name = item.get('name', '').lower().strip()
-            region_name = None
-            if city_name in CITY_DB:
+            region_name = item.get('subject', '').lower().strip() if item.get('subject') else None
+            if not region_name and city_name in CITY_DB:
                 region_name = CITY_DB[city_name].get('subject', '').lower().strip()
             if region_name and geojson_lookup:
                 existing = region_map.get(region_name)
@@ -667,11 +676,13 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     always_show = {'sighting', 'clear', 'interception'}
     for item in posts_data:
         if item.get('is_region') and item.get('type') not in always_show:
-            city_name = item.get('name', '').lower().strip()
-            if city_name in CITY_DB:
-                rn = CITY_DB[city_name].get('subject', '').lower().strip()
-                if rn in region_map:
-                    item['no_marker'] = True
+            rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+            if not rn:
+                city_name = item.get('name', '').lower().strip()
+                if city_name in CITY_DB:
+                    rn = CITY_DB[city_name].get('subject', '').lower().strip()
+            if rn and rn in region_map:
+                item['no_marker'] = True
 
     # Priority at same coordinates
     coord_items = {}
@@ -1024,6 +1035,8 @@ def process_posts(posts):
                 }
                 if src.get("is_region"):
                     m["is_region"] = True
+                if src.get("subject"):
+                    m["subject"] = src["subject"]
                 all_markers.append(m)
         else:
             locations = extract_locations(post)
@@ -1036,6 +1049,8 @@ def process_posts(posts):
                 }
                 if loc.get("is_region"):
                     marker["is_region"] = True
+                if loc.get("subject"):
+                    marker["subject"] = loc["subject"]
                 all_markers.append(marker)
 
     if filtered:
