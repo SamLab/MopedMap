@@ -815,18 +815,6 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
 
 L.control.attribution({{ prefix: false }}).addTo(map);
 
-// Pulring ring layer — visible only at zoom >= 7
-const pulseLayer = L.layerGroup().addTo(map);
-const updatePulseVisibility = () => {{
-  if (map.getZoom() >= 7) {{
-    if (!map.hasLayer(pulseLayer)) map.addLayer(pulseLayer);
-  }} else {{
-    if (map.hasLayer(pulseLayer)) map.removeLayer(pulseLayer);
-  }}
-}};
-map.on('zoomend', updatePulseVisibility);
-updatePulseVisibility();
-
 const data = {markers_json};
 
 // Always show Yaroslavl as a star marker at Luchinskoye
@@ -877,20 +865,15 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
+// Check if Yaroslavl has active threats (for star pulse animation)
+const yaroslavlHasThreat = data.some(d =>
+  isSpecial(d.name) && d.text !== 'Постоянный маркер' && d.type !== 'clear' && d.type !== 'info'
+);
+
 data.forEach(item => {{
   if (item.type === 'info' && !isSpecial(item.name)) return;
   const special = isSpecial(item.name);
   const s = styleMap[item.type] || styleMap.info;
-
-  // Pulsing ring for Yaroslavl real posts (only at zoom >= 7, threat types only)
-  if (special && item.text !== 'Постоянный маркер' && item.type !== 'clear' && item.type !== 'info') {{
-    const ringIcon = L.divIcon({{
-      html: `<div class="pulse-ring" style="--pulse-color:${{s.color}}"></div>`,
-      className: '', iconSize: [60, 60], iconAnchor: [30, 30]
-    }});
-    const ringMarker = L.marker(YAROSLAVL_COORDS, {{ icon: ringIcon, interactive: false }});
-    ringMarker.addTo(pulseLayer);
-  }}
 
   if (item.no_marker) return;
   // For Yaroslavl: skip plain circle marker for danger/attention/clear/info; keep distinctive ones
@@ -900,6 +883,7 @@ data.forEach(item => {{
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
   const border = special ? '3px solid #00f5ff' : '2px solid #333';
   const extraGlow = special ? 'box-shadow:0 0 16px #00f5ff;' : glow;
+  const starPulse = (special && item.text === 'Постоянный маркер' && yaroslavlHasThreat) ? 'animation:pulse-ring 2s ease-in-out infinite;' : '';
   const shape = special
     ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
     : item.type === 'sighting'
@@ -907,7 +891,7 @@ data.forEach(item => {{
       : 'border-radius:50%;';
   const html = item.type === 'interception'
     ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
-    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
+    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}${{starPulse}}"></div>`;
 
   const zOffset = (item.type === 'sighting' || item.type === 'interception') ? 2000 : 0;
   const marker = L.marker([item.lat, item.lon], {{
