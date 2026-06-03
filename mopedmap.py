@@ -745,6 +745,25 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 for it in danger_items:
                     it['no_marker'] = True  # within 1h → interception wins
 
+    # Clear region fills where clear is newer than the fill
+    for item in posts_data:
+        if item.get('type') == 'clear' and not item.get('no_marker'):
+            rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+            if not rn:
+                cn = item.get('name', '').lower().strip()
+                if cn in CITY_DB:
+                    rn = CITY_DB[cn].get('subject', '').lower().strip()
+            if rn and rn in region_map:
+                fill_time = region_map[rn]['properties'].get('popup_time', '')
+                if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
+                    del region_map[rn]
+            # Also clear city-level polygon fill
+            cn = item.get('name', '').lower().strip()
+            if cn in region_map:
+                fill_time = region_map[cn]['properties'].get('popup_time', '')
+                if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
+                    del region_map[cn]
+
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
     region_features = list(region_map.values())
