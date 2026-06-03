@@ -893,7 +893,7 @@ L.geoJSON(regionGeoJSON, {{
 
 // Check if Yaroslavl has active threats (for star pulse animation)
 const yaroslavlHasThreat = data.some(d =>
-  isSpecial(d.name) && d.text !== 'Постоянный маркер' && d.type !== 'clear' && d.type !== 'info' && !d.no_marker
+  isSpecial(d.name) && d.text !== 'Постоянный маркер' && d.type !== 'clear' && d.type !== 'info' && d.type !== 'sighting' && !d.no_marker
 );
 
 data.forEach(item => {{
@@ -963,7 +963,7 @@ let minDist = Infinity;
 let closestName = '';
 let closestTime = '';
 data.forEach(item => {{
-  if (item.type !== 'info' && item.type !== 'clear' && !item.no_marker) {{
+  if (item.type !== 'info' && item.type !== 'clear' && item.type !== 'sighting' && !item.no_marker) {{
     const d = map.distance(yarLatLng, [item.lat, item.lon]);
     if (d < minDist) {{ minDist = d; closestName = item.name; closestTime = item.time; }}
   }}
