@@ -719,7 +719,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             latest_threat = max(parse_post_time(it.get('time', '')) for it in threat_items)
             if latest_clear >= latest_threat:
                 for it in threat_items:
-                    it['no_marker'] = True  # clear newer → clear wins
+                    it['no_marker'] = True; it['cleared'] = True  # clear newer → clear wins
             else:
                 for it in clear_items:
                     it['no_marker'] = True  # threat newer → threat wins
@@ -727,12 +727,12 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         if 'interception' in types and 'sighting' in types:
             for it in items:
                 if it.get('type') == 'sighting':
-                    it['no_marker'] = True
+                    it['no_marker'] = True; it['cleared'] = True
         # sighting hides danger/attention
         if 'sighting' in types:
             for it in items:
                 if it.get('type') in ('danger', 'attention'):
-                    it['no_marker'] = True
+                    it['no_marker'] = True; it['cleared'] = True
         # danger vs interception: within 1h → interception wins; 1h+ older → danger wins
         if 'danger' in types and 'interception' in types:
             danger_items = [it for it in items if it.get('type') == 'danger']
@@ -742,10 +742,10 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             diff = (latest_danger - latest_int).total_seconds()
             if diff >= 3600:
                 for it in int_items:
-                    it['no_marker'] = True  # interception 1h+ older → danger wins
+                    it['no_marker'] = True; it['cleared'] = True  # interception 1h+ older → danger wins
             else:
                 for it in danger_items:
-                    it['no_marker'] = True  # within 1h → interception wins
+                    it['no_marker'] = True; it['cleared'] = True  # within 1h → interception wins
 
     # Clear region fills where clear is newer than the fill
     for item in posts_data:
@@ -893,7 +893,7 @@ L.geoJSON(regionGeoJSON, {{
 
 // Check if Yaroslavl has active threats (for star pulse animation)
 const yaroslavlHasThreat = data.some(d =>
-  isSpecial(d.name) && d.text !== 'Постоянный маркер' && !d.no_marker &&
+  isSpecial(d.name) && d.text !== 'Постоянный маркер' && !d.cleared &&
   ['danger', 'rocket', 'aviation', 'attention'].includes(d.type)
 );
 
@@ -965,7 +965,7 @@ let closestName = '';
 let closestTime = '';
 data.forEach(item => {{
   if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention') {{
-    if (!item.no_marker) {{
+    if (!item.cleared) {{
       const d = map.distance(yarLatLng, [item.lat, item.lon]);
       if (d < minDist) {{ minDist = d; closestName = item.name; closestTime = item.time; }}
     }}
