@@ -528,6 +528,8 @@ def classify_post(text):
         return "aviation"
     elif "меры безопасности" in text_lower or "пуск" in text_lower or "опасность" in text_lower or ("угроз" in text_lower and "в случае" not in text_lower):
         return "danger"
+    elif "фиксаци" in text_lower and "не наблюда" in text_lower:
+        return "clear"
     elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower:
         return "sighting"
     elif "внимание" in text_lower:
@@ -903,8 +905,8 @@ data.forEach(item => {{
   const s = styleMap[item.type] || styleMap.info;
 
   if (item.no_marker) return;
-  // For Yaroslavl: skip all point markers; only show the permanent star
-  if (special && item.text !== 'Постоянный маркер') return;
+  // For Yaroslavl: skip plain circle marker for danger/attention/clear/info; keep distinctive ones
+  if (special && item.text !== 'Постоянный маркер' && !['sighting','interception','rocket','aviation'].includes(item.type)) return;
 
   const size = special ? s.size + 6 : s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
