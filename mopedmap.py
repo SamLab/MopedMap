@@ -708,18 +708,19 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         coord_items.setdefault(key, []).append(item)
     for key, items in coord_items.items():
         types = {it.get('type') for it in items}
-        # clear vs sighting: latest times decide
-        if 'clear' in types and 'sighting' in types:
+        # clear vs any threat: keep only the newer one
+        threat_types = {'danger', 'rocket', 'aviation', 'interception', 'sighting', 'attention'}
+        if 'clear' in types and types & threat_types:
             clear_items = [it for it in items if it.get('type') == 'clear']
-            sighting_items = [it for it in items if it.get('type') == 'sighting']
+            threat_items = [it for it in items if it.get('type') in threat_types]
             latest_clear = max(parse_post_time(it.get('time', '')) for it in clear_items)
-            latest_sighting = max(parse_post_time(it.get('time', '')) for it in sighting_items)
-            if latest_clear >= latest_sighting and (latest_clear - latest_sighting).total_seconds() >= 3600:
-                for it in sighting_items:
-                    it['no_marker'] = True  # clear 1h+ newer → clear wins
+            latest_threat = max(parse_post_time(it.get('time', '')) for it in threat_items)
+            if latest_clear >= latest_threat:
+                for it in threat_items:
+                    it['no_marker'] = True  # clear newer → clear wins
             else:
                 for it in clear_items:
-                    it['no_marker'] = True  # same time or <1h → sighting wins
+                    it['no_marker'] = True  # threat newer → threat wins
         # interception hides sighting
         if 'interception' in types and 'sighting' in types:
             for it in items:
