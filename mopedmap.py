@@ -138,6 +138,8 @@ REGION_ALIASES = [
     make_region_alias("кромской р-н", "Кромы", 52.687, 35.768),
     make_region_alias("залегощенский район", "Залегощь", 52.902, 36.884),
     make_region_alias("залегощенский р-н", "Залегощь", 52.902, 36.884),
+    make_region_alias("заокский район", "Страхово", 54.75, 37.34, subject="Тульская область"),
+    make_region_alias("заокский р-н", "Страхово", 54.75, 37.34, subject="Тульская область"),
     make_region_alias("ростов на дону", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская область", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
@@ -1054,6 +1056,8 @@ def process_posts(posts):
         else:
             post, source = post_item, ""
             post_time = ""
+        # Normalize spacing: insert space before uppercase Cyrillic after lowercase (fixes concatenated text like "районТульская")
+        post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
         if is_summary_post(post):
             filtered += 1
             continue
