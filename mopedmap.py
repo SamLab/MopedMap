@@ -751,7 +751,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 for it in danger_items:
                     it['no_marker'] = True; it['cleared'] = True  # within 1h → interception wins
 
-    # Clear region fills where clear is newer than the fill
+    # Clear region fills where clear is newer than the fill → keep polygon but show clear popup
     for item in posts_data:
         if item.get('type') == 'clear' and not item.get('no_marker'):
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
@@ -762,13 +762,21 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             if rn and rn in region_map:
                 fill_time = region_map[rn]['properties'].get('popup_time', '')
                 if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
-                    del region_map[rn]
+                    region_map[rn]['properties']['alert_type'] = 'clear'
+                    region_map[rn]['properties']['popup_name'] = item.get('name', '')
+                    region_map[rn]['properties']['popup_text'] = item.get('text', '')
+                    region_map[rn]['properties']['popup_source'] = item.get('source', '')
+                    region_map[rn]['properties']['popup_time'] = item.get('time', '')
             # Also clear city-level polygon fill
             cn = item.get('name', '').lower().strip()
             if cn in region_map:
                 fill_time = region_map[cn]['properties'].get('popup_time', '')
                 if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
-                    del region_map[cn]
+                    region_map[cn]['properties']['alert_type'] = 'clear'
+                    region_map[cn]['properties']['popup_name'] = item.get('name', '')
+                    region_map[cn]['properties']['popup_text'] = item.get('text', '')
+                    region_map[cn]['properties']['popup_source'] = item.get('source', '')
+                    region_map[cn]['properties']['popup_time'] = item.get('time', '')
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
@@ -882,7 +890,8 @@ L.geoJSON(regionGeoJSON, {{
     const s = styleMap[alertType] || styleMap.danger;
     return {{
       color: s.color, fillColor: s.color,
-      fillOpacity: 0.15, weight: 1, opacity: 0.3
+      fillOpacity: alertType === 'clear' ? 0 : 0.15,
+      weight: 1, opacity: alertType === 'clear' ? 0.5 : 0.3
     }};
   }},
   onEachFeature: function(feature, layer) {{
