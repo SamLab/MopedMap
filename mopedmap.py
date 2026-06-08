@@ -752,30 +752,42 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     it['no_marker'] = True; it['cleared'] = True  # within 1h → interception wins
 
     # Clear region fills where clear is newer than the fill → keep polygon but show clear popup
+    # Only clear fills matching the threat type mentioned in the clear text
     for item in posts_data:
         if item.get('type') == 'clear' and not item.get('no_marker'):
+            clear_text = item.get('text', '').lower()
+            if 'ракетн' in clear_text:
+                clear_types = {'rocket'}
+            elif 'бпла' in clear_text:
+                clear_types = {'danger', 'attention', 'aviation'}
+            else:
+                clear_types = {'rocket', 'danger', 'aviation', 'attention'}
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
                 cn = item.get('name', '').lower().strip()
                 if cn in CITY_DB:
                     rn = CITY_DB[cn].get('subject', '').lower().strip()
             if rn and rn in region_map:
-                fill_time = region_map[rn]['properties'].get('popup_time', '')
-                if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
-                    region_map[rn]['properties']['alert_type'] = 'clear'
-                    region_map[rn]['properties']['popup_name'] = item.get('name', '')
-                    region_map[rn]['properties']['popup_text'] = item.get('text', '')
-                    region_map[rn]['properties']['popup_source'] = item.get('source', '')
-                    region_map[rn]['properties']['popup_time'] = item.get('time', '')
+                at = region_map[rn]['properties'].get('alert_type', '')
+                if at in clear_types:
+                    fill_time = region_map[rn]['properties'].get('popup_time', '')
+                    if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
+                        region_map[rn]['properties']['alert_type'] = 'clear'
+                        region_map[rn]['properties']['popup_name'] = item.get('name', '')
+                        region_map[rn]['properties']['popup_text'] = item.get('text', '')
+                        region_map[rn]['properties']['popup_source'] = item.get('source', '')
+                        region_map[rn]['properties']['popup_time'] = item.get('time', '')
             # Also clear city-level polygon fill
             cn = item.get('name', '').lower().strip()
             if cn in region_map:
-                fill_time = region_map[cn]['properties'].get('popup_time', '')
-                if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
-                    region_map[cn]['properties']['alert_type'] = 'clear'
-                    region_map[cn]['properties']['popup_name'] = item.get('name', '')
-                    region_map[cn]['properties']['popup_text'] = item.get('text', '')
-                    region_map[cn]['properties']['popup_source'] = item.get('source', '')
+                at = region_map[cn]['properties'].get('alert_type', '')
+                if at in clear_types:
+                    fill_time = region_map[cn]['properties'].get('popup_time', '')
+                    if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
+                        region_map[cn]['properties']['alert_type'] = 'clear'
+                        region_map[cn]['properties']['popup_name'] = item.get('name', '')
+                        region_map[cn]['properties']['popup_text'] = item.get('text', '')
+                        region_map[cn]['properties']['popup_source'] = item.get('source', '')
                     region_map[cn]['properties']['popup_time'] = item.get('time', '')
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
