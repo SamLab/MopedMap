@@ -42,36 +42,44 @@ def make_region_alias(alias, city_name, lat, lon, subject=None):
 
 
 def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
-    """Generate region alias with common case variants."""
+    """Generate region alias with common case variants and bare adjective form."""
     result = [make_region_alias(alias, city_name, lat, lon, subject)]
     a = alias.lower()
     # область -> области (genitive)
     if a.endswith("ая область"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ой области", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ая обл"):
         stem = a[:-6]
         result.append(make_region_alias(stem + "ой обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ская область"):
         stem = a[:-12]
         result.append(make_region_alias(stem + "ской области", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     elif a.endswith("ская обл"):
         stem = a[:-8]
         result.append(make_region_alias(stem + "ской обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     # край -> края (genitive)
     elif a.endswith("ий край"):
         stem = a[:-7]
         result.append(make_region_alias(stem + "его края", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
     elif a.endswith("ский край"):
         stem = a[:-9]
         result.append(make_region_alias(stem + "ского края", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
     # округ -> округа
     elif a.endswith("ий округ"):
         stem = a[:-8]
         result.append(make_region_alias(stem + "его округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
     elif a.endswith("ский округ"):
         stem = a[:-10]
-        result.append(make_region_alias(stem + "ского округа", city_name, lat, lon))
+        result.append(make_region_alias(stem + "ского округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
     return result
 
 REGION_ALIASES = [
