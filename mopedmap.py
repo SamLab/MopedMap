@@ -2606,6 +2606,62 @@ def extract_locations(text):
                 break
             start = idx + 1
 
+    # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район forms not already matched
+    # Handles both nominative and prepositional adjective forms
+    RAYON_RE = re.compile(
+        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не)(?!\w)',
+        re.IGNORECASE
+    )
+    for m in RAYON_RE.finditer(text_lower):
+        idx, end = m.start(), m.end()
+        is_overlap = any(
+            not (end <= s_start or s_end <= idx)
+            for s_start, s_end in matched_spans
+        )
+        if is_overlap:
+            continue
+        adj_suffix = m.group(2).lower()
+        stem = m.group(1)
+        # Normalize suffix to infer city stem
+        if adj_suffix in ('ском',):
+            # prepositional of -ский → remove -ском → stem is city name for -ск/ consonant cities
+            pass
+        elif adj_suffix in ('цком',):
+            # prepositional of -цкий
+            pass
+        # Build candidate city names from stem
+        candidates = []
+        # Strategy 1: stem directly (works for consonant-ending cities: Кирсанов→кирсановский)
+        candidates.append(stem)
+        # Strategy 2: stem + 'ск' (most -ск cities: Абинск→абинский)
+        candidates.append(stem + 'ск')
+        # Strategy 3: stem + 'к' (some -к cities: Ряжск→ряжский)
+        candidates.append(stem + 'к')
+        # Strategy 4: try common Russian town endings
+        for ending in ('ово', 'ево', 'ино', 'а', 'я', 'ь', 'й', 'град', 'горск', 'озёрск', 'уральск'):
+            cand = stem + ending
+            if cand not in candidates:
+                candidates.append(cand)
+        # Strategy 5: for -ском/цком prepositional, also try stem minus last consonant
+        if adj_suffix in ('ском', 'цком') and len(stem) > 3:
+            candidates.append(stem[:-1])
+            candidates.append(stem[:-1] + 'ск')
+        city_key = None
+        for cand in candidates:
+            if cand in CITY_DB:
+                city_key = cand
+                break
+        if city_key is None:
+            continue
+        c = CITY_DB[city_key]
+        matched_spans.add((idx, end))
+        r = {
+            "name": c["name"], "lat": c["lat"], "lon": c["lon"],
+            "type": "region", "matched": text[idx:end],
+            "is_region": True, "subject": c["subject"],
+        }
+        results.append(r)
+
     unique = {}
     found_keys = set()
     for r in results:
