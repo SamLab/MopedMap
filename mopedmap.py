@@ -2951,6 +2951,62 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                         region_map[cn]['properties']['popup_source'] = item.get('source', '')
                     region_map[cn]['properties']['popup_time'] = item.get('time', '')
 
+    # Fill regions with sightings but no active threat as attention (БПЛА)
+    # Collect regions with active threat fills
+    active_threat_regions = set()
+    threat_types_map = {'danger', 'rocket', 'aviation', 'attention'}
+    for rn, feat in region_map.items():
+        at = feat['properties'].get('alert_type', '')
+        if at in threat_types_map:
+            active_threat_regions.add(rn)
+    # Collect regions with active (non-cleared) sightings
+    sighting_items_by_region = {}
+    for item in posts_data:
+        if item.get('type') == 'sighting' and not item.get('cleared'):
+            rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+            if not rn:
+                cn = item.get('name', '').lower().strip()
+                if cn in CITY_DB:
+                    rn = CITY_DB[cn].get('subject', '').lower().strip()
+            if rn:
+                existing = sighting_items_by_region.get(rn)
+                if existing is None or parse_post_time(item.get('time', '')) > parse_post_time(existing.get('time', '')):
+                    sighting_items_by_region[rn] = item
+    for rn, sighting_item in sighting_items_by_region.items():
+        if rn in active_threat_regions:
+            continue
+        if rn in region_map:
+            continue
+        feat = find_geojson_feature(rn, geojson_lookup)
+        if feat:
+            feat_copy = json.loads(json.dumps(feat))
+            feat_copy['properties']['alert_type'] = 'attention'
+            feat_copy['properties']['popup_name'] = sighting_item.get('name', '')
+            feat_copy['properties']['popup_text'] = f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}"
+            feat_copy['properties']['popup_source'] = sighting_item.get('source', '')
+            feat_copy['properties']['popup_time'] = sighting_item.get('time', '')
+            region_map[rn] = feat_copy
+            # Also add synthetic item to posts_data so closest-danger detects it
+            coords = feat_copy['geometry']['coordinates']
+            if feat_copy['geometry']['type'] == 'Polygon':
+                center_lat = coords[0][0][1]
+                center_lon = coords[0][0][0]
+            else:
+                center_lat = coords[0][0][0][1]
+                center_lon = coords[0][0][0][0]
+            syn = {
+                "lat": center_lat, "lon": center_lon,
+                "name": sighting_item.get('name', ''),
+                "type": "attention",
+                "text": f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}",
+                "source": sighting_item.get('source', ''),
+                "time": sighting_item.get('time', ''),
+                "is_region": True,
+                "no_marker": True,
+                "subject": rn,
+            }
+            posts_data.append(syn)
+
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
     region_features = list(region_map.values())
