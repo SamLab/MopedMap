@@ -2448,6 +2448,7 @@ CHANNELS = [
     {"url": "https://t.me/s/radar_yaroslavl", "name": "radar_yaroslavl"},
     {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76"},
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar"},
+    {"url": "https://t.me/s/migalka_monitoring", "name": "migalka_monitoring"},
 ]
 
 
@@ -2468,6 +2469,8 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radar_yaroslavl.*$', '', clean).strip()
     clean = re.sub(r'@radar_yar76.*$', '', clean).strip()
     clean = re.sub(r'@radarr_yar.*$', '', clean).strip()
+    clean = re.sub(r'@migalka_monitoring.*$', '', clean).strip()
+    clean = re.split(r'-----+', clean)[0].strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру\s*$', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
