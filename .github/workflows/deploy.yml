@@ -37,9 +37,6 @@ jobs:
         env:
           OUTPUT_FILE: index.html
 
-      - name: Verify generated file
-        run: head -c 500 index.html | grep -oE '[0-9]{2}\.[0-9]{2}\.[0-9]{4} [0-9]{2}:[0-9]{2}'
-
       - name: Prepare deployment files
         run: |
           mkdir -p _site

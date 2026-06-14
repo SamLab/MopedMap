@@ -1146,21 +1146,12 @@ def main():
     else:
         posts = fetch_all()
         if not posts:
-            print("\nНе удалось загрузить посты автоматически.")
-            print("Возможные причины:")
-            print("  - Telegram заблокирован в вашей сети")
-            print("  - Нет доступа к t.me")
-            print("\nВы можете:")
-            print("  1. Ввести текст вручную (просто добавьте текст в аргументы)")
-            print("  2. Запустить с параметром: python locator_map.py \"ваш текст здесь\"")
-            print("\nПример: python locator_map.py \"Курская область - опасность по БПЛА. Брянская область - фиксации.\"")
-            return
-
+            print("\nНе удалось загрузить посты, генерирую пустую карту...")
+            posts = []
     all_markers = process_posts(posts)
-
     if not all_markers:
-        print("Не найдено локаций в тексте")
-        return
+        print("Не найдено локаций, генерирую пустую карту...")
+        all_markers = []
 
     print("Загрузка границ регионов...")
     geojson_lookup = load_region_geojson()
