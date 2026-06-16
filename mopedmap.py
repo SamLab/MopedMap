@@ -2945,7 +2945,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         coord_items.setdefault(key, []).append(item)
     for key, items in coord_items.items():
         types = {it.get('type') for it in items}
-        # clear vs any threat: keep only the newer one
+        # clear vs any threat: only clear threats matching the clear text type
         threat_types = {'danger', 'rocket', 'aviation', 'interception', 'sighting', 'attention'}
         if 'clear' in types and types & threat_types:
             clear_items = [it for it in items if it.get('type') == 'clear']
@@ -2954,10 +2954,23 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             latest_threat = max(parse_post_time(it.get('time', '')) for it in threat_items)
             if latest_clear >= latest_threat:
                 for it in threat_items:
-                    it['no_marker'] = True; it['cleared'] = True  # clear newer → clear wins
+                    should_clear = False
+                    for c in clear_items:
+                        ct = c.get('text', '').lower()
+                        if 'ракетн' in ct:
+                            ct_set = {'rocket'}
+                        elif 'бпла' in ct:
+                            ct_set = {'danger', 'attention', 'aviation'}
+                        else:
+                            ct_set = threat_types
+                        if it.get('type') in ct_set:
+                            should_clear = True
+                            break
+                    if should_clear:
+                        it['no_marker'] = True; it['cleared'] = True
             else:
                 for it in clear_items:
-                    it['no_marker'] = True  # threat newer → threat wins
+                    it['no_marker'] = True
         # interception hides sighting
         if 'interception' in types and 'sighting' in types:
             for it in items:
@@ -3003,7 +3016,23 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 if at in clear_types:
                     fill_time = region_map[rn]['properties'].get('popup_time', '')
                     if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
-                        region_map[rn]['properties']['alert_type'] = 'clear'
+                        # Check if other active (non-cleared) threats remain for this region
+                        other_type = None
+                        for other in posts_data:
+                            if other.get('is_region') and other.get('type') in type_priority and not other.get('cleared'):
+                                other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
+                                if not other_rn:
+                                    other_cn = other.get('name', '').lower().strip()
+                                    if other_cn in CITY_DB:
+                                        other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
+                                if other_rn == rn and other.get('type') not in clear_types:
+                                    if other_type is None or type_priority.get(other.get('type'), 99) < type_priority.get(other_type, 99):
+                                        other_type = other.get('type')
+                        if other_type:
+                            new_type = other_type
+                        else:
+                            new_type = 'clear'
+                        region_map[rn]['properties']['alert_type'] = new_type
                         region_map[rn]['properties']['popup_name'] = item.get('name', '')
                         region_map[rn]['properties']['popup_text'] = item.get('text', '')
                         region_map[rn]['properties']['popup_source'] = item.get('source', '')
