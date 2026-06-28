@@ -2444,6 +2444,21 @@ REGION_ALIASES = [
     {"pattern": "шумячском р-не", "name": "Шумячи", "lat": 53.85, "lon": 32.42, "type": "region", "is_region": True, "subject": "Смоленская область"},
 ]
 
+# Disambiguation rules: when a name matches multiple subjects, reassign
+# if another result in the same post provides context.
+# Key: name_lower → {wrong_subject_lower: replacement_with_context_subject}
+DISAMBIGUATION_MAP = {
+    "первомайский": {
+        "тамбовская область": {
+            "context_subject": "смоленская область",
+            "lat": 53.85,
+            "lon": 32.42,
+            "name": "Первомайский",
+            "subject": "Смоленская область",
+        },
+    },
+}
+
 ALL_PATTERNS = []
 for entry in REGION_ALIASES:
     items = entry if isinstance(entry, list) else [entry]
@@ -2730,6 +2745,21 @@ def extract_locations(text):
             "is_region": True, "subject": c["subject"],
         }
         results.append(r)
+
+    # --- Disambiguation: if a name matched a wrong subject but context
+    #     from another result points elsewhere, reassign ---
+    for r in results:
+        nl = r["name"].lower()
+        if nl in DISAMBIGUATION_MAP:
+            cur_subj = r.get("subject", "").lower()
+            if cur_subj in DISAMBIGUATION_MAP[nl]:
+                entry = DISAMBIGUATION_MAP[nl][cur_subj]
+                target = entry["context_subject"]
+                if any(r2.get("subject", "").lower() == target for r2 in results):
+                    r["lat"] = entry["lat"]
+                    r["lon"] = entry["lon"]
+                    r["name"] = entry["name"]
+                    r["subject"] = entry["subject"]
 
     unique = {}
     found_keys = set()
