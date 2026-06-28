@@ -3213,6 +3213,13 @@ def find_geojson_feature(region_name_lower, geojson_lookup):
         key = REGION_GEOJSON_MAP[nl]
         if key in geojson_lookup:
             return geojson_lookup[key]
+    # Try stripped name in special map (e.g. "республика северная осетия" -> "северная осетия")
+    if nl.startswith('республика '):
+        test = nl[len('республика '):]
+        if test in REGION_GEOJSON_MAP:
+            key = REGION_GEOJSON_MAP[test]
+            if key in geojson_lookup:
+                return geojson_lookup[key]
     return None
 
 
@@ -3800,7 +3807,7 @@ def process_posts(posts):
         else:
             # Split into sentences for per-sentence type classification
             # (posts often list multiple regions with different threat types)
-            sentences = [s.strip() for s in re.split(r'[.!?]+\s*', post) if len(s.strip()) > 3]
+            sentences = [s.strip() for s in re.split(r'[.!?]+(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
             for sentence in sentences:
                 sent_type = classify_post(sentence)
                 locations = extract_locations(sentence)
