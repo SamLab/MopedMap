@@ -2736,6 +2736,23 @@ def extract_locations(text):
                 city_key = cand
                 break
         if city_key is None:
+            # Fallback: rayon/city not in DB → create marker at region's main city
+            fallback_subj = None
+            for existing in results:
+                if existing.get("subject"):
+                    fallback_subj = existing["subject"]
+                    fallback_lat = existing["lat"]
+                    fallback_lon = existing["lon"]
+                    fallback_name = existing["name"]
+                    break
+            if fallback_subj:
+                matched_spans.add((idx, end))
+                r = {
+                    "name": fallback_name, "lat": fallback_lat, "lon": fallback_lon,
+                    "type": "region", "matched": text[idx:end],
+                    "is_region": True, "subject": fallback_subj,
+                }
+                results.append(r)
             continue
         c = CITY_DB[city_key]
         matched_spans.add((idx, end))
@@ -3125,6 +3142,34 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     rn = CITY_DB[city_name].get('subject', '').lower().strip()
             if rn and rn in region_map:
                 item['no_marker'] = True
+    # Suppress region-level marker for sighting/clear/interception if the same post has
+    # specific sub-region items (same subject, different name) — avoids duplicate at main city
+    for item in posts_data:
+        if not (item.get('is_region') and item.get('type') in always_show and not item.get('no_marker')):
+            continue
+        matched_text = item.get('matched', '').lower()
+        # Only suppress region-level entries (область/край/республика), not sub-region rayons
+        if not any(t in matched_text for t in ('область', 'край', 'республика')):
+            continue
+        item_subj = item.get('subject', '').lower().strip()
+        if not item_subj:
+            cn = item.get('name', '').lower().strip()
+            if cn in CITY_DB:
+                item_subj = CITY_DB[cn].get('subject', '').lower().strip()
+        if item_subj:
+            for other in posts_data:
+                if other is item or other.get('no_marker'):
+                    continue
+                if other.get('text') != item.get('text'):
+                    continue
+                other_subj = other.get('subject', '').lower().strip()
+                if not other_subj:
+                    other_cn = other.get('name', '').lower().strip()
+                    if other_cn in CITY_DB:
+                        other_subj = CITY_DB[other_cn].get('subject', '').lower().strip()
+                if other_subj == item_subj and other.get('name', '').lower() != item.get('name', '').lower():
+                    item['no_marker'] = True
+                    break
 
     # Priority at same coordinates
     coord_items = {}
@@ -3580,6 +3625,8 @@ def process_posts(posts):
                     m["is_region"] = True
                 if src.get("subject"):
                     m["subject"] = src["subject"]
+                if src.get("matched"):
+                    m["matched"] = src["matched"]
                 all_markers.append(m)
         else:
             # Split into sentences for per-sentence type classification
@@ -3599,6 +3646,8 @@ def process_posts(posts):
                         marker["is_region"] = True
                     if loc.get("subject"):
                         marker["subject"] = loc["subject"]
+                    if loc.get("matched"):
+                        marker["matched"] = loc["matched"]
                     all_markers.append(marker)
 
     if filtered:
