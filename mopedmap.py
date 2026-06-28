@@ -3236,7 +3236,7 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1))
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('type', ''))
         existing = seen.get(key)
         if existing:
             existing_time = parse_post_time(existing.get('time', ''))
@@ -3256,43 +3256,59 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     # Keep only the latest post per city
     posts_data = dedup_markers(posts_data)
     # Extract region geometries for active fill types
-    # Map city name -> region name via CITY_DB subject field
     region_map = {}  # region_name_lower -> feature
     type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4, 'sighting': 5, 'info': 6, 'clear': 7}
+    # Collect all region entries per region
+    from collections import defaultdict
+    region_entries = defaultdict(list)
     for item in posts_data:
         is_region = item.get('is_region', False)
         item_type = item.get('type')
-        if is_region and item_type in type_priority:
-            city_name = item.get('name', '').lower().strip()
-            region_name = item.get('subject', '').lower().strip() if item.get('subject') else None
-            if not region_name and city_name in CITY_DB:
-                region_name = CITY_DB[city_name].get('subject', '').lower().strip()
-            if region_name and geojson_lookup:
-                existing = region_map.get(region_name)
-                if existing:
-                    existing_time = existing['properties'].get('popup_time', '')
-                    if parse_post_time(item.get('time', '')) <= parse_post_time(existing_time):
-                        continue
-                feat = find_geojson_feature(region_name, geojson_lookup)
-                if feat:
-                    feat_copy = json.loads(json.dumps(feat))
-                    feat_copy['properties']['alert_type'] = item_type
-                    feat_copy['properties']['popup_name'] = item.get('name', '')
-                    feat_copy['properties']['popup_text'] = item.get('text', '')
-                    feat_copy['properties']['popup_source'] = item.get('source', '')
-                    feat_copy['properties']['popup_time'] = item.get('time', '')
-                    region_map[region_name] = feat_copy
-                # Also fill city-level polygon if different from region (e.g. Москва & Московская область)
-                if city_name != region_name:
-                    city_feat = find_geojson_feature(city_name, geojson_lookup)
-                    if city_feat and city_name not in region_map:
-                        city_copy = json.loads(json.dumps(city_feat))
-                        city_copy['properties']['alert_type'] = item_type
-                        city_copy['properties']['popup_name'] = item.get('name', '')
-                        city_copy['properties']['popup_text'] = item.get('text', '')
-                        city_copy['properties']['popup_source'] = item.get('source', '')
-                        city_copy['properties']['popup_time'] = item.get('time', '')
-                        region_map[city_name] = city_copy
+        if not (is_region and item_type in type_priority):
+            continue
+        city_name = item.get('name', '').lower().strip()
+        region_name = item.get('subject', '').lower().strip() if item.get('subject') else None
+        if not region_name and city_name in CITY_DB:
+            region_name = CITY_DB[city_name].get('subject', '').lower().strip()
+        if region_name:
+            region_entries[region_name].append((type_priority[item_type], item, item_type, city_name))
+    # Select best entry per region: most severe, but clear cancels most severe type
+    for region_name, entries in region_entries.items():
+        has_clear = any(t == 'clear' for _, _, t, _ in entries)
+        non_clear = [(p, item, t, cn) for p, item, t, cn in entries if t != 'clear']
+        if has_clear and non_clear:
+            min_prio = min(p for p, _, _, _ in non_clear)
+            non_clear = [(p, item, t, cn) for p, item, t, cn in non_clear if p != min_prio]
+        if non_clear:
+            best_prio = min(p for p, _, _, _ in non_clear)
+            candidates = [(item, t, cn) for p, item, t, cn in non_clear if p == best_prio]
+            best_item, best_type, best_city = max(candidates, key=lambda x: parse_post_time(x[0].get('time', '')))
+        elif has_clear:
+            clear_items = [item for _, item, t, cn in entries if t == 'clear']
+            best_item = max(clear_items, key=lambda x: parse_post_time(x.get('time', '')))
+            best_type = 'clear'
+            best_city = best_item.get('name', '').lower().strip()
+        else:
+            continue
+        feat = find_geojson_feature(region_name, geojson_lookup)
+        if feat:
+            feat_copy = json.loads(json.dumps(feat))
+            feat_copy['properties']['alert_type'] = best_type
+            feat_copy['properties']['popup_name'] = best_item.get('name', '')
+            feat_copy['properties']['popup_text'] = best_item.get('text', '')
+            feat_copy['properties']['popup_source'] = best_item.get('source', '')
+            feat_copy['properties']['popup_time'] = best_item.get('time', '')
+            region_map[region_name] = feat_copy
+            if best_city != region_name:
+                city_feat = find_geojson_feature(best_city, geojson_lookup)
+                if city_feat and best_city not in region_map:
+                    city_copy = json.loads(json.dumps(city_feat))
+                    city_copy['properties']['alert_type'] = best_type
+                    city_copy['properties']['popup_name'] = best_item.get('name', '')
+                    city_copy['properties']['popup_text'] = best_item.get('text', '')
+                    city_copy['properties']['popup_source'] = best_item.get('source', '')
+                    city_copy['properties']['popup_time'] = best_item.get('time', '')
+                    region_map[best_city] = city_copy
     # Fallback: create region fills from city-level items whose subject maps to a GeoJSON region
     for item in posts_data:
         if not item.get('is_region') and item.get('type') in type_priority:
