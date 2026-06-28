@@ -23,11 +23,12 @@ for c in cities_data:
         "subject": c["subject"],
     }
 
-def make_region_alias(alias, city_name, lat, lon, subject=None):
-    ck = city_name.lower()
-    if ck in CITY_DB:
-        lat = CITY_DB[ck]["lat"]
-        lon = CITY_DB[ck]["lon"]
+def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
+    if use_city_db:
+        ck = city_name.lower()
+        if ck in CITY_DB:
+            lat = CITY_DB[ck]["lat"]
+            lon = CITY_DB[ck]["lon"]
     if not subject:
         subject = alias.strip()
         # Capitalize first letter for common patterns
@@ -2418,7 +2419,7 @@ REGION_ALIASES = [
     make_region_alias_with_cases("тюменская область", "Тюмень", 57.1535, 65.5423),
     make_region_alias_with_cases("херсонская область", "Херсон", 46.6354, 32.6169),
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
-    make_region_alias("днр", "Донецк", 48.0159, 37.8028),
+    make_region_alias("днр", "Донецк", 48.0159, 37.8028, use_city_db=False),
     make_region_alias("лнр", "Луганск", 48.574, 39.3078),
     make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019),
     make_region_alias_with_cases("ханты-мансийский автономный округ", "Ханты-Мансийск", 61.0024, 69.0099),
