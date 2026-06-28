@@ -2763,7 +2763,7 @@ def classify_post(text):
         return "danger"
     elif "фиксаци" in text_lower and "не наблюда" in text_lower:
         return "clear"
-    elif "фиксаци" in text_lower or "пролёт" in text_lower or "группа" in text_lower:
+    elif "фиксаци" in text_lower or "пролёт" in text_lower or "пролет" in text_lower or "группа" in text_lower:
         return "sighting"
     elif "внимание" in text_lower:
         return "attention"
