@@ -2321,8 +2321,8 @@ REGION_ALIASES = [
     make_region_alias_with_cases("забайкальский край", "Чита", 52.0333, 113.5),
     make_region_alias_with_cases("камчатский край", "Петропавловск-Камчатский", 53.0167, 158.65),
     make_region_alias_with_cases("пермский край", "Пермь", 58.0105, 56.2502),
-    make_region_alias("крым", "Симферополь", 44.9521, 34.1024),
-    make_region_alias("республика крым", "Симферополь", 44.9521, 34.1024),
+    make_region_alias("крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
+    make_region_alias("республика крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
     make_region_alias("адыгея", "Майкоп", 44.6833, 40.1167),
     make_region_alias("республика адыгея", "Майкоп", 44.6833, 40.1167),
     make_region_alias("башкортостан", "Уфа", 54.7355, 55.9587),
@@ -2442,6 +2442,15 @@ REGION_ALIASES = [
     {"pattern": "шумячском районе", "name": "Шумячи", "lat": 53.85, "lon": 32.42, "type": "region", "is_region": True, "subject": "Смоленская область"},
     {"pattern": "шумячский р-н", "name": "Шумячи", "lat": 53.85, "lon": 32.42, "type": "region", "is_region": True, "subject": "Смоленская область"},
     {"pattern": "шумячском р-не", "name": "Шумячи", "lat": 53.85, "lon": 32.42, "type": "region", "is_region": True, "subject": "Смоленская область"},
+    # Красногвардейский район, Крым (адм. центр — Красногвардейское/Курман)
+    {"pattern": "красногвардейский район крым", "name": "Красногвардейское", "lat": 45.497, "lon": 34.297, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "красногвардейский р-н крым", "name": "Красногвардейское", "lat": 45.497, "lon": 34.297, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "крым красногвардейский район", "name": "Красногвардейское", "lat": 45.497, "lon": 34.297, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "крым красногвардейский р-н", "name": "Красногвардейское", "lat": 45.497, "lon": 34.297, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    # Петровское, Красногвардейский район, Крым
+    {"pattern": "петровское крым", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
+    {"pattern": "крым петровское", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
+    {"pattern": "петровское красногвардейский", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2455,6 +2464,24 @@ DISAMBIGUATION_MAP = {
             "lon": 32.42,
             "name": "Первомайский",
             "subject": "Смоленская область",
+        },
+    },
+    "петровское": {
+        "тамбовская область": {
+            "context_subject": "республика крым",
+            "lat": 45.495,
+            "lon": 34.275,
+            "name": "Петровское",
+            "subject": "Республика Крым",
+        },
+    },
+    "красногвардейский": {
+        "белгородская область": {
+            "context_subject": "республика крым",
+            "lat": 45.497,
+            "lon": 34.297,
+            "name": "Красногвардейское",
+            "subject": "Республика Крым",
         },
     },
 }
@@ -2767,16 +2794,25 @@ def extract_locations(text):
     #     from another result points elsewhere, reassign ---
     for r in results:
         nl = r["name"].lower()
-        if nl in DISAMBIGUATION_MAP:
-            cur_subj = r.get("subject", "").lower()
-            if cur_subj in DISAMBIGUATION_MAP[nl]:
-                entry = DISAMBIGUATION_MAP[nl][cur_subj]
-                target = entry["context_subject"]
-                if any(r2.get("subject", "").lower() == target for r2 in results):
-                    r["lat"] = entry["lat"]
-                    r["lon"] = entry["lon"]
-                    r["name"] = entry["name"]
-                    r["subject"] = entry["subject"]
+        # Also check by matched text (e.g., "красногвардейский" for rayon patterns)
+        matched_key = r.get("matched", "").lower().strip()
+        # Strip "район"/"р-н" from matched for key lookup
+        for suffix in (" район", " р-н", " районе", " р-не"):
+            if matched_key.endswith(suffix):
+                matched_key = matched_key[:-len(suffix)]
+                break
+        for key in (nl, matched_key):
+            if key in DISAMBIGUATION_MAP:
+                cur_subj = r.get("subject", "").lower()
+                if cur_subj in DISAMBIGUATION_MAP[key]:
+                    entry = DISAMBIGUATION_MAP[key][cur_subj]
+                    target = entry["context_subject"]
+                    if any(r2.get("subject", "").lower() == target for r2 in results):
+                        r["lat"] = entry["lat"]
+                        r["lon"] = entry["lon"]
+                        r["name"] = entry["name"]
+                        r["subject"] = entry["subject"]
+                break
 
     unique = {}
     found_keys = set()
