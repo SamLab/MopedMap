@@ -3254,7 +3254,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
     # Extract region geometries for active fill types
     # Map city name -> region name via CITY_DB subject field
     region_map = {}  # region_name_lower -> feature
-    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4, 'sighting': 5, 'info': 6}
+    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4, 'sighting': 5, 'info': 6, 'clear': 7}
     for item in posts_data:
         is_region = item.get('is_region', False)
         item_type = item.get('type')
