@@ -2451,6 +2451,17 @@ REGION_ALIASES = [
     {"pattern": "петровское крым", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
     {"pattern": "крым петровское", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
     {"pattern": "петровское красногвардейский", "name": "Петровское", "lat": 45.495, "lon": 34.275, "type": "city", "subject": "Республика Крым"},
+    # Кольчугино, Симферопольский район, Крым
+    {"pattern": "кольчугино республика крым", "name": "Кольчугино", "lat": 44.94, "lon": 34.23, "type": "city", "subject": "Республика Крым"},
+    {"pattern": "кольчугино симферополь", "name": "Кольчугино", "lat": 44.94, "lon": 34.23, "type": "city", "subject": "Республика Крым"},
+    {"pattern": "крым кольчугино", "name": "Кольчугино", "lat": 44.94, "lon": 34.23, "type": "city", "subject": "Республика Крым"},
+    # Первомайский район, Крым (адм. центр — Первомайское)
+    {"pattern": "первомайский район крым", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "первомайском районе крым", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "первомайский р-н крым", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "первомайском р-не крым", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "крым первомайский район", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    {"pattern": "крым первомайский р-н", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2458,13 +2469,13 @@ REGION_ALIASES = [
 # Key: name_lower → {wrong_subject_lower: replacement_with_context_subject}
 DISAMBIGUATION_MAP = {
     "первомайский": {
-        "тамбовская область": {
-            "context_subject": "смоленская область",
-            "lat": 53.85,
-            "lon": 32.42,
-            "name": "Первомайский",
-            "subject": "Смоленская область",
-        },
+        "тамбовская область": [
+            {"context_subject": "смоленская область", "lat": 53.85, "lon": 32.42, "name": "Первомайский", "subject": "Смоленская область"},
+            {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
+        ],
+        "ярославская область": [
+            {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
+        ],
     },
     "петровское": {
         "тамбовская область": {
@@ -2490,6 +2501,15 @@ DISAMBIGUATION_MAP = {
             "lat": 45.340,
             "lon": 34.930,
             "name": "Советский",
+            "subject": "Республика Крым",
+        },
+    },
+    "кольчугино": {
+        "владимирская область": {
+            "context_subject": "республика крым",
+            "lat": 44.94,
+            "lon": 34.23,
+            "name": "Кольчугино",
             "subject": "Республика Крым",
         },
     },
@@ -2671,7 +2691,7 @@ def is_word_boundary(text, idx):
     return text[idx - 1] not in WORD_CHARS
 
 
-def extract_locations(text):
+def extract_locations(text, extra_context=None):
     text_lower = text.lower()
     WORD_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789абвгдеёжзийклмнопрстуфхцчшщъыьэюя")
     matched_spans = set()
@@ -2814,13 +2834,20 @@ def extract_locations(text):
             if key in DISAMBIGUATION_MAP:
                 cur_subj = r.get("subject", "").lower()
                 if cur_subj in DISAMBIGUATION_MAP[key]:
-                    entry = DISAMBIGUATION_MAP[key][cur_subj]
-                    target = entry["context_subject"]
-                    if any(r2.get("subject", "").lower() == target for r2 in results):
-                        r["lat"] = entry["lat"]
-                        r["lon"] = entry["lon"]
-                        r["name"] = entry["name"]
-                        r["subject"] = entry["subject"]
+                    candidates = DISAMBIGUATION_MAP[key][cur_subj]
+                    if not isinstance(candidates, list):
+                        candidates = [candidates]
+                    all_results = results
+                    if extra_context:
+                        all_results = results + extra_context
+                    for entry in candidates:
+                        target = entry["context_subject"]
+                        if any(r2.get("subject", "").lower() == target for r2 in all_results):
+                            r["lat"] = entry["lat"]
+                            r["lon"] = entry["lon"]
+                            r["name"] = entry["name"]
+                            r["subject"] = entry["subject"]
+                            break
                 break
 
     unique = {}
@@ -2884,8 +2911,11 @@ def extract_directions(text):
         if after_lower in cardinal:
             continue
 
-        sources = extract_locations(before)
-        dests = extract_locations(after)
+        # Extract locations from full sentence for disambiguation context
+        # (so Первомайский район in "before" can see Крым in "after")
+        full_context = extract_locations(sentence)
+        sources = extract_locations(before, extra_context=full_context)
+        dests = extract_locations(after, extra_context=full_context)
 
         for s in sources:
             for d in dests:
