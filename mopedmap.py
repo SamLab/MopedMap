@@ -3239,7 +3239,11 @@ def dedup_markers(markers):
         key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1))
         existing = seen.get(key)
         if existing:
-            if len(m.get('text', '')) > len(existing.get('text', '')):
+            existing_time = parse_post_time(existing.get('time', ''))
+            new_time = parse_post_time(m.get('time', ''))
+            if new_time > existing_time:
+                seen[key] = m
+            elif new_time == existing_time and len(m.get('text', '')) > len(existing.get('text', '')):
                 seen[key] = m
         else:
             seen[key] = m
