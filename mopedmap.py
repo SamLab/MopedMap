@@ -2451,6 +2451,7 @@ from datetime import datetime, timezone, timedelta
 
 HOURS_FILTER = 4
 
+RADARMAP_API_URL = "https://radar-map.ru/api/state"
 
 CHANNELS = [
     {"url": "https://t.me/s/locatorru", "name": "locatorru"},
@@ -2552,12 +2553,52 @@ def fetch_channel(url, name):
     return posts
 
 
+def fetch_radarmap_api():
+    """Fetch recent messages from radar-map.ru API."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS_FILTER)
+    try:
+        r = requests.get(RADARMAP_API_URL, timeout=15, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        })
+        r.raise_for_status()
+        data = r.json()
+    except Exception:
+        print("  radar-map.ru API: ошибка загрузки")
+        return []
+
+    # Build source_id -> label map
+    source_labels = {}
+    for s in data.get("sources", []):
+        source_labels[s["id"]] = s.get("label", s["id"])
+
+    recent = data.get("recent_by_source", {})
+    posts = []
+    for src_id, msgs in recent.items():
+        label = source_labels.get(src_id, src_id)
+        for msg in msgs:
+            ts = msg.get("ts")
+            if not ts:
+                continue
+            dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+            if dt < cutoff:
+                continue
+            text = msg.get("text", "").strip()
+            if not text or len(text) < 5:
+                continue
+            posts.append((text, label, dt))
+    if posts:
+        print(f"  radar-map.ru ({len(recent)} источников): {len(posts)} постов")
+    return posts
+
+
 def fetch_all():
     print("Загрузка постов из Telegram...")
     all_posts = []
     for ch in CHANNELS:
         posts = fetch_channel(ch["url"], ch["name"])
         all_posts.extend(posts)
+    api_posts = fetch_radarmap_api()
+    all_posts.extend(api_posts)
     print(f"Всего загружено: {len(all_posts)} постов")
     return all_posts
 
