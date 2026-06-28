@@ -185,6 +185,7 @@ REGION_ALIASES = [
     {"pattern": "мышкинском районе", "name": "Мышкин", "lat": 57.783, "lon": 38.450, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "мышкинский р-н", "name": "Мышкин", "lat": 57.783, "lon": 38.450, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "мышкинском р-не", "name": "Мышкин", "lat": 57.783, "lon": 38.450, "type": "region", "is_region": True, "subject": "Ярославская область"},
+    {"pattern": "мышкино", "name": "Мышкин", "lat": 57.783, "lon": 38.450, "type": "city", "subject": "Ярославская область"},
     {"pattern": "некоузский район", "name": "Новый Некоуз", "lat": 57.917, "lon": 38.067, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "некоузском районе", "name": "Новый Некоуз", "lat": 57.917, "lon": 38.067, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "некоузский р-н", "name": "Новый Некоуз", "lat": 57.917, "lon": 38.067, "type": "region", "is_region": True, "subject": "Ярославская область"},
@@ -2740,6 +2741,8 @@ DIRECTION_SEPS = [
     r'\bв сторону\b',
     r'\bв направлении\b',
     r'\bнаправлении\b',
+    r'\bв направление\b',
+    r'\bнаправление\b',
     '→', '➡️',
 ]
 
