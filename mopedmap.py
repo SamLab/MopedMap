@@ -2866,7 +2866,91 @@ def load_region_geojson():
             'geometry': {'type': geom['type'], 'coordinates': geom['coordinates']}
         }
     print(f"  Загружено {len(lookup)} регионов из GeoJSON")
+    # Add static polygons for regions not in the upstream GeoJSON (disputed territories)
+    for name_lower, feat in STATIC_GEOJSON_FEATURES.items():
+        if name_lower not in lookup:
+            lookup[name_lower] = feat
+    if STATIC_GEOJSON_FEATURES:
+        print(f"  Добавлено {len(STATIC_GEOJSON_FEATURES)} статических регионов")
     return lookup
+
+
+# Simplified polygons for regions not in the standard Russia GeoJSON
+STATIC_GEOJSON_FEATURES = {
+    'республика крым': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Республика Крым'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [33.5, 46.2], [34.5, 46.2], [35.0, 45.8],
+                [35.5, 45.5], [36.5, 45.3], [36.5, 45.0],
+                [36.0, 44.8], [35.5, 44.5], [34.0, 44.4],
+                [33.5, 44.5], [33.0, 44.8], [32.5, 45.3],
+                [32.5, 45.8], [33.0, 46.0], [33.5, 46.2],
+            ]]
+        }
+    },
+    'севастополь': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Севастополь'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [33.3, 44.5], [33.7, 44.5], [33.7, 44.6],
+                [33.3, 44.6], [33.3, 44.5],
+            ]]
+        }
+    },
+    'донецкая область': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Донецкая область'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [36.5, 48.5], [38.5, 48.5], [39.0, 48.0],
+                [39.0, 47.5], [38.5, 47.0], [37.5, 46.8],
+                [37.0, 47.0], [36.5, 47.2], [36.5, 48.5],
+            ]]
+        }
+    },
+    'луганская область': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Луганская область'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [37.5, 49.5], [40.0, 49.5], [40.0, 49.0],
+                [40.0, 48.5], [39.0, 48.0], [38.5, 48.0],
+                [37.5, 48.0], [37.5, 49.5],
+            ]]
+        }
+    },
+    'херсонская область': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Херсонская область'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [31.5, 47.0], [34.0, 47.0], [34.5, 46.5],
+                [34.5, 46.0], [33.5, 46.0], [33.0, 46.2],
+                [32.5, 46.8], [31.5, 47.0],
+            ]]
+        }
+    },
+    'запорожская область': {
+        'type': 'Feature',
+        'properties': {'NAME': 'Запорожская область'},
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [34.0, 47.5], [36.5, 47.5], [37.0, 47.0],
+                [37.0, 46.5], [36.5, 46.5], [35.0, 46.8],
+                [34.5, 47.0], [34.0, 47.0], [34.0, 47.5],
+            ]]
+        }
+    },
+}
 
 
 REGION_GEOJSON_MAP = {
