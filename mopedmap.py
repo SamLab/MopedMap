@@ -33,10 +33,8 @@ def make_region_alias(alias, city_name, lat, lon, subject=None):
         # Capitalize first letter for common patterns
         if ' ' in subject:
             subject = subject.title()
-        elif len(subject) <= 4 and subject.isupper():
+        elif len(subject) <= 4 and subject.isalpha():
             subject = subject.upper()
-        else:
-            subject = subject.capitalize()
     result = {
         "pattern": alias.lower(),
         "name": city_name,
@@ -2483,6 +2481,12 @@ REGION_ALIASES = [
     {"pattern": "ивановский р-н херсонская", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "херсонская ивановский район", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "херсонская ивановский р-н", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    # Володарский район, ДНР/Донецкая область
+    {"pattern": "володарский район днр", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
+    {"pattern": "володарском районе днр", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
+    {"pattern": "володарский р-н днр", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
+    {"pattern": "днр володарский район", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
+    {"pattern": "днр володарский р-н", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2568,6 +2572,24 @@ DISAMBIGUATION_MAP = {
             "lon": 34.55,
             "name": "Ивановка",
             "subject": "Херсонская область",
+        },
+    },
+    "володарск": {
+        "нижегородская область": {
+            "context_subject": "днр",
+            "lat": 47.167,
+            "lon": 37.317,
+            "name": "Володарское",
+            "subject": "ДНР",
+        },
+    },
+    "володарский": {
+        "нижегородская область": {
+            "context_subject": "днр",
+            "lat": 47.167,
+            "lon": 37.317,
+            "name": "Володарское",
+            "subject": "ДНР",
         },
     },
 }
@@ -3154,6 +3176,8 @@ REGION_GEOJSON_MAP = {
     'чувашия': 'чувашская республика - чувашия',
     'чечня': 'чеченская республика',
     'ханты-мансийский автономный округ': 'ханты-мансийский автономный округ - югра',
+    'днр': 'донецкая область',
+    'лнр': 'луганская область',
 }
 
 
