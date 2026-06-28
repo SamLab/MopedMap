@@ -3297,19 +3297,6 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .footer {{ display: flex; align-items: center; padding: 6px 12px; background: #fff; border-top: 1px solid #ddd; font-size: 11px; color: #555; gap: 6px; flex-wrap: wrap; }}
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
-@keyframes pulse-ring {{
-  0% {{ transform: scale(1); opacity: 0.4; }}
-  50% {{ transform: scale(2.5); opacity: 0.1; }}
-  100% {{ transform: scale(1); opacity: 0.4; }}
-}}
-.pulse-ring {{
-  width: 30px; height: 30px; border-radius: 50%;
-  border: 3px solid var(--pulse-color, #00f5ff);
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  animation: pulse-ring 2s ease-in-out infinite;
-  pointer-events: none;
-}}
 .header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; gap: 6px; flex-wrap: wrap; overflow: hidden; }}
 .header h1 {{ font-size: 15px; color: #d32f2f; white-space: nowrap; }}
 .header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
@@ -3354,17 +3341,6 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
 
-// Always show Yaroslavl as a star marker at Luchinskoye
-const YAROSLAVL_COORDS = [57.552927, 39.850605];
-data.push({{
-  lat: YAROSLAVL_COORDS[0], lon: YAROSLAVL_COORDS[1],
-  name: 'Ярославль', type: 'info',
-  text: 'Постоянный маркер', source: '', time: ''
-}});
-
-const specialNames = ['Ярославль', 'Ярославская область'];
-const isSpecial = (name) => specialNames.some(s => name.includes(s));
-
 const styleMap = {{
   danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
   aviation: {{ color: '#06b6d4', size: 14, glow: '#06b6d4' }},
@@ -3403,34 +3379,21 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-// Check if Yaroslavl has active threats (for star pulse animation)
-const yaroslavlHasThreat = data.some(d =>
-  isSpecial(d.name) && d.text !== 'Постоянный маркер' && !d.cleared &&
-  ['danger', 'rocket', 'aviation', 'attention'].includes(d.type)
-);
-
 data.forEach(item => {{
-  if (item.type === 'info' && !isSpecial(item.name)) return;
-  const special = isSpecial(item.name);
   const s = styleMap[item.type] || styleMap.info;
 
   if (item.no_marker) return;
-  // For Yaroslavl: skip plain circle marker for danger/attention/clear/info; keep distinctive ones
-  if (special && item.text !== 'Постоянный маркер' && !['sighting','interception','rocket','aviation'].includes(item.type)) return;
 
-  const size = special ? s.size + 6 : s.size;
+  const size = s.size;
   const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
-  const border = special ? '3px solid #00f5ff' : '2px solid #333';
-  const extraGlow = special ? 'box-shadow:0 0 16px #00f5ff;' : glow;
-  const starPulse = (special && item.text === 'Постоянный маркер' && yaroslavlHasThreat) ? 'animation:pulse-ring 2s ease-in-out infinite;' : '';
-  const shape = special
-    ? 'clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);border-radius:0;'
-    : item.type === 'sighting'
-      ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
-      : 'border-radius:50%;';
+  const border = '2px solid #333';
+  const extraGlow = glow;
+  const shape = item.type === 'sighting'
+    ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
+    : 'border-radius:50%;';
   const html = item.type === 'interception'
     ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
-    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}${{starPulse}}"></div>`;
+    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
 
   const zOffset = (item.type === 'sighting' || item.type === 'interception') ? 2000 : 0;
   const marker = L.marker([item.lat, item.lon], {{
