@@ -3776,7 +3776,7 @@ def process_posts(posts):
                 m = {
                     "lat": src["lat"], "lon": src["lon"],
                     "name": src["name"], "type": post_type,
-                    "text": post[:1000] + ("..." if len(post) > 1000 else ""),
+                    "text": post[:5000] + ("..." if len(post) > 5000 else ""),
                     "direction": [dst["lat"], dst["lon"]],
                     "dest_name": dst["name"],
                     "source": source, "time": post_time,
@@ -3799,7 +3799,7 @@ def process_posts(posts):
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
                         "name": loc["name"], "type": sent_type,
-                        "text": post[:1000] + ("..." if len(post) > 1000 else ""),
+                        "text": post[:5000] + ("..." if len(post) > 5000 else ""),
                         "source": source, "time": post_time,
                     }
                     if loc.get("is_region"):
