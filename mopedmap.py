@@ -28,6 +28,15 @@ def make_region_alias(alias, city_name, lat, lon, subject=None):
     if ck in CITY_DB:
         lat = CITY_DB[ck]["lat"]
         lon = CITY_DB[ck]["lon"]
+    if not subject:
+        subject = alias.strip()
+        # Capitalize first letter for common patterns
+        if ' ' in subject:
+            subject = subject.title()
+        elif len(subject) <= 4 and subject.isupper():
+            subject = subject.upper()
+        else:
+            subject = subject.capitalize()
     result = {
         "pattern": alias.lower(),
         "name": city_name,
@@ -35,9 +44,8 @@ def make_region_alias(alias, city_name, lat, lon, subject=None):
         "lon": lon,
         "type": "region",
         "is_region": True,
+        "subject": subject,
     }
-    if subject:
-        result["subject"] = subject
     return result
 
 
@@ -2462,6 +2470,13 @@ REGION_ALIASES = [
     {"pattern": "первомайском р-не крым", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
     {"pattern": "крым первомайский район", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
     {"pattern": "крым первомайский р-н", "name": "Первомайское", "lat": 45.717, "lon": 33.856, "type": "region", "is_region": True, "subject": "Республика Крым"},
+    # Зеленый Гай, Запорожская область
+    {"pattern": "зеленый гай", "name": "Зеленый Гай", "lat": 46.85, "lon": 35.37, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "зеленого гая", "name": "Зеленый Гай", "lat": 46.85, "lon": 35.37, "type": "city", "subject": "Запорожская область"},
+    # Приморск, Запорожская область (контекстные паттерны)
+    {"pattern": "приморск запорожская", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "приморск бердянск", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "бердянск приморск", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2511,6 +2526,24 @@ DISAMBIGUATION_MAP = {
             "lon": 34.23,
             "name": "Кольчугино",
             "subject": "Республика Крым",
+        },
+    },
+    "приморск": {
+        "ленинградская область": {
+            "context_subject": "запорожская область",
+            "lat": 46.735,
+            "lon": 36.345,
+            "name": "Приморск",
+            "subject": "Запорожская область",
+        },
+    },
+    "гай": {
+        "оренбургская область": {
+            "context_subject": "запорожская область",
+            "lat": 46.85,
+            "lon": 35.37,
+            "name": "Гай",
+            "subject": "Запорожская область",
         },
     },
 }
