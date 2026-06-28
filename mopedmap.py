@@ -3585,7 +3585,7 @@ const data = {markers_json};
 const styleMap = {{
   danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
   aviation: {{ color: '#06b6d4', size: 14, glow: '#06b6d4' }},
-  sighting: {{ color: '#000000', size: 12, glow: null }},
+  sighting: {{ color: '#f5a623', size: 12, glow: null }},
   clear: {{ color: '#4ade80', size: 12, glow: null }},
   attention: {{ color: '#eab308', size: 12, glow: null }},
   interception: {{ color: '#000000', size: 12, glow: null }},
