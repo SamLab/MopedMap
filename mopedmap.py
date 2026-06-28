@@ -3434,19 +3434,24 @@ def process_posts(posts):
                     m["subject"] = src["subject"]
                 all_markers.append(m)
         else:
-            locations = extract_locations(post)
-            for loc in locations:
-                marker = {
-                    "lat": loc["lat"], "lon": loc["lon"],
-                    "name": loc["name"], "type": post_type,
-                    "text": post[:300] + ("..." if len(post) > 300 else ""),
-                    "source": source, "time": post_time,
-                }
-                if loc.get("is_region"):
-                    marker["is_region"] = True
-                if loc.get("subject"):
-                    marker["subject"] = loc["subject"]
-                all_markers.append(marker)
+            # Split into sentences for per-sentence type classification
+            # (posts often list multiple regions with different threat types)
+            sentences = [s.strip() for s in re.split(r'[.!?]+\s*', post) if len(s.strip()) > 3]
+            for sentence in sentences:
+                sent_type = classify_post(sentence)
+                locations = extract_locations(sentence)
+                for loc in locations:
+                    marker = {
+                        "lat": loc["lat"], "lon": loc["lon"],
+                        "name": loc["name"], "type": sent_type,
+                        "text": post[:300] + ("..." if len(post) > 300 else ""),
+                        "source": source, "time": post_time,
+                    }
+                    if loc.get("is_region"):
+                        marker["is_region"] = True
+                    if loc.get("subject"):
+                        marker["subject"] = loc["subject"]
+                    all_markers.append(marker)
 
     if filtered:
         print(f"  Отфильтровано {filtered} сводок/объявлений")
