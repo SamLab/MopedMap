@@ -2419,6 +2419,11 @@ REGION_ALIASES = [
     make_region_alias_with_cases("еврейская автономная область", "Биробиджан", 48.7833, 132.9333),
     make_region_alias_with_cases("ненецкий автономный округ", "Нарьян-Мар", 67.6385, 53.0067),
 
+    # Октябрьский район, Ростовская область
+    {"pattern": "октябрьский район ростовская", "name": "Каменоломни", "lat": 47.6667, "lon": 40.2000, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "октябрьском районе ростовской", "name": "Каменоломни", "lat": 47.6667, "lon": 40.2000, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "октябрьский р-н ростовская", "name": "Каменоломни", "lat": 47.6667, "lon": 40.2000, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "октябрьском р-не ростовской", "name": "Каменоломни", "lat": 47.6667, "lon": 40.2000, "type": "region", "is_region": True, "subject": "Ростовская область"},
     # Октябрьский, Рыбинский район (Ярославская область)
     {"pattern": "октябрьский, рыбинский", "name": "Октябрьский", "lat": 57.985, "lon": 39.11, "type": "city", "subject": "Ярославская область"},
     {"pattern": "октябрьский (рыбинский", "name": "Октябрьский", "lat": 57.985, "lon": 39.11, "type": "city", "subject": "Ярославская область"},
@@ -3399,6 +3404,8 @@ def process_posts(posts):
             post_time = ""
         # Normalize spacing: insert space before uppercase Cyrillic after lowercase (fixes concatenated text like "районТульская")
         post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
+        # Replace newlines with spaces so multi-word patterns can match across lines
+        post = re.sub(r'\n+', ' ', post)
         if is_summary_post(post):
             filtered += 1
             continue
