@@ -3097,6 +3097,23 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                         city_copy['properties']['popup_source'] = item.get('source', '')
                         city_copy['properties']['popup_time'] = item.get('time', '')
                         region_map[city_name] = city_copy
+    # Fallback: create region fills from city-level items whose subject maps to a GeoJSON region
+    for item in posts_data:
+        if not item.get('is_region') and item.get('type') in type_priority:
+            cn = item.get('name', '').lower().strip()
+            rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+            if not rn and cn in CITY_DB:
+                rn = CITY_DB[cn].get('subject', '').lower().strip()
+            if rn and rn not in region_map and rn != cn:
+                feat = find_geojson_feature(rn, geojson_lookup)
+                if feat:
+                    feat_copy = json.loads(json.dumps(feat))
+                    feat_copy['properties']['alert_type'] = item['type']
+                    feat_copy['properties']['popup_name'] = item.get('name', '')
+                    feat_copy['properties']['popup_text'] = item.get('text', '')
+                    feat_copy['properties']['popup_source'] = item.get('source', '')
+                    feat_copy['properties']['popup_time'] = item.get('time', '')
+                    region_map[rn] = feat_copy
     # Mark items that should not render a point marker
     always_show = {'sighting', 'clear', 'interception'}
     for item in posts_data:
@@ -3190,7 +3207,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                         # Check if other active (non-cleared) threats remain for this region
                         other_type = None
                         for other in posts_data:
-                            if other.get('is_region') and other.get('type') in type_priority and not other.get('cleared'):
+                            if other.get('type') not in type_priority or other.get('cleared'):
+                                continue
+                            if other.get('is_region') or other.get('subject'):
                                 other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
                                 if not other_rn:
                                     other_cn = other.get('name', '').lower().strip()
