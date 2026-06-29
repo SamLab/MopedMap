@@ -3830,7 +3830,7 @@ const lightningCtrl = L.control({{ position: 'topleft' }});
 lightningCtrl.onAdd = function() {{
   const div = L.DomUtil.create('div', '');
   div.style.cssText = 'background:rgba(255,255,255,.9);padding:4px 8px;border-radius:6px;font-size:13px;border:1px solid #ccc;cursor:pointer;white-space:nowrap';
-  div.innerHTML = '<label style="cursor:pointer;color:#22c55e;font-weight:bold"><input type="checkbox" id="lightning-cb" checked> ⛈ Молнии (30 мин)</label>';
+  div.innerHTML = '<label style="cursor:pointer"><input type="checkbox" id="lightning-cb" checked> <span style="font-size:16px">⛈</span></label>';
   L.DomEvent.disableClickPropagation(div);
   const cb = div.querySelector('#lightning-cb');
   cb.addEventListener('change', function() {{
