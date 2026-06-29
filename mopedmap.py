@@ -3895,8 +3895,11 @@ def process_posts(posts):
             # Split into sentences for per-sentence type classification
             # (posts often list multiple regions with different threat types)
             sentences = [s.strip() for s in re.split(r'[.!?]+(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
+            # Use post-level type as fallback for info sentences (e.g. "Рыбинск, Ярославская область. Фиксации БПЛА")
             for sentence in sentences:
                 sent_type = classify_post(sentence)
+                if sent_type == "info" and post_type != "info":
+                    sent_type = post_type
                 locations = extract_locations(sentence)
                 for loc in locations:
                     marker = {
