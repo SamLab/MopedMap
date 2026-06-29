@@ -3771,8 +3771,10 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <script>
 const map = L.map('map', {{ center: [54.6095, 39.7126], zoom: 6, zoomControl: true, attributionControl: false }});
 
-map.createPane('lightning');
-map.getPane('lightning').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
+map.createPane('lightning-0');
+map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
+map.createPane('lightning-1');
+map.getPane('lightning-1').style.filter = 'invert(0.15) brightness(0.35) sepia(1) hue-rotate(90deg) saturate(3)';
 
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -3781,9 +3783,8 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
 }}).addTo(map);
 
 const lightningTileUrl = 'https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=';
-const lightningOpts = {{ opacity: 0.9, maxZoom: 19, pane: 'lightning' }};
-const lightningLayer0 = L.tileLayer(lightningTileUrl + '0', Object.assign({{ attribution: 'Молнии: <a href=\"https://www.blitzortung.org\">Blitzortung.org</a>' }}, lightningOpts));
-const lightningLayer1 = L.tileLayer(lightningTileUrl + '1', Object.assign({{}}, lightningOpts));
+const lightningLayer0 = L.tileLayer(lightningTileUrl + '0', {{ opacity: 0.9, maxZoom: 19, pane: 'lightning-0', attribution: 'Молнии: <a href=\"https://www.blitzortung.org\">Blitzortung.org</a>' }});
+const lightningLayer1 = L.tileLayer(lightningTileUrl + '1', {{ opacity: 0.9, maxZoom: 19, pane: 'lightning-1' }});
 const lightningGroup = L.layerGroup([lightningLayer0, lightningLayer1]).addTo(map);
 
 setInterval(function() {{
