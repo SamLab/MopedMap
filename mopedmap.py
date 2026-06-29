@@ -3775,7 +3775,7 @@ const lightningTileUrl = 'https://images.lightningmaps.org/blitzortung/europe/in
 const lightningOpts = {{ opacity: 0.9, maxZoom: 19, pane: 'lightning' }};
 const lightningLayer0 = L.tileLayer(lightningTileUrl + '0', Object.assign({{ attribution: 'Молнии: <a href=\"https://www.blitzortung.org\">Blitzortung.org</a>' }}, lightningOpts));
 const lightningLayer1 = L.tileLayer(lightningTileUrl + '1', Object.assign({{}}, lightningOpts));
-const lightningGroup = L.layerGroup([lightningLayer0, lightningLayer1]).addTo(map);
+const lightningGroup = L.layerGroup([lightningLayer0, lightningLayer1]);
 
 setInterval(function() {{
   const ts = '&_t=' + Date.now();
@@ -3826,18 +3826,7 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-L.control({{ position: 'topleft' }}).onAdd = function() {{
-  const div = L.DomUtil.create('div', '');
-  div.style.cssText = 'background:rgba(255,255,255,.9);padding:4px 8px;border-radius:6px;font-size:13px;border:1px solid #ccc;cursor:pointer;white-space:nowrap';
-  div.innerHTML = '<label style="cursor:pointer;color:#22c55e;font-weight:bold"><input type="checkbox" id="lightning-cb" checked> ⛈ Молнии (30 мин)</label>';
-  L.DomEvent.disableClickPropagation(div);
-  const cb = div.querySelector('#lightning-cb');
-  cb.addEventListener('change', function() {{
-    if (this.checked) lightningGroup.addTo(map);
-    else map.removeLayer(lightningGroup);
-  }});
-  return div;
-}}.addTo(map);
+L.control.layers(null, {{ '⛈ Молнии': lightningGroup }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
 
 data.forEach(item => {{
   const s = styleMap[item.type] || styleMap.info;
