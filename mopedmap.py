@@ -3300,7 +3300,7 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('type', ''))
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('type', ''), m.get('is_region', False))
         existing = seen.get(key)
         if existing:
             existing_time = parse_post_time(existing.get('time', ''))
@@ -3374,6 +3374,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     city_copy['properties']['popup_time'] = best_item.get('time', '')
                     region_map[best_city] = city_copy
     # Fallback: create region fills from city-level items whose subject maps to a GeoJSON region
+    # Skip if the same post has a real region entry (область/край/республика in matched text)
+    # with a DIFFERENT subject and no entry matches this city's subject — the city is likely
+    # a false homonym (e.g. "Архангельск" in a list of Krasnodar Krai locations)
     for item in posts_data:
         if not item.get('is_region') and item.get('type') in type_priority:
             cn = item.get('name', '').lower().strip()
@@ -3381,6 +3384,29 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             if not rn and cn in CITY_DB:
                 rn = CITY_DB[cn].get('subject', '').lower().strip()
             if rn and rn not in region_map and rn != cn:
+                # Check if same post has a real region entry with a different subject
+                same_text = item.get('text', '')
+                has_own_region = False
+                has_other_region = False
+                for other in posts_data:
+                    if other is item or other.get('text') != same_text:
+                        continue
+                    if other.get('is_region'):
+                        other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
+                        if not other_rn:
+                            other_cn = other.get('name', '').lower().strip()
+                            if other_cn in CITY_DB:
+                                other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
+                        if other_rn:
+                            mt = other.get('matched', '').lower()
+                            is_real_region = any(t in mt for t in ('область', 'край', 'республика'))
+                            if is_real_region:
+                                if other_rn == rn:
+                                    has_own_region = True
+                                else:
+                                    has_other_region = True
+                if has_other_region and not has_own_region:
+                    continue  # city is likely a false homonym, skip fallback
                 feat = find_geojson_feature(rn, geojson_lookup)
                 if feat:
                     feat_copy = json.loads(json.dumps(feat))
@@ -3401,6 +3427,74 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     rn = CITY_DB[city_name].get('subject', '').lower().strip()
             if rn and rn in region_map:
                 item['no_marker'] = True
+    # Suppress region markers from bare adjective forms (e.g. "архангельская" matching as
+    # Архангельская область) when the same post has a real region entry with a different subject
+    for item in posts_data:
+        if not item.get('is_region') or item.get('no_marker'):
+            continue
+        mt = item.get('matched', '').lower()
+        if any(t in mt for t in ('область', 'край', 'республика')):
+            continue  # real region reference, keep marker
+        item_text = item.get('text', '')
+        item_rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+        if not item_rn:
+            item_cn = item.get('name', '').lower().strip()
+            if item_cn in CITY_DB:
+                item_rn = CITY_DB[item_cn].get('subject', '').lower().strip()
+        if not item_rn:
+            continue
+        has_own_real = False
+        has_other_real = False
+        for other in posts_data:
+            if other is item or other.get('text') != item_text:
+                continue
+            if other.get('is_region'):
+                other_mt = other.get('matched', '').lower()
+                if not any(t in other_mt for t in ('область', 'край', 'республика')):
+                    continue
+                other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
+                if not other_rn:
+                    other_cn = other.get('name', '').lower().strip()
+                    if other_cn in CITY_DB:
+                        other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
+                if other_rn == item_rn:
+                    has_own_real = True
+                else:
+                    has_other_real = True
+        if has_other_real and not has_own_real:
+            item['no_marker'] = True
+    # Suppress city-level markers (from CITY_DB) when the same post has a real region entry
+    # with a different subject and no entry matches this city's subject — false homonym
+    for item in posts_data:
+        if item.get('is_region') or item.get('no_marker'):
+            continue
+        cn = item.get('name', '').lower().strip()
+        rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+        if not rn and cn in CITY_DB:
+            rn = CITY_DB[cn].get('subject', '').lower().strip()
+        if not rn:
+            continue
+        item_text = item.get('text', '')
+        has_own_real = False
+        has_other_real = False
+        for other in posts_data:
+            if other is item or other.get('text') != item_text:
+                continue
+            if other.get('is_region'):
+                other_mt = other.get('matched', '').lower()
+                if not any(t in other_mt for t in ('область', 'край', 'республика')):
+                    continue
+                other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
+                if not other_rn:
+                    other_cn = other.get('name', '').lower().strip()
+                    if other_cn in CITY_DB:
+                        other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
+                if other_rn == rn:
+                    has_own_real = True
+                else:
+                    has_other_real = True
+        if has_other_real and not has_own_real:
+            item['no_marker'] = True
     # Suppress region-level marker for sighting/clear/interception if the same post has
     # specific sub-region items (same subject, different name) — avoids duplicate at main city
     for item in posts_data:
