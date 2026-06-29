@@ -3754,6 +3754,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
   <span class="dot" style="color:#4ade80">●</span> Отбой
   <span class="dot" style="color:#60a5fa">●</span> Инфо
+  <span style="color:#22c55e;font-size:14px">✚</span> Молнии (30 мин)
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
