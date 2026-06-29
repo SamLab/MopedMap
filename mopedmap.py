@@ -3853,7 +3853,11 @@ if (bounds.length > 0) {{
   map.setView([54.6095, 39.7126], 6);
 }}
 
-const YAROSLAVL_COORDS = [57.6261, 39.8845];
+const YAROSLAVL_COORDS = [57.553026, 39.850545];
+// Permanent marker at Yaroslavl
+L.circleMarker(YAROSLAVL_COORDS, {{
+  radius: 6, color: '#333', weight: 2, fillColor: '#ffd700', fillOpacity: 0.8, zIndexOffset: 1000
+}}).addTo(map);
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
