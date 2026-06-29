@@ -14,6 +14,7 @@ with open(CITIES_FILE, "r", encoding="utf-8") as f:
     cities_data = json.load(f)
 
 CITY_DB = {}
+CITY_BY_NAME_SUBJECT = {}
 for c in cities_data:
     name = c["name"].strip()
     CITY_DB[name.lower()] = {
@@ -22,6 +23,15 @@ for c in cities_data:
         "name": name,
         "subject": c["subject"],
     }
+    subj = c["subject"].strip()
+    key = (name.lower(), subj.lower())
+    if key not in CITY_BY_NAME_SUBJECT:
+        CITY_BY_NAME_SUBJECT[key] = {
+            "lat": float(c["coords"]["lat"]),
+            "lon": float(c["coords"]["lon"]),
+            "name": name,
+            "subject": subj,
+        }
 
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
     if use_city_db:
@@ -2967,6 +2977,33 @@ def extract_locations(text, extra_context=None):
                             r["subject"] = entry["subject"]
                             break
                 break
+
+    # --- Automatic region-subject matching: if a city result has a
+    #     different subject than a nearby region result, look up the
+    #     correct city variant by (name, subject) in cities.json ---
+    all_ctx = results
+    if extra_context:
+        all_ctx = results + extra_context
+    region_results = [ctx for ctx in all_ctx if ctx.get("is_region") and ctx.get("subject")]
+    if region_results:
+        for r in results:
+            if r.get("is_region"):
+                continue
+            cur_subj = r.get("subject", "").lower().strip()
+            if not cur_subj:
+                continue
+            for rr in region_results:
+                region_subj = rr.get("subject", "").lower().strip()
+                if region_subj == cur_subj:
+                    continue
+                key = (r["name"].lower(), region_subj)
+                if key in CITY_BY_NAME_SUBJECT:
+                    correct = CITY_BY_NAME_SUBJECT[key]
+                    r["lat"] = correct["lat"]
+                    r["lon"] = correct["lon"]
+                    r["name"] = correct["name"]
+                    r["subject"] = correct["subject"]
+                    break
 
     unique = {}
     found_keys = set()
