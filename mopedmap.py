@@ -3860,7 +3860,7 @@ let minDist = Infinity;
 let closestName = '';
 let closestTime = '';
 data.forEach(item => {{
-  if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention') {{
+  if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention' || item.type === 'sighting' || item.type === 'interception') {{
     if (!item.cleared) {{
       const d = map.distance(yarLatLng, [item.lat, item.lon]);
       if (d < minDist) {{ minDist = d; closestName = item.name; closestTime = item.time; }}
