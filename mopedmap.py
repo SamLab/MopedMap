@@ -3756,6 +3756,16 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
   maxZoom: 19
 }}).addTo(map);
 
+const lightningLayer = L.tileLayer('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0', {{
+  opacity: 0.65,
+  maxZoom: 19,
+  attribution: 'Молнии: <a href="https://www.blitzortung.org">Blitzortung.org</a>'
+}});
+
+setInterval(function() {{
+  lightningLayer.setUrl('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0&_t=' + Date.now());
+}}, 120000);
+
 L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
@@ -3798,6 +3808,8 @@ L.geoJSON(regionGeoJSON, {{
     }}
   }}
 }}).addTo(map);
+
+L.control.layers(null, {{ '⛈ Молнии': lightningLayer }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
 
 data.forEach(item => {{
   const s = styleMap[item.type] || styleMap.info;
