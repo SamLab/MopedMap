@@ -3856,8 +3856,8 @@ if (bounds.length > 0) {{
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
 // Permanent blue star marker at Yaroslavl
 const starIcon = L.divIcon({{
-  html: '<svg width="20" height="20"><polygon points="10,1 12.5,7.5 19.5,7.5 14,12 16,19 10,15 4,19 6,12 0.5,7.5 7.5,7.5" fill="#2196f3" stroke="#1565c0" stroke-width="1"/></svg>',
-  className: '', iconSize: [20, 20], iconAnchor: [10, 10]
+  html: '<div style="width:14px;height:14px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#2196f3;border:1px solid #1565c0"></div>',
+  className: '', iconSize: [14, 14], iconAnchor: [7, 7]
 }});
 L.marker(YAROSLAVL_COORDS, {{ icon: starIcon, zIndexOffset: 1000 }}).addTo(map);
 // Closest threat to Yaroslavl
