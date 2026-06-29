@@ -3935,7 +3935,8 @@ if (useItem) {{
 const legendCtrl = L.control({{ position: 'bottomright' }});
 legendCtrl.onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
-  div.innerHTML = '<b>Легенда</b><br>' +
+  div.style.cursor = 'pointer';
+  div.innerHTML = '<span id="legend-toggle"><b>▶ Легенда</b></span><div id="legend-body" style="display:none;margin-top:4px"><b>Легенда</b><br>' +
     '<i style="background:#e94560"></i> Опасность БПЛА<br>' +
     '<i style="background:#06b6d4"></i> Авиационная опасность<br>' +
     '<i style="background:#f5a623"></i> Фиксация<br>' +
@@ -3945,7 +3946,18 @@ legendCtrl.onAdd = function() {{
     '<i style="background:#a855f7"></i> Ракетная опасность<br>' +
     '<hr style="border-color:#333;margin:6px 0">' +
     '<span style="display:inline-block;width:12px;height:12px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#333;border:2px solid #00f5ff;vertical-align:middle;margin-right:6px"></span> Ярославль и область' +
-    '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span>';
+    '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span></div>';
+  div.onclick = function() {{
+    const body = div.querySelector('#legend-body');
+    const toggle = div.querySelector('#legend-toggle');
+    if (body.style.display === 'none') {{
+      body.style.display = '';
+      toggle.textContent = '▼ Легенда';
+    }} else {{
+      body.style.display = 'none';
+      toggle.textContent = '▶ Легенда';
+    }}
+  }};
   return div;
 }};
 legendCtrl.addTo(map);
