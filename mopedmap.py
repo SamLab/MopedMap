@@ -3774,7 +3774,6 @@ const lightningOpts = {{ opacity: 0.9, maxZoom: 19, pane: 'lightning' }};
 const lightningLayer0 = L.tileLayer(lightningTileUrl + '0', Object.assign({{ attribution: 'Молнии: <a href=\"https://www.blitzortung.org\">Blitzortung.org</a>' }}, lightningOpts));
 const lightningLayer1 = L.tileLayer(lightningTileUrl + '1', Object.assign({{}}, lightningOpts));
 const lightningGroup = L.layerGroup([lightningLayer0, lightningLayer1]);
-lightningGroup.addTo(map);
 
 setInterval(function() {{
   const ts = '&_t=' + Date.now();
@@ -3824,6 +3823,8 @@ L.geoJSON(regionGeoJSON, {{
     }}
   }}
 }}).addTo(map);
+
+L.control.layers(null, {{ '⛈ Молнии': lightningGroup }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
 
 L.control({{ position: 'bottomleft' }}).onAdd = function() {{
   const div = L.DomUtil.create('div', '');
