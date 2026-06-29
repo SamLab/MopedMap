@@ -3737,7 +3737,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
 .leaflet-popup-content-wrapper {{ max-height: 80vh; overflow-y: auto; }}
 .leaflet-popup-content {{ max-height: 75vh; overflow-y: auto; }}
-@media (max-width:600px) {{ .header {{ font-size: 12px; }} .info {{ font-size: 10px; }} .header h1 {{ font-size: 13px; }} #dist-info {{ font-size: 11px !important; }} }}
+@media (max-width:600px) {{ .header {{ font-size: 12px; }} .info {{ font-size: 10px; }} .header h1 {{ font-size: 13px; }} #dist-info {{ font-size: 11px !important; }} .legend {{ display: none !important; }} }}
 
 </style>
 </head>
