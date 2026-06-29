@@ -3826,6 +3826,22 @@ L.geoJSON(regionGeoJSON, {{
 
 L.control.layers(null, {{ '⛈ Молнии': lightningGroup }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
 
+L.control({{ position: 'bottomleft' }}).onAdd = function() {{
+  const div = L.DomUtil.create('div', '');
+  div.style = 'background:rgba(255,255,255,0.9);padding:4px 8px;border-radius:6px;font-size:13px;border:1px solid #ccc;cursor:pointer;white-space:nowrap';
+  div.innerHTML = '<input type="checkbox" id="lightning-cb" checked> <label for="lightning-cb" style="cursor:pointer;color:#22c55e;font-weight:bold">⛈ Молнии</label>';
+  L.DomEvent.disableClickPropagation(div);
+  const cb = div.querySelector('#lightning-cb');
+  cb.addEventListener('change', function() {{
+    if (this.checked) {{
+      lightningGroup.addTo(map);
+    }} else {{
+      map.removeLayer(lightningGroup);
+    }}
+  }});
+  return div;
+}}.addTo(map);
+
 data.forEach(item => {{
   const s = styleMap[item.type] || styleMap.info;
 
