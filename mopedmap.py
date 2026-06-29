@@ -3774,7 +3774,7 @@ const map = L.map('map', {{ center: [54.6095, 39.7126], zoom: 6, zoomControl: tr
 map.createPane('lightning-0');
 map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
 map.createPane('lightning-1');
-map.getPane('lightning-1').style.filter = 'invert(0.15) brightness(0.35) sepia(1) hue-rotate(90deg) saturate(3)';
+map.getPane('lightning-1').style.filter = 'invert(0.15) brightness(0.5) sepia(1) hue-rotate(90deg) saturate(3)';
 
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
