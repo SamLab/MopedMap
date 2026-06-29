@@ -100,6 +100,8 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
     return result
 
 REGION_ALIASES = [
+    make_region_alias("губкинский го", "Губкин", 51.28333, 37.55, "Белгородская область"),
+    make_region_alias("губкинском го", "Губкин", 51.28333, 37.55, "Белгородская область"),
     make_region_alias("неклиновский район", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias("неклиновский р-н", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias("малоархангельский район", "Малоархангельск", 52.4, 36.5),
