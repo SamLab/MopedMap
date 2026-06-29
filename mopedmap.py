@@ -3768,15 +3768,16 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
   maxZoom: 19
 }}).addTo(map);
 
-const lightningLayer = L.tileLayer('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0', {{
-  opacity: 0.9,
-  maxZoom: 19,
-  pane: 'lightning',
-  attribution: 'Молнии: <a href="https://www.blitzortung.org">Blitzortung.org</a>'
-}});
+const lightningTileUrl = 'https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=';
+const lightningOpts = {{ opacity: 0.9, maxZoom: 19, pane: 'lightning' }};
+const lightningLayer0 = L.tileLayer(lightningTileUrl + '0', Object.assign({{ attribution: 'Молнии: <a href=\"https://www.blitzortung.org\">Blitzortung.org</a>' }}, lightningOpts));
+const lightningLayer1 = L.tileLayer(lightningTileUrl + '1', Object.assign({{}}, lightningOpts));
+const lightningGroup = L.layerGroup([lightningLayer0, lightningLayer1]);
 
 setInterval(function() {{
-  lightningLayer.setUrl('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0&_t=' + Date.now());
+  const ts = '&_t=' + Date.now();
+  lightningLayer0.setUrl(lightningTileUrl + '0' + ts);
+  lightningLayer1.setUrl(lightningTileUrl + '1' + ts);
 }}, 120000);
 
 L.control.attribution({{ prefix: false }}).addTo(map);
@@ -3822,7 +3823,7 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-L.control.layers(null, {{ '⛈ Молнии': lightningLayer }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
+L.control.layers(null, {{ '⛈ Молнии': lightningGroup }}, {{ position: 'topleft', collapsed: true }}).addTo(map);
 
 data.forEach(item => {{
   const s = styleMap[item.type] || styleMap.info;
