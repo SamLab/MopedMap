@@ -3857,37 +3857,31 @@ const YAROSLAVL_COORDS = [57.6261, 39.8845];
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
+let minDistCity = Infinity;
 let closestItem = null;
+let closestCity = null;
 data.forEach(item => {{
   if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention' || item.type === 'sighting' || item.type === 'interception') {{
     if (!item.cleared) {{
       const d = map.distance(yarLatLng, [item.lat, item.lon]);
       if (d < minDist) {{ minDist = d; closestItem = item; }}
+      if (!item.is_region && d < minDistCity) {{ minDistCity = d; closestCity = item; }}
     }}
   }}
 }});
-if (minDist < Infinity) {{
-  let closestName = closestItem.name;
-  // Prefer sub-region city name over region capital
-  if (closestItem.is_region) {{
-    const sameText = closestItem.text;
-    for (const other of data) {{
-      if (!other.is_region && other.text === sameText && !other.cleared) {{
-        closestName = other.name;
-        break;
-      }}
-    }}
-  }}
-  const distKm = (minDist / 1000).toFixed(0);
+// Prefer city-level marker (distance from actual location), fall back to region
+const useItem = closestCity || closestItem;
+if (useItem) {{
+  const distKm = ((closestCity ? minDistCity : minDist) / 1000).toFixed(0);
   let ago = '';
-  const closestTime = closestItem.time || '';
+  const closestTime = useItem.time || '';
   if (closestTime) {{
     const [dd, mm, yyyy, hh, mi] = closestTime.match(/(\\d+)/g);
     const postDate = new Date(+yyyy, +mm - 1, +dd, +hh, +mi);
     const mins = Math.round((Date.now() - postDate) / 60000);
     if (mins > 0) ago = `, ${{mins}} мин назад`;
   }}
-  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{closestName}}${{ago}})`;
+  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{useItem.name}}${{ago}})`;
 }}
 
 L.control({{ position: 'bottomright' }}).onAdd = function() {{
