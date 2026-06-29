@@ -2638,6 +2638,15 @@ DISAMBIGUATION_MAP = {
             "subject": "Калужская область",
         },
     },
+    "березники": {
+        "пермский край": {
+            "context_subject": "курская область",
+            "lat": 51.614,
+            "lon": 34.787,
+            "name": "Березники",
+            "subject": "Курская область",
+        },
+    },
 }
 
 ALL_PATTERNS = []
@@ -3399,7 +3408,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                                 other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
                         if other_rn:
                             mt = other.get('matched', '').lower()
-                            is_real_region = any(t in mt for t in ('область', 'край', 'республика'))
+                            is_real_region = any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н'))
                             if is_real_region:
                                 if other_rn == rn:
                                     has_own_region = True
@@ -3433,8 +3442,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         if not item.get('is_region') or item.get('no_marker'):
             continue
         mt = item.get('matched', '').lower()
-        if any(t in mt for t in ('область', 'край', 'республика')):
-            continue  # real region reference, keep marker
+        if any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
+            continue  # real region or rayon reference, keep marker
         item_text = item.get('text', '')
         item_rn = item.get('subject', '').lower().strip() if item.get('subject') else None
         if not item_rn:
@@ -3450,7 +3459,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 continue
             if other.get('is_region'):
                 other_mt = other.get('matched', '').lower()
-                if not any(t in other_mt for t in ('область', 'край', 'республика')):
+                if not any(t in other_mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
                     continue
                 other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
                 if not other_rn:
@@ -3482,7 +3491,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 continue
             if other.get('is_region'):
                 other_mt = other.get('matched', '').lower()
-                if not any(t in other_mt for t in ('область', 'край', 'республика')):
+                if not any(t in other_mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
                     continue
                 other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
                 if not other_rn:
