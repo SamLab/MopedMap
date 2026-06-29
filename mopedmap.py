@@ -3857,19 +3857,30 @@ const YAROSLAVL_COORDS = [57.6261, 39.8845];
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
-let closestName = '';
-let closestTime = '';
+let closestItem = null;
 data.forEach(item => {{
   if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention' || item.type === 'sighting' || item.type === 'interception') {{
     if (!item.cleared) {{
       const d = map.distance(yarLatLng, [item.lat, item.lon]);
-      if (d < minDist) {{ minDist = d; closestName = item.name; closestTime = item.time; }}
+      if (d < minDist) {{ minDist = d; closestItem = item; }}
     }}
   }}
 }});
 if (minDist < Infinity) {{
+  let closestName = closestItem.name;
+  // Prefer sub-region city name over region capital
+  if (closestItem.is_region) {{
+    const sameText = closestItem.text;
+    for (const other of data) {{
+      if (!other.is_region && other.text === sameText && !other.cleared) {{
+        closestName = other.name;
+        break;
+      }}
+    }}
+  }}
   const distKm = (minDist / 1000).toFixed(0);
   let ago = '';
+  const closestTime = closestItem.time || '';
   if (closestTime) {{
     const [dd, mm, yyyy, hh, mi] = closestTime.match(/(\\d+)/g);
     const postDate = new Date(+yyyy, +mm - 1, +dd, +hh, +mi);
