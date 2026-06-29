@@ -3759,6 +3759,7 @@ if (bounds.length > 0) {{
   map.setView([54.6095, 39.7126], 6);
 }}
 
+const YAROSLAVL_COORDS = [57.6261, 39.8845];
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
