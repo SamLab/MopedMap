@@ -3757,7 +3757,7 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
 }}).addTo(map);
 
 const lightningLayer = L.tileLayer('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0', {{
-  opacity: 0.65,
+  opacity: 0.9,
   maxZoom: 19,
   attribution: 'Молнии: <a href="https://www.blitzortung.org">Blitzortung.org</a>'
 }});
