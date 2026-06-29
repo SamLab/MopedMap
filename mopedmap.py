@@ -4033,6 +4033,9 @@ def process_posts(posts):
         post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
         # Replace newlines with spaces so multi-word patterns can match across lines
         post = re.sub(r'\n+', ' ', post)
+        if "max.ru/join/" in post:
+            filtered += 1
+            continue
         if is_summary_post(post):
             filtered += 1
             continue
