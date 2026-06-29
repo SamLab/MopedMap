@@ -3759,6 +3759,9 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <script>
 const map = L.map('map', {{ center: [54.6095, 39.7126], zoom: 6, zoomControl: true, attributionControl: false }});
 
+map.createPane('lightning');
+map.getPane('lightning').style.filter = 'brightness(0.5) sepia(1) hue-rotate(90deg) saturate(4)';
+
 L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
   subdomains: 'abcd',
@@ -3768,6 +3771,7 @@ L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}
 const lightningLayer = L.tileLayer('https://images.lightningmaps.org/blitzortung/europe/index.php?tile&zoom={{z}}&x={{x}}&y={{y}}&type=0', {{
   opacity: 0.9,
   maxZoom: 19,
+  pane: 'lightning',
   attribution: 'Молнии: <a href="https://www.blitzortung.org">Blitzortung.org</a>'
 }});
 
