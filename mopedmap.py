@@ -3859,7 +3859,7 @@ const starIcon = L.divIcon({{
   html: '<div style="width:14px;height:14px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#2196f3;border:1px solid #1565c0"></div>',
   className: '', iconSize: [14, 14], iconAnchor: [7, 7]
 }});
-L.marker(YAROSLAVL_COORDS, {{ icon: starIcon, zIndexOffset: 1000 }}).addTo(map);
+L.marker(YAROSLAVL_COORDS, {{ icon: starIcon, zIndexOffset: 1000 }}).addTo(map).bindPopup('Ярославль - постоянный маркер');
 // Closest threat to Yaroslavl
 const yarLatLng = L.latLng(YAROSLAVL_COORDS);
 let minDist = Infinity;
