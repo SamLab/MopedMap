@@ -2741,6 +2741,7 @@ from datetime import datetime, timezone, timedelta
 
 
 HOURS_FILTER = 4
+HISTORY_HOURS = 24
 
 RADARMAP_API_URL = "https://radar-map.ru/api/state"
 
@@ -3834,10 +3835,14 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             }
             posts_data.append(syn)
 
-    # Fallback: show history popups for regions without current events
+    # Fallback: show history popups for regions without current events (max HISTORY_HOURS old)
     if history:
+        history_cutoff = datetime.now(timezone(timedelta(hours=3))) - timedelta(hours=HISTORY_HOURS)
         for rn, h_entry in history.items():
             if rn in region_map:
+                continue
+            h_time = h_entry.get('time', '')
+            if not h_time or parse_post_time(h_time) < history_cutoff:
                 continue
             feat = find_geojson_feature(rn, geojson_lookup)
             if feat:
