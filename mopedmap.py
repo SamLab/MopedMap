@@ -3927,6 +3927,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
 .header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; gap: 6px; flex-wrap: wrap; overflow: hidden; }}
+.leaflet-tile-pane {{ filter: saturate(0.5) brightness(0.8); }}
 .header h1 {{ font-size: 15px; color: #d32f2f; white-space: nowrap; }}
 .header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
@@ -4021,8 +4022,8 @@ L.geoJSON(regionGeoJSON, {{
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
       color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0 : 0.25,
-      weight: 1.5, opacity: 0.5
+      fillOpacity: alertType === 'clear' ? 0 : 0.2,
+      weight: 1.5, opacity: 0.45
     }};
   }},
   onEachFeature: function(feature, layer) {{
@@ -4089,7 +4090,7 @@ data.filter(item => item.direction).forEach(item => {{
   const color = s.color;
 
   L.polyline([from, to], {{
-    color, weight: 1.5, opacity: 0.35, dashArray: '4, 6'
+    color, weight: 2.5, opacity: 0.55, dashArray: '4, 6'
   }}).addTo(map);
 
   L.circleMarker(to, {{
