@@ -3492,7 +3492,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
         )]
     # Extract region geometries for active fill types
     region_map = {}  # region_name_lower -> feature
-    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4, 'sighting': 5, 'info': 6, 'clear': 7}
+    type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'interception': 3, 'attention': 4, 'sighting': 5, 'info': 6, 'clear': 7}
     # Collect all region entries per region
     from collections import defaultdict
     region_entries = defaultdict(list)
@@ -3755,9 +3755,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             if 'ракетн' in clear_text:
                 clear_types = {'rocket'}
             elif 'бпла' in clear_text:
-                clear_types = {'danger', 'attention', 'aviation'}
+                clear_types = {'danger', 'attention', 'aviation', 'interception'}
             else:
-                clear_types = {'rocket', 'danger', 'aviation', 'attention'}
+                clear_types = {'rocket', 'danger', 'aviation', 'attention', 'interception'}
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
                 cn = item.get('name', '').lower().strip()
