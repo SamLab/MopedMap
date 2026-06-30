@@ -2346,6 +2346,8 @@ REGION_ALIASES = [
     make_region_alias_with_cases("пермский край", "Пермь", 58.0105, 56.2502),
     make_region_alias("крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
     make_region_alias("республика крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
+    make_region_alias("керченский полуостров", "Керчь", 45.33861, 36.46806, subject="Республика Крым"),
+    make_region_alias("керченский", "Керчь", 45.33861, 36.46806, subject="Республика Крым"),
     make_region_alias("адыгея", "Майкоп", 44.6833, 40.1167),
     make_region_alias("республика адыгея", "Майкоп", 44.6833, 40.1167),
     make_region_alias("башкортостан", "Уфа", 54.7355, 55.9587),
@@ -2685,6 +2687,40 @@ DISAMBIGUATION_MAP = {
             "lon": 38.908,
             "name": "Куйбышево",
             "subject": "Ростовская область",
+        },
+    },
+    "видное": {
+        "московская область": {
+            "context_subject": "республика крым",
+            "lat": 45.092875,
+            "lon": 35.243711,
+            "name": "Видное",
+            "subject": "Республика Крым",
+        },
+    },
+    "кировский": {
+        "калужская область": {
+            "context_subject": "республика крым",
+            "lat": 45.223,
+            "lon": 35.205,
+            "name": "Кировское",
+            "subject": "Республика Крым",
+        },
+    },
+    "ленинский": {
+        "московская область": {
+            "context_subject": "республика крым",
+            "lat": 45.294,
+            "lon": 35.769,
+            "name": "Ленино",
+            "subject": "Республика Крым",
+        },
+        "тульская область": {
+            "context_subject": "республика крым",
+            "lat": 45.294,
+            "lon": 35.769,
+            "name": "Ленино",
+            "subject": "Республика Крым",
         },
     },
 }
@@ -3057,7 +3093,7 @@ def extract_locations(text, extra_context=None):
                             r["name"] = entry["name"]
                             r["subject"] = entry["subject"]
                             break
-                break
+                    break
 
     # --- Automatic region-subject matching: if a city result has a
     #     different subject than a nearby region result, look up the
