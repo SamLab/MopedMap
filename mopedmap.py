@@ -3935,6 +3935,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
 .popup-text {{ font-size: 12px; max-height: 500px; overflow-y: auto; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }}
 .leaflet-popup-content {{ max-width: 600px !important; }}
+.leaflet-tile-pane {{ filter: saturate(0.77); }}
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
@@ -3963,7 +3964,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [57.5, 39.5], zoom: 7, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: [57.5, 39.5], zoom: 6, zoomControl: true, attributionControl: false }});
 
 map.createPane('lightning-0');
 map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
@@ -4104,7 +4105,7 @@ data.filter(item => item.direction).forEach(item => {{
 }});
 
 if (bounds.length > 0) {{
-  map.setView([57.5, 39.5], 7);
+  map.setView([57.5, 39.5], 6);
 }}
 
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
