@@ -2737,7 +2737,8 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'Радар Ярославская область\s*[-–—]\s*', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
-    clean = re.sub(r'Мониторинг\.РФ\s*\|\s*Мы в MAX', '', clean).strip()
+    clean = re.sub(r'Мониторинг\.РФ.*', '', clean).strip()
+    clean = re.sub(r'Мы в MAX.*', '', clean).strip()
     return clean.strip()
 
 
@@ -2789,6 +2790,8 @@ def fetch_channel(url, name):
             display = re.sub(r'\s*\n\s*', '\n', display).strip()
             display = re.sub(r'@\w+\s*', '', display).strip()
             display = re.sub(r'Подписаться', '', display).strip()
+            display = re.sub(r'Мониторинг\.РФ.*', '', display).strip()
+            display = re.sub(r'Мы в MAX.*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
