@@ -2879,6 +2879,12 @@ DISAMBIGUATION_MAP = {
             {"context_subject": "республика крым", "lat": 45.35, "lon": 36.48, "name": "Октябрьский", "subject": "Республика Крым"},
         ],
     },
+    "ждановка": {
+        "__any__": [
+            {"context_subject": "днр", "lat": 48.25, "lon": 38.40, "name": "Ждановка", "subject": "ДНР"},
+            {"context_subject": "республика крым", "lat": 45.35, "lon": 33.80, "name": "Ждановка", "subject": "Республика Крым"},
+        ],
+    },
 }
 
 ALL_PATTERNS = []
