@@ -230,6 +230,8 @@ REGION_ALIASES = [
     {"pattern": "рыбинском районе", "name": "Рыбинск", "lat": 58.050, "lon": 38.833, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "рыбинский р-н", "name": "Рыбинск", "lat": 58.050, "lon": 38.833, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "рыбинском р-не", "name": "Рыбинск", "lat": 58.050, "lon": 38.833, "type": "region", "is_region": True, "subject": "Ярославская область"},
+    {"pattern": "рыбинское водохранилище", "name": "Рыбинское водохранилище", "lat": 58.0653, "lon": 38.8208, "type": "city", "subject": "Ярославская область"},
+    {"pattern": "рыбинского водохранилища", "name": "Рыбинское водохранилище", "lat": 58.0653, "lon": 38.8208, "type": "city", "subject": "Ярославская область"},
     {"pattern": "тутаевский район", "name": "Тутаев", "lat": 57.883, "lon": 39.533, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "тутаевском районе", "name": "Тутаев", "lat": 57.883, "lon": 39.533, "type": "region", "is_region": True, "subject": "Ярославская область"},
     {"pattern": "тутаевский р-н", "name": "Тутаев", "lat": 57.883, "lon": 39.533, "type": "region", "is_region": True, "subject": "Ярославская область"},
@@ -3215,6 +3217,8 @@ def extract_directions(text):
             if s.get("is_region") or s.get("type") == "region":
                 continue
             for d in dests:
+                if d.get("is_region") or d.get("type") == "region":
+                    continue
                 if round(s["lat"], 1) == round(d["lat"], 1) and round(s["lon"], 1) == round(d["lon"], 1):
                     continue
                 pairs.append((s, d))
