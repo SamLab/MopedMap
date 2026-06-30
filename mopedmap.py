@@ -2783,8 +2783,14 @@ def fetch_channel(url, name):
             if dt < cutoff:
                 continue
             clean = clean_message_text(msg_html, name)
+            # Create display version: preserve <br> as newlines, strip other HTML, remove noise
+            display = msg_html.replace('<br>', '\n').replace('<br/>', '\n')
+            display = re.sub(r'<[^>]+>', ' ', display)
+            display = re.sub(r'\s*\n\s*', '\n', display).strip()
+            display = re.sub(r'@\w+\s*', '', display).strip()
+            display = re.sub(r'Подписаться', '', display).strip()
             if clean and len(clean) > 10:
-                posts.append((clean, name, dt))
+                posts.append((clean, display, name, dt))
                 page_posts += 1
 
         if page_posts == 0 or oldest_id is None:
@@ -4041,18 +4047,25 @@ def process_posts(posts):
     msk = timezone(timedelta(hours=3))
     for post_item in posts:
         if isinstance(post_item, tuple):
-            if len(post_item) == 3:
+            if len(post_item) == 4:
+                post, display_text, source, dt = post_item
+                post_time = dt.astimezone(msk).strftime('%d.%m.%Y %H:%M')
+            elif len(post_item) == 3:
                 post, source, dt = post_item
+                display_text = post
                 post_time = dt.astimezone(msk).strftime('%d.%m.%Y %H:%M')
             else:
                 post, source = post_item
+                display_text = post
                 post_time = ""
         else:
             post, source = post_item, ""
+            display_text = post
             post_time = ""
         # Normalize spacing: insert space before uppercase Cyrillic after lowercase (fixes concatenated text like "районТульская")
         post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
-        original_post = post
+        display_text = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', display_text)
+        original_post = display_text
         # Replace newlines with spaces so multi-word patterns can match across lines
         post = re.sub(r'\n+', ' ', post)
         if "max.ru/join/" in post:
