@@ -2803,7 +2803,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@migalka_alerts_bot.*$', '', clean).strip()
     clean = re.sub(r'@radar_russia_monitor.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
-    clean = re.sub(r'.*Радар.*Россия.*', '', clean).strip()
+    clean = re.sub(r'^.*Радар по всей России.*$', '', clean, flags=re.MULTILINE).strip()
     clean = re.sub(r'мониторинг\.ру.*', '', clean).strip()
     clean = re.sub(r'Мониторинг\.РФ.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.рф.*', '', clean).strip()
@@ -2869,18 +2869,19 @@ def fetch_channel(url, name, hours_filter=None):
             display = re.sub(r'@\w+\s*', '', display).strip()
             display = re.sub(r'@ \w+\s*', '', display).strip()
             display = re.sub(r'Подписаться', '', display).strip()
-            # Remove known footer lines
-            display = re.sub(r'.*Локатор России.*', '', display).strip()
-            display = re.sub(r'.*Радар Ярославль.*', '', display).strip()
-            display = re.sub(r'.*Радар Ярославск.*', '', display).strip()
-            display = re.sub(r'.*Радар Чувашия.*', '', display).strip()
-            display = re.sub(r'.*Обход белых списков.*', '', display).strip()
-            display = re.sub(r'.*Радар по всей России.*', '', display).strip()
-            display = re.sub(r'.*Мониторинг\.РФ.*', '', display).strip()
-            display = re.sub(r'.*мониторинг\.ру.*', '', display).strip()
-            display = re.sub(r'.*мониторинг\.рф.*', '', display).strip()
-            display = re.sub(r'.*Мы в MAX.*', '', display).strip()
-            display = re.sub(r'.*Радар.*Россия.*', '', display).strip()
+            # Remove known footer text (inline-safe: no leading .*, matches from keyword to end of line)
+            display = re.sub(r'Локатор России[^\n]*', '', display).strip()
+            display = re.sub(r'Радар Ярославль[^\n]*', '', display).strip()
+            display = re.sub(r'Радар Ярославск[^\n]*', '', display).strip()
+            display = re.sub(r'Радар Чувашия[^\n]*', '', display).strip()
+            display = re.sub(r'Обход белых списков[^\n]*', '', display).strip()
+            display = re.sub(r'Радар по всей России[^\n]*', '', display).strip()
+            display = re.sub(r'Мониторинг\.РФ[^\n]*', '', display).strip()
+            display = re.sub(r'мониторинг\.ру[^\n]*', '', display).strip()
+            display = re.sub(r'мониторинг\.рф[^\n]*', '', display).strip()
+            display = re.sub(r'Мы в MAX[^\n]*', '', display).strip()
+            display = re.sub(r'Радар\.РФ[^\n]*', '', display).strip()
+            display = re.sub(r'radar\.RF[^\n]*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
@@ -3927,7 +3928,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .footer span {{ white-space: nowrap; }}
 .footer .dot {{ font-size: 16px; line-height: 1; }}
 .header {{ min-height: 60px; display: flex; align-items: center; padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; gap: 6px; flex-wrap: wrap; overflow: hidden; }}
-.leaflet-tile-pane {{ filter: saturate(0.5) brightness(0.8); }}
+
 .header h1 {{ font-size: 15px; color: #d32f2f; white-space: nowrap; }}
 .header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
@@ -3990,14 +3991,14 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 const data = {markers_json};
 
 const styleMap = {{
-  danger: {{ color: '#b91c1c', size: 12, glow: null }},
-  aviation: {{ color: '#0369a1', size: 12, glow: null }},
+  danger: {{ color: '#a83232', size: 12, glow: null }},
+  aviation: {{ color: '#2a6a90', size: 12, glow: null }},
   sighting: {{ color: '#555555', size: 10, glow: null }},
-  clear: {{ color: '#16a34a', size: 10, glow: null }},
-  attention: {{ color: '#a16207', size: 10, glow: null }},
-  interception: {{ color: '#000000', size: 10, glow: null }},
-  rocket: {{ color: '#6d28d9', size: 14, glow: null }},
-  info: {{ color: '#2563eb', size: 8, glow: null }},
+  clear: {{ color: '#4a8a5a', size: 10, glow: null }},
+  attention: {{ color: '#8a6830', size: 10, glow: null }},
+  interception: {{ color: '#333333', size: 10, glow: null }},
+  rocket: {{ color: '#6d4a9e', size: 14, glow: null }},
+  info: {{ color: '#4a6ebb', size: 8, glow: null }},
   history: {{ color: '#999999', size: 0, glow: null }}
 }};
 
