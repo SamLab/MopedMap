@@ -138,5 +138,36 @@ Clear (отбой) убирал danger-заливку региона даже е
 
 Итог: clear убирает заливку только если он **новее** danger. Если danger свежее — заливка остаётся.
 
+## Последние изменения (30.06.2026)
+
+### 14. Центр карты → Переславль-Залесский
+`mopedmap.py:3966,4107` — [56.74, 38.86], zoom 7.
+
+### 15. Clear цвет ещё менее зелёный
+`mopedmap.py:3997` — `#6a6a5a` (серо-оливковый, R=G > B).
+
+### 16. interception в type_priority
+`mopedmap.py:3495` — `'interception': 3` (между aviation=2 и attention=4).
+Раньше interception-события не создавали заливку региона, только точку.
+Также interception добавлен в `clear_types` (`mopedmap.py:3758,3760`) — отбой по БПЛА снимает и заливку перехвата.
+
+### 17. CI: deploy-pages@v4, без concurrency, таймаут 30 мин
+`deploy.yml` — `actions/deploy-pages@v4` + `upload-pages-artifact@v3`, jobs объединены,
+concurrency group убран (отмена предыдущего ранна оставляла зависшие деплои в очереди),
+таймаут увеличен до 30 минут.
+
+## Проблема: деплой зависает в очереди
+`Deploy to Pages` — статус `deployment_queued` бесконечно, затем timeout.
+Не кодовая проблема — инфраструктура GitHub Pages не подхватывает деплой.
+Лечится повторным запуском (иногда проходит с 7+ раза).
+
+## Установленный факт: рабочие коммиты
+```
+1effa45 center: Переславль-Залесский [56.74, 38.86]; clear color → #6a6a5a
+d9a3fc9 fix: add interception to type_priority and clear_types for region fills
+c7d4717 ci: use upload-pages-artifact@v3 + deploy-pages@v4
+d6a6065 ci: merge build+deploy, remove concurrency, timeout 30m
+```
+
 ## PUSH
 Пользователь: "давай ты будешь сам пушить дальше" — коммитить и пушить без запроса.
