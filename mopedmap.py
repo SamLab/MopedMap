@@ -3963,7 +3963,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [58.05, 38.83], zoom: 7, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: [56.74, 38.86], zoom: 6, zoomControl: true, attributionControl: false }});
 
 map.createPane('lightning-0');
 map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
@@ -4104,7 +4104,7 @@ data.filter(item => item.direction).forEach(item => {{
 }});
 
 if (bounds.length > 0) {{
-  map.setView([58.05, 38.83], 7);
+  map.setView([56.74, 38.86], 6);
 }}
 
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
