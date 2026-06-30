@@ -3439,7 +3439,8 @@ def parse_post_time(time_str):
 def dedup_markers(markers):
     seen = {}
     for m in markers:
-        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('type', ''), m.get('is_region', False))
+        dest = m.get('dest_name', '').lower().strip() if m.get('direction') else ''
+        key = (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1), m.get('type', ''), m.get('is_region', False), dest)
         existing = seen.get(key)
         if existing:
             existing_time = parse_post_time(existing.get('time', ''))
