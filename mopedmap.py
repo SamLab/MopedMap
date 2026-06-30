@@ -2509,6 +2509,11 @@ REGION_ALIASES = [
     {"pattern": "володарский р-н днр", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
     {"pattern": "днр володарский район", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
     {"pattern": "днр володарский р-н", "name": "Володарское", "lat": 47.167, "lon": 37.317, "type": "region", "is_region": True, "subject": "ДНР"},
+    # Херсонская область — Новый Гай, Аскания Нова
+    {"pattern": "новый гай", "name": "Новый Гай", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "новом гаю", "name": "Новый Гай", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "аскания нова", "name": "Аскания-Нова", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "аскании новой", "name": "Аскания-Нова", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2570,13 +2575,22 @@ DISAMBIGUATION_MAP = {
         },
     },
     "гай": {
-        "оренбургская область": {
-            "context_subject": "запорожская область",
-            "lat": 46.85,
-            "lon": 35.37,
-            "name": "Гай",
-            "subject": "Запорожская область",
-        },
+        "оренбургская область": [
+            {
+                "context_subject": "запорожская область",
+                "lat": 46.85,
+                "lon": 35.37,
+                "name": "Гай",
+                "subject": "Запорожская область",
+            },
+            {
+                "context_subject": "херсонская область",
+                "lat": 46.45,
+                "lon": 33.87,
+                "name": "Новый Гай",
+                "subject": "Херсонская область",
+            },
+        ],
     },
     "иваново": {
         "ивановская область": {
@@ -3718,6 +3732,13 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         if rn in active_threat_regions:
             continue
         if rn in region_map:
+            at = region_map[rn]['properties'].get('alert_type', '')
+            if at == 'sighting':
+                region_map[rn]['properties']['alert_type'] = 'attention'
+                region_map[rn]['properties']['popup_name'] = sighting_item.get('name', '')
+                region_map[rn]['properties']['popup_text'] = f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}"
+                region_map[rn]['properties']['popup_source'] = sighting_item.get('source', '')
+                region_map[rn]['properties']['popup_time'] = sighting_item.get('time', '')
             continue
         feat = find_geojson_feature(rn, geojson_lookup)
         if feat:
