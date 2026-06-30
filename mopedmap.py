@@ -2713,7 +2713,7 @@ CHANNELS = [
 
     {"url": "https://t.me/s/radarrussiia", "name": "radarrussiia"},
     {"url": "https://t.me/s/radarYR", "name": "radarYR"},
-    {"url": "https://t.me/s/russiamonitoring_radar_bpla", "name": "russiamonitoring_radar_bpla"},
+    # {"url": "https://t.me/s/russiamonitoring_radar_bpla", "name": "russiamonitoring_radar_bpla"},
     {"url": "https://t.me/s/radar_rossia_bpla", "name": "radar_rossia_bpla"},
     {"url": "https://t.me/s/radar_yaroslavl", "name": "radar_yaroslavl"},
     {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76"},
