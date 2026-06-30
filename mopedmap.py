@@ -2551,6 +2551,8 @@ REGION_ALIASES = [
     {"pattern": "феодосии", "name": "Феодосия", "lat": 45.035, "lon": 35.378, "type": "city", "subject": "Республика Крым"},
     # Горностаевка, Ленинский район, Крым
     {"pattern": "горностаевка", "name": "Горностаевка", "lat": 45.35, "lon": 36.48, "type": "city", "subject": "Республика Крым"},
+    # Мелкие сёла Крыма (не в settlement_db)
+    {"pattern": "сенокосное", "name": "Сенокосное", "lat": 45.827, "lon": 33.770, "type": "city", "subject": "Республика Крым"},
     # Ивановский район, Херсонская область
     {"pattern": "ивановский район херсонская", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "ивановском районе херсонской", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
@@ -2823,6 +2825,59 @@ DISAMBIGUATION_MAP = {
             "name": "Никольское",
             "subject": "Калужская область",
         },
+    },
+    # --- Crimea/Donbass villages: redirect from any region when context matches ---
+    "первомайское": {
+        "__any__": {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
+    },
+    "калинино": {
+        "__any__": [
+            {"context_subject": "республика крым", "lat": 45.48, "lon": 33.70, "name": "Калинино", "subject": "Республика Крым"},
+            {"context_subject": "днр", "lat": 48.28, "lon": 38.20, "name": "Калинино", "subject": "ДНР"},
+        ],
+    },
+    "братское": {
+        "__any__": [
+            {"context_subject": "республика крым", "lat": 46.685, "lon": 40.002, "name": "Братское", "subject": "Республика Крым"},
+            {"context_subject": "днр", "lat": 48.52, "lon": 38.58, "name": "Братское", "subject": "ДНР"},
+        ],
+    },
+    "новопавловка": {
+        "__any__": [
+            {"context_subject": "республика крым", "lat": 45.981, "lon": 40.967, "name": "Новопавловка", "subject": "Республика Крым"},
+            {"context_subject": "днр", "lat": 48.13, "lon": 37.90, "name": "Новопавловка", "subject": "ДНР"},
+        ],
+    },
+    "высокая": {
+        "__any__": {"context_subject": "днр", "lat": 48.30, "lon": 38.25, "name": "Высокое", "subject": "ДНР"},
+    },
+    "чернышево": {
+        "__any__": {"context_subject": "республика крым", "lat": 45.776, "lon": 33.524, "name": "Чернышево", "subject": "Республика Крым"},
+    },
+    "кропоткино": {
+        "__any__": {"context_subject": "республика крым", "lat": 45.783, "lon": 33.550, "name": "Кропоткино", "subject": "Республика Крым"},
+    },
+    "раздольное": {
+        "__any__": [
+            {"context_subject": "республика крым", "lat": 45.806, "lon": 33.479, "name": "Раздольное", "subject": "Республика Крым"},
+            {"context_subject": "днр", "lat": 48.35, "lon": 38.40, "name": "Раздольное", "subject": "ДНР"},
+        ],
+    },
+    "червоное": {
+        "__any__": {"context_subject": "республика крым", "lat": 45.663, "lon": 33.880, "name": "Червоное", "subject": "Республика Крым"},
+    },
+    "ботаническое": {
+        "__any__": {"context_subject": "республика крым", "lat": 44.956, "lon": 34.132, "name": "Ботаническое", "subject": "Республика Крым"},
+    },
+    "сенокосное": {
+        "__any__": {"context_subject": "республика крым", "lat": 45.827, "lon": 33.770, "name": "Сенокосное", "subject": "Республика Крым"},
+    },
+    # Октябрьский — Белгородская (не Уфа)
+    "октябрьский": {
+        "__any__": [
+            {"context_subject": "белгородская область", "lat": 50.44, "lon": 36.35, "name": "Октябрьский", "subject": "Белгородская область"},
+            {"context_subject": "республика крым", "lat": 45.35, "lon": 36.48, "name": "Октябрьский", "subject": "Республика Крым"},
+        ],
     },
 }
 
@@ -3197,8 +3252,12 @@ def extract_locations(text, extra_context=None):
         for key in (nl, matched_key):
             if key in DISAMBIGUATION_MAP:
                 cur_subj = r.get("subject", "").lower()
+                candidates = None
                 if cur_subj in DISAMBIGUATION_MAP[key]:
                     candidates = DISAMBIGUATION_MAP[key][cur_subj]
+                elif "__any__" in DISAMBIGUATION_MAP[key]:
+                    candidates = DISAMBIGUATION_MAP[key]["__any__"]
+                if candidates is not None:
                     if not isinstance(candidates, list):
                         candidates = [candidates]
                     all_results = results
