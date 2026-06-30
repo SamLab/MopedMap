@@ -3760,7 +3760,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
-.popup-text {{ font-size: 12px; max-height: 500px; overflow-y: auto; line-height: 1.4; word-break: break-word; }}
+.popup-text {{ font-size: 12px; max-height: 500px; overflow-y: auto; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }}
 .leaflet-popup-content {{ max-width: 600px !important; }}
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
@@ -4052,6 +4052,7 @@ def process_posts(posts):
             post_time = ""
         # Normalize spacing: insert space before uppercase Cyrillic after lowercase (fixes concatenated text like "районТульская")
         post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
+        original_post = post
         # Replace newlines with spaces so multi-word patterns can match across lines
         post = re.sub(r'\n+', ' ', post)
         if "max.ru/join/" in post:
@@ -4074,7 +4075,7 @@ def process_posts(posts):
                 m = {
                     "lat": src["lat"], "lon": src["lon"],
                     "name": src["name"], "type": post_type,
-                    "text": post[:5000] + ("..." if len(post) > 5000 else ""),
+                    "text": original_post[:5000] + ("..." if len(original_post) > 5000 else ""),
                     "direction": [dst["lat"], dst["lon"]],
                     "dest_name": dst["name"],
                     "source": source, "time": post_time,
@@ -4100,7 +4101,7 @@ def process_posts(posts):
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
                         "name": loc["name"], "type": sent_type,
-                        "text": post[:5000] + ("..." if len(post) > 5000 else ""),
+                        "text": original_post[:5000] + ("..." if len(original_post) > 5000 else ""),
                         "source": source, "time": post_time,
                     }
                     if loc.get("is_region"):
