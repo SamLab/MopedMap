@@ -2705,6 +2705,9 @@ CHANNELS = [
     {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76"},
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar"},
     {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii"},
+    {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm"},
+    {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik"},
+    {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot"},
 ]
 
 
