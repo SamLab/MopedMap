@@ -884,6 +884,13 @@ REGION_ALIASES = [
     {"pattern": "фирове", "name": "Фирово", "lat": 57.483, "lon": 33.7, "type": "city", "subject": "Тверская область"},
     {"pattern": "жарковский", "name": "Жарковский", "lat": 55.85, "lon": 32.433, "type": "city", "subject": "Тверская область"},
     {"pattern": "жарковские", "name": "Жарковский", "lat": 55.85, "lon": 32.433, "type": "city", "subject": "Тверская область"},
+    {"pattern": "новоселки", "name": "Новоселки", "lat": 56.18, "lon": 32.85, "type": "city", "subject": "Тверская область"},
+    {"pattern": "нилидово", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "city", "subject": "Тверская область"},
+    # Нелидовский район, Тверская область
+    {"pattern": "ниливский район", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
+    {"pattern": "ниливском районе", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
+    {"pattern": "ниливский р-н", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
+    {"pattern": "ниливском р-не", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
 
     # Московская область — районы
     {"pattern": "волоколамский район", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
