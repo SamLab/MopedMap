@@ -45,13 +45,16 @@ jobs:
         with:
           path: _site
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
+      - name: Cancel stuck Pages deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for sha in "${{ github.event.before }}" "${{ github.sha }}" $(git log --format=%H -5 2>/dev/null); do
+            [ -z "$sha" ] && continue
+            gh api -X POST "repos/${{ github.repository }}/pages/deployments/$sha/cancel" --silent 2>/dev/null || true
+          done
+          echo "Done cancelling stuck deployments"
+
       - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v5
