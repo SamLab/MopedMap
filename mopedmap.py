@@ -3842,12 +3842,15 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             feat = find_geojson_feature(rn, geojson_lookup)
             if feat:
                 feat_copy = json.loads(json.dumps(feat))
-                feat_copy['properties']['alert_type'] = 'history'
                 h_name = h_entry.get('name', '')
                 h_type = h_entry.get('type', '')
                 h_text = h_entry.get('text', '')[:500]
                 h_time = h_entry.get('time', '')
                 h_source = h_entry.get('source', '')
+                # Threat types get real fill; clear/info get grey dashed outline
+                threat_fill = {'danger', 'rocket', 'aviation', 'attention', 'sighting', 'interception'}
+                alert_type = h_type if h_type in threat_fill else 'history'
+                feat_copy['properties']['alert_type'] = alert_type
                 feat_copy['properties']['popup_name'] = f"[История] {h_name}"
                 feat_copy['properties']['popup_text'] = f"Последнее ({h_time}):\n{h_text}"
                 feat_copy['properties']['popup_source'] = h_source
