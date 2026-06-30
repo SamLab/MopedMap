@@ -9,6 +9,7 @@ import traceback
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CITIES_FILE = os.path.join(BASE_DIR, "cities.json")
+REGION_HISTORY_FILE = os.path.join(BASE_DIR, "region_history.json")
 
 with open(CITIES_FILE, "r", encoding="utf-8") as f:
     cities_data = json.load(f)
@@ -3436,7 +3437,7 @@ def dedup_markers(markers):
     return list(seen.values())
 
 
-def generate_html(posts_data, filename=None, geojson_lookup=None):
+def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
     # Keep only the latest post per city
@@ -3833,6 +3834,26 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             }
             posts_data.append(syn)
 
+    # Fallback: show history popups for regions without current events
+    if history:
+        for rn, h_entry in history.items():
+            if rn in region_map:
+                continue
+            feat = find_geojson_feature(rn, geojson_lookup)
+            if feat:
+                feat_copy = json.loads(json.dumps(feat))
+                feat_copy['properties']['alert_type'] = 'history'
+                h_name = h_entry.get('name', '')
+                h_type = h_entry.get('type', '')
+                h_text = h_entry.get('text', '')[:500]
+                h_time = h_entry.get('time', '')
+                h_source = h_entry.get('source', '')
+                feat_copy['properties']['popup_name'] = f"[История] {h_name}"
+                feat_copy['properties']['popup_text'] = f"Последнее ({h_time}):\n{h_text}"
+                feat_copy['properties']['popup_source'] = h_source
+                feat_copy['properties']['popup_time'] = h_time
+                region_map[rn] = feat_copy
+
     markers_json = json.dumps(posts_data, ensure_ascii=False)
 
     region_features = list(region_map.values())
@@ -3924,12 +3945,13 @@ const styleMap = {{
   attention: {{ color: '#eab308', size: 12, glow: null }},
   interception: {{ color: '#000000', size: 12, glow: null }},
   rocket: {{ color: '#a855f7', size: 16, glow: '#a855f7' }},
-  info: {{ color: '#60a5fa', size: 10, glow: null }}
+  info: {{ color: '#60a5fa', size: 10, glow: null }},
+  history: {{ color: '#999999', size: 0, glow: null }}
 }};
 
 const bounds = [];
 
-const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность' }};
+const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность', history: 'Архив' }};
 
 const regionGeoJSON = {region_geojson};
 
@@ -3937,6 +3959,13 @@ const regionGeoJSON = {region_geojson};
 L.geoJSON(regionGeoJSON, {{
   style: function(feature) {{
     const alertType = feature.properties.alert_type || 'danger';
+    if (alertType === 'history') {{
+      return {{
+        color: '#999', fillColor: '#999',
+        fillOpacity: 0, weight: 1, opacity: 0.5,
+        dashArray: '4, 4'
+      }};
+    }}
     const s = styleMap[alertType] || styleMap.danger;
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
@@ -4098,6 +4127,47 @@ legendCtrl.addTo(map);
     return os.path.abspath(filename)
 
 
+def load_region_history():
+    try:
+        with open(REGION_HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_region_history(history):
+    try:
+        with open(REGION_HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"  Ошибка сохранения истории регионов: {e}")
+
+
+def update_region_history(markers, history):
+    for m in markers:
+        rn = m.get('subject', '').lower().strip() if m.get('subject') else None
+        if not rn:
+            cn = m.get('name', '').lower().strip()
+            if cn in CITY_DB:
+                rn = CITY_DB[cn].get('subject', '').lower().strip()
+        if not rn:
+            continue
+        m_time = m.get('time', '')
+        if not m_time:
+            continue
+        existing = history.get(rn, {})
+        existing_time = existing.get('time', '')
+        if not existing_time or parse_post_time(m_time) > parse_post_time(existing_time):
+            history[rn] = {
+                'name': m.get('name', ''),
+                'type': m.get('type', ''),
+                'text': m.get('text', '')[:500],
+                'source': m.get('source', ''),
+                'time': m_time,
+            }
+    return history
+
+
 SUMMARY_PATTERNS = [
     r'в период с.*дежурными средствами пво',
     r'средствами пво перехвачены и уничтожен',
@@ -4247,7 +4317,10 @@ def main():
     print("Загрузка границ регионов...")
     geojson_lookup = load_region_geojson()
 
-    filename = generate_html(all_markers, geojson_lookup=geojson_lookup)
+    history = load_region_history()
+    filename = generate_html(all_markers, geojson_lookup=geojson_lookup, history=history)
+    history = update_region_history(all_markers, history)
+    save_region_history(history)
     abs_path = os.path.abspath(filename)
     print(f"\nСгенерирована карта: file://{abs_path}")
     print(f"Локаций на карте: {len(all_markers)}")
