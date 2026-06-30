@@ -2800,6 +2800,8 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
     clean = re.sub(r'Мы в MAX.*', '', clean).strip()
+    # Insert space between lowercase-uppercase Cyrillic transitions (no-space formatting)
+    clean = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', clean)
     return clean.strip()
 
 
