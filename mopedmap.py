@@ -2508,6 +2508,17 @@ REGION_ALIASES = [
     {"pattern": "приморск запорожская", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
     {"pattern": "приморск бердянск", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
     {"pattern": "бердянск приморск", "name": "Приморск", "lat": 46.735, "lon": 36.345, "type": "city", "subject": "Запорожская область"},
+    # Бердянск, Запорожская область
+    {"pattern": "бердянск", "name": "Бердянск", "lat": 46.755, "lon": 36.790, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "бердянска", "name": "Бердянск", "lat": 46.755, "lon": 36.790, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "бердянске", "name": "Бердянск", "lat": 46.755, "lon": 36.790, "type": "city", "subject": "Запорожская область"},
+    # Мелитополь, Запорожская область
+    {"pattern": "мелитополь", "name": "Мелитополь", "lat": 46.842, "lon": 35.365, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "мелитополя", "name": "Мелитополь", "lat": 46.842, "lon": 35.365, "type": "city", "subject": "Запорожская область"},
+    {"pattern": "мелитополе", "name": "Мелитополь", "lat": 46.842, "lon": 35.365, "type": "city", "subject": "Запорожская область"},
+    # Феодосия, Республика Крым
+    {"pattern": "феодосия", "name": "Феодосия", "lat": 45.035, "lon": 35.378, "type": "city", "subject": "Республика Крым"},
+    {"pattern": "феодосии", "name": "Феодосия", "lat": 45.035, "lon": 35.378, "type": "city", "subject": "Республика Крым"},
     # Ивановский район, Херсонская область
     {"pattern": "ивановский район херсонская", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "ивановском районе херсонской", "name": "Ивановка", "lat": 46.717, "lon": 34.55, "type": "region", "is_region": True, "subject": "Херсонская область"},
@@ -2736,6 +2747,33 @@ DISAMBIGUATION_MAP = {
             "lon": 35.769,
             "name": "Ленино",
             "subject": "Республика Крым",
+        },
+    },
+    "муром": {
+        "владимирская область": {
+            "context_subject": "белгородская область",
+            "lat": 50.367,
+            "lon": 36.833,
+            "name": "Муром",
+            "subject": "Белгородская область",
+        },
+    },
+    "дмитриевка": {
+        "тамбовская область": {
+            "context_subject": "белгородская область",
+            "lat": 50.433,
+            "lon": 36.900,
+            "name": "Дмитриевка",
+            "subject": "Белгородская область",
+        },
+    },
+    "доброе": {
+        "липецкая область": {
+            "context_subject": "белгородская область",
+            "lat": 50.450,
+            "lon": 36.867,
+            "name": "Доброе",
+            "subject": "Белгородская область",
         },
     },
 }
@@ -4328,12 +4366,15 @@ def process_posts(posts):
             # Split into sentences for per-sentence type classification
             # (posts often list multiple regions with different threat types)
             sentences = [s.strip() for s in re.split(r'[.!?]+(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
+            # Pre-extract from full post for disambiguation context across sentences
+            # (e.g. "Видное" as first line needs to see Crimea locations mentioned later)
+            full_context = extract_locations(post)
             # Use post-level type as fallback for info sentences (e.g. "Рыбинск, Ярославская область. Фиксации БПЛА")
             for sentence in sentences:
                 sent_type = classify_post(sentence)
                 if sent_type == "info" and post_type != "info":
                     sent_type = post_type
-                locations = extract_locations(sentence)
+                locations = extract_locations(sentence, extra_context=full_context)
                 # Dedup locations in same sentence by proximity (< 5 km), keep longest name
                 survivors = []
                 for loc in locations:
