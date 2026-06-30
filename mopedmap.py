@@ -2791,10 +2791,13 @@ def fetch_channel(url, name):
             display = re.sub(r'@\w+\s*', '', display).strip()
             display = re.sub(r'@ \w+\s*', '', display).strip()
             display = re.sub(r'Подписаться', '', display).strip()
-            display = re.sub(r'Радар по всей России.*', '', display).strip()
-            display = re.sub(r'Обход белых списков.*', '', display).strip()
-            display = re.sub(r'Мониторинг\.РФ.*', '', display).strip()
-            display = re.sub(r'Мы в MAX.*', '', display).strip()
+            # Remove known footer lines
+            display = re.sub(r'.*Локатор России.*', '', display).strip()
+            display = re.sub(r'.*Радар Ярославль.*', '', display).strip()
+            display = re.sub(r'.*Обход белых списков.*', '', display).strip()
+            display = re.sub(r'.*Радар по всей России.*', '', display).strip()
+            display = re.sub(r'.*Мониторинг\.РФ.*', '', display).strip()
+            display = re.sub(r'.*Мы в MAX.*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
