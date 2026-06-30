@@ -4022,8 +4022,8 @@ L.geoJSON(regionGeoJSON, {{
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
       color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0 : 0.2,
-      weight: 1.5, opacity: 0.45
+      fillOpacity: alertType === 'clear' ? 0 : 0.1,
+      weight: 1.5, opacity: 0.35
     }};
   }},
   onEachFeature: function(feature, layer) {{
@@ -4090,7 +4090,7 @@ data.filter(item => item.direction).forEach(item => {{
   const color = s.color;
 
   L.polyline([from, to], {{
-    color, weight: 2.5, opacity: 0.55, dashArray: '4, 6'
+    color, weight: 3, opacity: 0.75, dashArray: '6, 5'
   }}).addTo(map);
 
   L.circleMarker(to, {{
