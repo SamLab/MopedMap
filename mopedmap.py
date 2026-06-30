@@ -3212,6 +3212,8 @@ def extract_directions(text):
         dests = extract_locations(after, extra_context=full_context)
 
         for s in sources:
+            if s.get("is_region") or s.get("type") == "region":
+                continue
             for d in dests:
                 if round(s["lat"], 1) == round(d["lat"], 1) and round(s["lon"], 1) == round(d["lon"], 1):
                     continue
