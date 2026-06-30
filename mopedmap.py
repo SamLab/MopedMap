@@ -2747,7 +2747,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@migalka_alerts_bot.*$', '', clean).strip()
     clean = re.sub(r'@radar_russia_monitor.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
-    clean = re.sub(r'.*Радар.*Россия.*t\.me.*', '', clean).strip()
+    clean = re.sub(r'.*Радар.*Россия.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру.*', '', clean).strip()
     clean = re.sub(r'Мониторинг\.РФ.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.рф.*', '', clean).strip()
@@ -2820,7 +2820,7 @@ def fetch_channel(url, name):
             display = re.sub(r'.*мониторинг\.ру.*', '', display).strip()
             display = re.sub(r'.*мониторинг\.рф.*', '', display).strip()
             display = re.sub(r'.*Мы в MAX.*', '', display).strip()
-            display = re.sub(r'.*Радар.*Россия.*t\.me.*', '', display).strip()
+            display = re.sub(r'.*Радар.*Россия.*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
