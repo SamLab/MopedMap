@@ -1631,6 +1631,10 @@ REGION_ALIASES = [
     {"pattern": "куйбышевском районе", "name": "Бетлица", "lat": 54.017, "lon": 33.95, "type": "region", "is_region": True, "subject": "Калужская область"},
     {"pattern": "куйбышевский р-н", "name": "Бетлица", "lat": 54.017, "lon": 33.95, "type": "region", "is_region": True, "subject": "Калужская область"},
     {"pattern": "куйбышевском р-не", "name": "Бетлица", "lat": 54.017, "lon": 33.95, "type": "region", "is_region": True, "subject": "Калужская область"},
+    {"pattern": "куйбышевский район", "name": "Куйбышево", "lat": 47.817, "lon": 38.908, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "куйбышевском районе", "name": "Куйбышево", "lat": 47.817, "lon": 38.908, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "куйбышевский р-н", "name": "Куйбышево", "lat": 47.817, "lon": 38.908, "type": "region", "is_region": True, "subject": "Ростовская область"},
+    {"pattern": "куйбышевском р-не", "name": "Куйбышево", "lat": 47.817, "lon": 38.908, "type": "region", "is_region": True, "subject": "Ростовская область"},
     {"pattern": "людиновский район", "name": "Людиново", "lat": 53.87, "lon": 34.45, "type": "region", "is_region": True, "subject": "Калужская область"},
     {"pattern": "людиновском районе", "name": "Людиново", "lat": 53.87, "lon": 34.45, "type": "region", "is_region": True, "subject": "Калужская область"},
     {"pattern": "людиновский р-н", "name": "Людиново", "lat": 53.87, "lon": 34.45, "type": "region", "is_region": True, "subject": "Калужская область"},
@@ -2656,6 +2660,15 @@ DISAMBIGUATION_MAP = {
             "lon": 40.350,
             "name": "Архангельская",
             "subject": "Краснодарский край",
+        },
+    },
+    "куйбышевский": {
+        "калужская область": {
+            "context_subject": "ростовская область",
+            "lat": 47.817,
+            "lon": 38.908,
+            "name": "Куйбышево",
+            "subject": "Ростовская область",
         },
     },
 }
