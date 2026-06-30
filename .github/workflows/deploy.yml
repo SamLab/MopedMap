@@ -6,16 +6,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -32,27 +26,15 @@ jobs:
         env:
           OUTPUT_FILE: index.html
 
-      - name: Prepare deployment files
+      - name: Prepare files
         run: |
           mkdir -p _site
           cp index.html _site/
-          cp -r README.html _site/ 2>/dev/null || true
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: _site
-
-      - name: Cancel stuck Pages deployments
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          for sha in "${{ github.event.before }}" "${{ github.sha }}" $(git log --format=%H -5 2>/dev/null); do
-            [ -z "$sha" ] && continue
-            gh api -X POST "repos/${{ github.repository }}/pages/deployments/$sha/cancel" --silent 2>/dev/null || true
-          done
-          echo "Done cancelling stuck deployments"
-
-      - name: Deploy to Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_site
+          publish_branch: gh-pages
+          keep_files: false
