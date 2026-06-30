@@ -2729,6 +2729,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radar_yar76.*$', '', clean).strip()
     clean = re.sub(r'@radarr_yar.*$', '', clean).strip()
     clean = re.sub(r'@radar_rossii_rossii.*$', '', clean).strip()
+    clean = re.sub(r'@migalka_alerts_bot.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру\s*$', '', clean).strip()
     clean = re.sub(r'Радар\.РФ\s*[-–—]\s*radar\.RF', '', clean).strip()
