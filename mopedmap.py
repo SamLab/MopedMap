@@ -2789,7 +2789,10 @@ def fetch_channel(url, name):
             display = re.sub(r'<[^>]+>', ' ', display)
             display = re.sub(r'\s*\n\s*', '\n', display).strip()
             display = re.sub(r'@\w+\s*', '', display).strip()
+            display = re.sub(r'@ \w+\s*', '', display).strip()
             display = re.sub(r'Подписаться', '', display).strip()
+            display = re.sub(r'Радар по всей России.*', '', display).strip()
+            display = re.sub(r'Обход белых списков.*', '', display).strip()
             display = re.sub(r'Мониторинг\.РФ.*', '', display).strip()
             display = re.sub(r'Мы в MAX.*', '', display).strip()
             if clean and len(clean) > 10:
