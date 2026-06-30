@@ -4325,7 +4325,23 @@ def process_posts(posts):
                 if sent_type == "info" and post_type != "info":
                     sent_type = post_type
                 locations = extract_locations(sentence)
+                # Dedup locations in same sentence by proximity (< 5 km), keep longest name
+                survivors = []
                 for loc in locations:
+                    dup = False
+                    for i, existing in enumerate(survivors):
+                        dlat = loc["lat"] - existing["lat"]
+                        dlon = loc["lon"] - existing["lon"]
+                        if (dlat * dlat + dlon * dlon) < 0.002:  # ~5 km at 58°N
+                            existing_len = len(existing.get("matched", existing["name"]))
+                            new_len = len(loc.get("matched", loc["name"]))
+                            if new_len > existing_len:
+                                survivors[i] = loc
+                            dup = True
+                            break
+                    if not dup:
+                        survivors.append(loc)
+                for loc in survivors:
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
                         "name": loc["name"], "type": sent_type,
