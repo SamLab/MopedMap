@@ -2742,6 +2742,7 @@ from datetime import datetime, timezone, timedelta
 
 HOURS_FILTER = 4
 HISTORY_HOURS = 24
+HISTORY_FETCH_HOURS = 24
 
 RADARMAP_API_URL = "https://radar-map.ru/api/state"
 
@@ -2801,8 +2802,9 @@ def clean_message_text(raw, channel=""):
     return clean.strip()
 
 
-def fetch_channel(url, name):
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS_FILTER)
+def fetch_channel(url, name, hours_filter=None):
+    hours = hours_filter if hours_filter is not None else HOURS_FILTER
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     posts = []
     seen_ids = set()
     before = None
@@ -2880,9 +2882,10 @@ def fetch_channel(url, name):
     return posts
 
 
-def fetch_radarmap_api():
+def fetch_radarmap_api(hours_filter=None):
     """Fetch recent messages from radar-map.ru API."""
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=HOURS_FILTER)
+    hours = hours_filter if hours_filter is not None else HOURS_FILTER
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     try:
         r = requests.get(RADARMAP_API_URL, timeout=15, headers={
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -2918,13 +2921,14 @@ def fetch_radarmap_api():
     return posts
 
 
-def fetch_all():
-    print("Загрузка постов из Telegram...")
+def fetch_all(hours_filter=None):
+    window = hours_filter if hours_filter is not None else HOURS_FILTER
+    print(f"Загрузка постов из Telegram (окно {window}ч)...")
     all_posts = []
     for ch in CHANNELS:
-        posts = fetch_channel(ch["url"], ch["name"])
+        posts = fetch_channel(ch["url"], ch["name"], hours_filter)
         all_posts.extend(posts)
-    api_posts = fetch_radarmap_api()
+    api_posts = fetch_radarmap_api(hours_filter)
     all_posts.extend(api_posts)
     print(f"Всего загружено: {len(all_posts)} постов")
     return all_posts
@@ -3443,6 +3447,16 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
     # Keep only the latest post per city
     posts_data = dedup_markers(posts_data)
+    # Suppress non-interception markers at locations with interception
+    int_keys = set()
+    for m in posts_data:
+        if m.get('type') == 'interception':
+            int_keys.add((m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1)))
+    if int_keys:
+        posts_data = [m for m in posts_data if not (
+            (m['name'].lower().strip(), round(m['lat'], 1), round(m['lon'], 1)) in int_keys
+            and m.get('type') != 'interception'
+        )]
     # Extract region geometries for active fill types
     region_map = {}  # region_name_lower -> feature
     type_priority = {'rocket': 0, 'danger': 1, 'aviation': 2, 'attention': 4, 'sighting': 5, 'info': 6, 'clear': 7}
@@ -4313,7 +4327,7 @@ def main():
         print("Обработка текста из аргументов командной строки...")
         posts = [input_text]
     else:
-        posts = fetch_all()
+        posts = fetch_all(hours_filter=HISTORY_FETCH_HOURS)
         if not posts:
             print("\nНе удалось загрузить посты, генерирую пустую карту...")
             posts = []
@@ -4326,12 +4340,17 @@ def main():
     geojson_lookup = load_region_geojson()
 
     history = load_region_history()
-    filename = generate_html(all_markers, geojson_lookup=geojson_lookup, history=history)
     history = update_region_history(all_markers, history)
     save_region_history(history)
+
+    # Keep only markers within the display window (4h) for the map
+    cutoff_4h = datetime.now(timezone(timedelta(hours=3))) - timedelta(hours=HOURS_FILTER)
+    display_markers = [m for m in all_markers if parse_post_time(m.get('time', '')) >= cutoff_4h]
+
+    filename = generate_html(display_markers, geojson_lookup=geojson_lookup, history=history)
     abs_path = os.path.abspath(filename)
     print(f"\nСгенерирована карта: file://{abs_path}")
-    print(f"Локаций на карте: {len(all_markers)}")
+    print(f"Локаций на карте: {len(display_markers)}")
     # Открыть браузер только если есть дисплей (не в CI)
     import platform
     if platform.system() != 'Linux' or os.environ.get('DISPLAY'):
