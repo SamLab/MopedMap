@@ -2743,6 +2743,7 @@ from datetime import datetime, timezone, timedelta
 HOURS_FILTER = 4
 HISTORY_HOURS = 24
 HISTORY_FETCH_HOURS = 24
+DISPLAY_HOURS = {'rocket': 1, 'danger': 4, 'aviation': 2, 'attention': 4, 'sighting': 3, 'interception': 3, 'clear': 4, 'info': 4}
 
 RADARMAP_API_URL = "https://radar-map.ru/api/state"
 
@@ -4343,9 +4344,14 @@ def main():
     history = update_region_history(all_markers, history)
     save_region_history(history)
 
-    # Keep only markers within the display window (4h) for the map
-    cutoff_4h = datetime.now(timezone(timedelta(hours=3))) - timedelta(hours=HOURS_FILTER)
-    display_markers = [m for m in all_markers if parse_post_time(m.get('time', '')) >= cutoff_4h]
+    # Keep markers within per-type display windows
+    now_msk = datetime.now(timezone(timedelta(hours=3)))
+    display_markers = []
+    for m in all_markers:
+        m_type = m.get('type', 'info')
+        hours = DISPLAY_HOURS.get(m_type, HOURS_FILTER)
+        if parse_post_time(m.get('time', '')) >= now_msk - timedelta(hours=hours):
+            display_markers.append(m)
 
     filename = generate_html(display_markers, geojson_lookup=geojson_lookup, history=history)
     abs_path = os.path.abspath(filename)
