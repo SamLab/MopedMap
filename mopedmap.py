@@ -4265,6 +4265,9 @@ def process_posts(posts):
         if is_summary_post(post):
             filtered += 1
             continue
+        if "#сводка" in post.lower():
+            filtered += 1
+            continue
         post_type = classify_post(post)
 
         # Skip info-only posts with no threat description (just names without context)
