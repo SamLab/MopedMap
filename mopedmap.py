@@ -1707,6 +1707,13 @@ REGION_ALIASES = [
     {"pattern": "ульяново", "name": "Ульяново", "lat": 53.717, "lon": 35.533, "type": "city", "subject": "Калужская область"},
     {"pattern": "ферзиково", "name": "Ферзиково", "lat": 54.5, "lon": 36.75, "type": "city", "subject": "Калужская область"},
     {"pattern": "хвастовичи", "name": "Хвастовичи", "lat": 53.467, "lon": 35.1, "type": "city", "subject": "Калужская область"},
+    # Дзержинский район, Калужская область (адм. центр — Кондрово)
+    {"pattern": "дзержинский район", "name": "Кондрово", "lat": 54.8, "lon": 35.93333, "type": "region", "is_region": True, "subject": "Калужская область"},
+    {"pattern": "дзержинском районе", "name": "Кондрово", "lat": 54.8, "lon": 35.93333, "type": "region", "is_region": True, "subject": "Калужская область"},
+    {"pattern": "дзержинский р-н", "name": "Кондрово", "lat": 54.8, "lon": 35.93333, "type": "region", "is_region": True, "subject": "Калужская область"},
+    {"pattern": "дзержинском р-не", "name": "Кондрово", "lat": 54.8, "lon": 35.93333, "type": "region", "is_region": True, "subject": "Калужская область"},
+    {"pattern": "острожное", "name": "Острожное", "lat": 54.79, "lon": 35.96, "type": "city", "subject": "Калужская область"},
+    {"pattern": "кудиново", "name": "Кудиново", "lat": 54.83, "lon": 35.98, "type": "city", "subject": "Калужская область"},
 
     # Орловская область — районы
     {"pattern": "болховский район", "name": "Болхов", "lat": 53.45, "lon": 36.0, "type": "region", "is_region": True, "subject": "Орловская область"},
@@ -2542,6 +2549,13 @@ REGION_ALIASES = [
     {"pattern": "северский р-н", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
     {"pattern": "северском р-не", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
     {"pattern": "северская", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "city", "subject": "Краснодарский край"},
+    # Красноармейский район, Краснодарский край
+    {"pattern": "красноармейский район", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красноармейском районе", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красноармейский р-н", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красноармейском р-не", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "староджерелиевская", "name": "Староджерелиевская", "lat": 45.35, "lon": 38.28, "type": "city", "subject": "Краснодарский край"},
+    {"pattern": "старовеличковская", "name": "Старовеличковская", "lat": 45.42, "lon": 38.22, "type": "city", "subject": "Краснодарский край"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
@@ -2776,16 +2790,27 @@ DISAMBIGUATION_MAP = {
             "subject": "Белгородская область",
         },
     },
+    "никольское": {
+        "орловская область": {
+            "context_subject": "калужская область",
+            "lat": 54.76,
+            "lon": 35.92,
+            "name": "Никольское",
+            "subject": "Калужская область",
+        },
+    },
 }
 
 ALL_PATTERNS = []
 for entry in REGION_ALIASES:
     items = entry if isinstance(entry, list) else [entry]
     for r in items:
-        ALL_PATTERNS.append((len(r["pattern"]), r["pattern"], r))
+        pat = r["pattern"].replace("ё", "е")
+        ALL_PATTERNS.append((len(pat), pat, r))
 
 for name_lower, c in CITY_DB.items():
-    ALL_PATTERNS.append((len(name_lower), name_lower, c))
+    pat = name_lower.replace("ё", "е")
+    ALL_PATTERNS.append((len(pat), pat, c))
 
 ALL_PATTERNS.sort(key=lambda x: -x[0])
 
@@ -3002,8 +3027,8 @@ def is_word_boundary(text, idx):
 
 
 def extract_locations(text, extra_context=None):
-    text_lower = text.lower()
-    WORD_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789абвгдеёжзийклмнопрстуфхцчшщъыьэюя")
+    text_lower = text.lower().replace("ё", "е")
+    WORD_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789абвгдежзийклмнопрстуфхцчшщъыьэюя")
     matched_spans = set()
     results = []
 
@@ -3262,10 +3287,12 @@ def extract_directions(text):
             dsts = extract_locations(after, extra_context=full_context)
 
         for s in srcs:
-            if s.get("is_region") or s.get("type") == "region":
+            s_matched = (s.get("matched") or "").lower()
+            if any(t in s_matched for t in ["область", "край", "республика", "автономн"]):
                 continue
             for d in dsts:
-                if d.get("is_region") or d.get("type") == "region":
+                d_matched = (d.get("matched") or "").lower()
+                if any(t in d_matched for t in ["область", "край", "республика", "автономн"]):
                     continue
                 if round(s["lat"], 1) == round(d["lat"], 1) and round(s["lon"], 1) == round(d["lon"], 1):
                     continue
