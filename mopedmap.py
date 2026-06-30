@@ -2862,6 +2862,7 @@ def fetch_channel(url, name, hours_filter=None):
             # Remove known footer lines
             display = re.sub(r'.*Локатор России.*', '', display).strip()
             display = re.sub(r'.*Радар Ярославль.*', '', display).strip()
+            display = re.sub(r'.*Радар Ярославск.*', '', display).strip()
             display = re.sub(r'.*Радар Чувашия.*', '', display).strip()
             display = re.sub(r'.*Обход белых списков.*', '', display).strip()
             display = re.sub(r'.*Радар по всей России.*', '', display).strip()
