@@ -3167,6 +3167,7 @@ DIRECTION_SEPS = [
     r'\bв направление\b',
     r'\bнаправление\b',
     '→', '➡️',
+    r'\bот\b',
 ]
 
 
@@ -3210,13 +3211,19 @@ def extract_directions(text):
         # Extract locations from full sentence for disambiguation context
         # (so Первомайский район in "before" can see Крым in "after")
         full_context = extract_locations(sentence)
-        sources = extract_locations(before, extra_context=full_context)
-        dests = extract_locations(after, extra_context=full_context)
+        from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
+        if from_sep:
+            # "от X" → source is after "от" (origin), dest is before (target)
+            srcs = extract_locations(after, extra_context=full_context)
+            dsts = extract_locations(before, extra_context=full_context)
+        else:
+            srcs = extract_locations(before, extra_context=full_context)
+            dsts = extract_locations(after, extra_context=full_context)
 
-        for s in sources:
+        for s in srcs:
             if s.get("is_region") or s.get("type") == "region":
                 continue
-            for d in dests:
+            for d in dsts:
                 if d.get("is_region") or d.get("type") == "region":
                     continue
                 if round(s["lat"], 1) == round(d["lat"], 1) and round(s["lon"], 1) == round(d["lon"], 1):
