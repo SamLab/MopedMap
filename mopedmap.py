@@ -3471,7 +3471,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                 return (t, -pri, len(x[0].get('text', '')))
             best_item, best_type, best_city = max(candidates, key=candidate_sort_key)
         else:
-            continue
+            # Only clear entries: still show popup with latest clear event
+            clear_entries = [(item, t, cn) for p, item, t, cn in entries if t == 'clear']
+            best_item, best_type, best_city = max(clear_entries, key=lambda x: parse_post_time(x[0].get('time', '')))
         feat = find_geojson_feature(region_name, geojson_lookup)
         if feat:
             feat_copy = json.loads(json.dumps(feat))
