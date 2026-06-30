@@ -2802,8 +2802,8 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radar_rossii_rossii.*$', '', clean).strip()
     clean = re.sub(r'@migalka_alerts_bot.*$', '', clean).strip()
     clean = re.sub(r'@radar_russia_monitor.*$', '', clean).strip()
-    clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
-    clean = re.sub(r'^.*Радар по всей России.*$', '', clean, flags=re.MULTILINE).strip()
+    clean = re.sub(r'Радар по всей России[^\n]*', '', clean).strip()
+    clean = re.sub(r'🔎[^\n]*Радар[^\n]*Россия[^\n]*', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру.*', '', clean).strip()
     clean = re.sub(r'Мониторинг\.РФ.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.рф.*', '', clean).strip()
@@ -2882,6 +2882,8 @@ def fetch_channel(url, name, hours_filter=None):
             display = re.sub(r'Мы в MAX[^\n]*', '', display).strip()
             display = re.sub(r'Радар\.РФ[^\n]*', '', display).strip()
             display = re.sub(r'radar\.RF[^\n]*', '', display).strip()
+            display = re.sub(r'🔎[^\n]*Радар[^\n]*Россия[^\n]*', '', display).strip()
+            display = re.sub(r'[📡❗️🔎🌐]\s*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
@@ -3495,9 +3497,10 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     from collections import defaultdict
     region_entries = defaultdict(list)
     for item in posts_data:
-        is_region = item.get('is_region', False)
+        if item.get('no_marker'):
+            continue
         item_type = item.get('type')
-        if not (is_region and item_type in type_priority):
+        if item_type not in type_priority:
             continue
         city_name = item.get('name', '').lower().strip()
         region_name = item.get('subject', '').lower().strip() if item.get('subject') else None
@@ -3662,34 +3665,30 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     has_other_real = True
         if has_other_real and not has_own_real:
             item['no_marker'] = True
-    # Suppress region-level marker for sighting/clear/interception if the same post has
-    # specific sub-region items (same subject, different name) — avoids duplicate at main city
+    # Suppress region-level marker if the same post (source+time) has a city marker in the same subject
     for item in posts_data:
-        if not (item.get('is_region') and item.get('type') in always_show and not item.get('no_marker')):
-            continue
-        matched_text = item.get('matched', '').lower()
-        # Only suppress region-level entries (область/край/республика), not sub-region rayons
-        if not any(t in matched_text for t in ('область', 'край', 'республика')):
+        if not (item.get('is_region') and not item.get('no_marker')):
             continue
         item_subj = item.get('subject', '').lower().strip()
         if not item_subj:
             cn = item.get('name', '').lower().strip()
             if cn in CITY_DB:
                 item_subj = CITY_DB[cn].get('subject', '').lower().strip()
-        if item_subj:
-            for other in posts_data:
-                if other is item or other.get('no_marker'):
-                    continue
-                if other.get('text') != item.get('text'):
-                    continue
-                other_subj = other.get('subject', '').lower().strip()
-                if not other_subj:
-                    other_cn = other.get('name', '').lower().strip()
-                    if other_cn in CITY_DB:
-                        other_subj = CITY_DB[other_cn].get('subject', '').lower().strip()
-                if other_subj == item_subj and other.get('name', '').lower() != item.get('name', '').lower():
-                    item['no_marker'] = True
-                    break
+        if not item_subj:
+            continue
+        for other in posts_data:
+            if other is item or other.get('no_marker') or other.get('is_region'):
+                continue
+            if other.get('source') != item.get('source') or other.get('time') != item.get('time'):
+                continue
+            other_subj = other.get('subject', '').lower().strip()
+            if not other_subj:
+                other_cn = other.get('name', '').lower().strip()
+                if other_cn in CITY_DB:
+                    other_subj = CITY_DB[other_cn].get('subject', '').lower().strip()
+            if other_subj == item_subj:
+                item['no_marker'] = True
+                break
 
     # Priority at same coordinates
     coord_items = {}
@@ -3958,13 +3957,13 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="dot" style="color:#eab308">●</span> Внимание
   <span style="color:#000000;font-size:14px;font-weight:bold">✕</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
-  <span class="dot" style="color:#4ade80">●</span> Отбой
+  <span class="dot" style="color:#6a7a5a">●</span> Отбой
   <span class="dot" style="color:#60a5fa">●</span> Инфо
   <span style="color:#22c55e;font-size:14px">✚</span> Молнии (30 мин)
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
 <script>
-const map = L.map('map', {{ center: [57.5, 39.5], zoom: 6, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: [56.315, 38.133], zoom: 7, zoomControl: true, attributionControl: false }});
 
 map.createPane('lightning-0');
 map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
@@ -3995,7 +3994,7 @@ const styleMap = {{
   danger: {{ color: '#a83232', size: 12, glow: null }},
   aviation: {{ color: '#2a6a90', size: 12, glow: null }},
   sighting: {{ color: '#555555', size: 10, glow: null }},
-  clear: {{ color: '#4a8a5a', size: 10, glow: null }},
+  clear: {{ color: '#6a7a5a', size: 10, glow: null }},
   attention: {{ color: '#8a6830', size: 10, glow: null }},
   interception: {{ color: '#333333', size: 10, glow: null }},
   rocket: {{ color: '#6d4a9e', size: 14, glow: null }},
@@ -4105,7 +4104,7 @@ data.filter(item => item.direction).forEach(item => {{
 }});
 
 if (bounds.length > 0) {{
-  map.setView([57.5, 39.5], 6);
+  map.setView([56.315, 38.133], 7);
 }}
 
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
