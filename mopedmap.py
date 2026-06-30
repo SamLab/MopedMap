@@ -2444,6 +2444,8 @@ REGION_ALIASES = [
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
     make_region_alias("днр", "Донецк", 48.0159, 37.8028, use_city_db=False),
     make_region_alias("лнр", "Луганск", 48.574, 39.3078),
+    make_region_alias("артёмовск", "Артёмовск", 48.594, 38.002, "ДНР", use_city_db=False),
+    make_region_alias("бахмут", "Бахмут", 48.594, 38.002, "ДНР", use_city_db=False),
     make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019),
     make_region_alias_with_cases("ханты-мансийский автономный округ", "Ханты-Мансийск", 61.0024, 69.0099),
     make_region_alias_with_cases("чукотский автономный округ", "Анадырь", 64.7333, 177.5167),
@@ -2521,6 +2523,12 @@ REGION_ALIASES = [
     {"pattern": "новом гаю", "name": "Новый Гай", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
     {"pattern": "аскания нова", "name": "Аскания-Нова", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
     {"pattern": "аскании новой", "name": "Аскания-Нова", "lat": 46.45, "lon": 33.87, "type": "city", "subject": "Херсонская область"},
+    # Северский район, Краснодарский край
+    {"pattern": "северский район", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "северском районе", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "северский р-н", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "северском р-не", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "северская", "name": "Северская", "lat": 44.85, "lon": 38.67, "type": "city", "subject": "Краснодарский край"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
