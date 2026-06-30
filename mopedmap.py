@@ -2722,6 +2722,7 @@ CHANNELS = [
     {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm"},
     {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik"},
     {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot"},
+    {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor"},
 ]
 
 
@@ -2744,7 +2745,9 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'@radarr_yar.*$', '', clean).strip()
     clean = re.sub(r'@radar_rossii_rossii.*$', '', clean).strip()
     clean = re.sub(r'@migalka_alerts_bot.*$', '', clean).strip()
+    clean = re.sub(r'@radar_russia_monitor.*$', '', clean).strip()
     clean = re.sub(r'Радар по всей России.*$', '', clean).strip()
+    clean = re.sub(r'.*Радар.*Россия.*t\.me.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.ру.*', '', clean).strip()
     clean = re.sub(r'Мониторинг\.РФ.*', '', clean).strip()
     clean = re.sub(r'мониторинг\.рф.*', '', clean).strip()
@@ -2817,6 +2820,7 @@ def fetch_channel(url, name):
             display = re.sub(r'.*мониторинг\.ру.*', '', display).strip()
             display = re.sub(r'.*мониторинг\.рф.*', '', display).strip()
             display = re.sub(r'.*Мы в MAX.*', '', display).strip()
+            display = re.sub(r'.*Радар.*Россия.*t\.me.*', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
