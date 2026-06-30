@@ -4083,11 +4083,12 @@ data.filter(item => item.direction).forEach(item => {{
   }}).addTo(map);
 
   L.circleMarker(to, {{
-    radius: 6, color, weight: 1.5, fill: false, dashArray: '2, 3', opacity: 0.5
+    radius: 8, color: '#333', weight: 2, fill: true, fillColor: color,
+    fillOpacity: 0.25, dashArray: '3, 4', opacity: 0.8
   }}).addTo(map).bindTooltip(item.dest_name || '?', {{
     permanent: false, direction: 'top', offset: [0, -4],
     className: 'dest-tooltip'
-  }}).bindPopup('<div class="popup-name">' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + ' → ' + item.name + '</div>');
+  }}).bindPopup('<div class="popup-name">' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">→ ' + item.name + ' (' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + ')</div>');
 }});
 
 if (bounds.length > 0) {{
