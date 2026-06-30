@@ -3969,7 +3969,7 @@ map.createPane('lightning-1');
 map.getPane('lightning-1').style.filter = 'invert(0.15) brightness(0.5) sepia(1) hue-rotate(90deg) saturate(3)';
 
 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 19
 }}).addTo(map);
 
@@ -3989,14 +3989,14 @@ L.control.attribution({{ prefix: false }}).addTo(map);
 const data = {markers_json};
 
 const styleMap = {{
-  danger: {{ color: '#e94560', size: 14, glow: '#e94560' }},
-  aviation: {{ color: '#06b6d4', size: 14, glow: '#06b6d4' }},
-  sighting: {{ color: '#000000', size: 12, glow: null }},
-  clear: {{ color: '#4ade80', size: 12, glow: null }},
-  attention: {{ color: '#eab308', size: 12, glow: null }},
-  interception: {{ color: '#000000', size: 12, glow: null }},
-  rocket: {{ color: '#a855f7', size: 16, glow: '#a855f7' }},
-  info: {{ color: '#60a5fa', size: 10, glow: null }},
+  danger: {{ color: '#b91c1c', size: 12, glow: null }},
+  aviation: {{ color: '#0369a1', size: 12, glow: null }},
+  sighting: {{ color: '#555555', size: 10, glow: null }},
+  clear: {{ color: '#16a34a', size: 10, glow: null }},
+  attention: {{ color: '#a16207', size: 10, glow: null }},
+  interception: {{ color: '#000000', size: 10, glow: null }},
+  rocket: {{ color: '#6d28d9', size: 14, glow: null }},
+  info: {{ color: '#2563eb', size: 8, glow: null }},
   history: {{ color: '#999999', size: 0, glow: null }}
 }};
 
@@ -4021,8 +4021,8 @@ L.geoJSON(regionGeoJSON, {{
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
       color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0 : 0.15,
-      weight: 1, opacity: alertType === 'clear' ? 0.5 : 0.3
+      fillOpacity: alertType === 'clear' ? 0 : 0.25,
+      weight: 1.5, opacity: 0.5
     }};
   }},
   onEachFeature: function(feature, layer) {{
