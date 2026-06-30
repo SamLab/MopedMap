@@ -2734,6 +2734,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'мониторинг\.ру\s*$', '', clean).strip()
     clean = re.sub(r'Радар\.РФ\s*[-–—]\s*radar\.RF', '', clean).strip()
     clean = re.sub(r'Радар Ярославль\s*[-–—]\s*', '', clean).strip()
+    clean = re.sub(r'Радар Чувашия\s*[-–—]\s*', '', clean).strip()
     clean = re.sub(r'Радар Ярославская область\s*[-–—]\s*', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
@@ -2794,6 +2795,7 @@ def fetch_channel(url, name):
             # Remove known footer lines
             display = re.sub(r'.*Локатор России.*', '', display).strip()
             display = re.sub(r'.*Радар Ярославль.*', '', display).strip()
+            display = re.sub(r'.*Радар Чувашия.*', '', display).strip()
             display = re.sub(r'.*Обход белых списков.*', '', display).strip()
             display = re.sub(r'.*Радар по всей России.*', '', display).strip()
             display = re.sub(r'.*Мониторинг\.РФ.*', '', display).strip()
