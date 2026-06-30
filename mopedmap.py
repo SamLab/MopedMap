@@ -61,6 +61,10 @@ def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True
 
 def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
     """Generate region alias with common case variants and bare adjective form."""
+    if subject is None:
+        subject = alias.strip()
+        if ' ' in subject:
+            subject = subject.title()
     result = [make_region_alias(alias, city_name, lat, lon, subject)]
     a = alias.lower()
     # область -> области (genitive)
