@@ -9,6 +9,7 @@ import traceback
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CITIES_FILE = os.path.join(BASE_DIR, "cities.json")
+SETTLEMENTS_FILE = os.path.join(BASE_DIR, "settlements.json")
 REGION_HISTORY_FILE = os.path.join(BASE_DIR, "region_history.json")
 
 with open(CITIES_FILE, "r", encoding="utf-8") as f:
@@ -27,12 +28,27 @@ for c in cities_data:
     subj = c["subject"].strip()
     key = (name.lower(), subj.lower())
     if key not in CITY_BY_NAME_SUBJECT:
-        CITY_BY_NAME_SUBJECT[key] = {
-            "lat": float(c["coords"]["lat"]),
-            "lon": float(c["coords"]["lon"]),
-            "name": name,
-            "subject": subj,
-        }
+            CITY_BY_NAME_SUBJECT[key] = {
+                "lat": float(c["coords"]["lat"]),
+                "lon": float(c["coords"]["lon"]),
+                "name": name,
+                "subject": subj,
+            }
+
+SETTLEMENT_DB = {}
+if os.path.exists(SETTLEMENTS_FILE):
+    with open(SETTLEMENTS_FILE, "r", encoding="utf-8") as f:
+        settlements_data = json.load(f)
+    for s in settlements_data:
+        name = s["name"].strip()
+        lk = name.lower()
+        if lk not in CITY_DB:
+            SETTLEMENT_DB[lk] = {
+                "lat": float(s["lat"]),
+                "lon": float(s["lon"]),
+                "name": name,
+                "subject": s["subject"],
+            }
 
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
     if use_city_db:
@@ -2809,6 +2825,10 @@ for entry in REGION_ALIASES:
         ALL_PATTERNS.append((len(pat), pat, r))
 
 for name_lower, c in CITY_DB.items():
+    pat = name_lower.replace("ё", "е")
+    ALL_PATTERNS.append((len(pat), pat, c))
+
+for name_lower, c in SETTLEMENT_DB.items():
     pat = name_lower.replace("ё", "е")
     ALL_PATTERNS.append((len(pat), pat, c))
 
