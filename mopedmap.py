@@ -2708,22 +2708,24 @@ HOURS_FILTER = 4
 RADARMAP_API_URL = "https://radar-map.ru/api/state"
 
 CHANNELS = [
-    {"url": "https://t.me/s/locatorru", "name": "locatorru"},
-    {"url": "https://t.me/s/vrv_radar", "name": "vrv_radar"},
+    {"url": "https://t.me/s/locatorru", "name": "locatorru", "priority": 1},
+    {"url": "https://t.me/s/vrv_radar", "name": "vrv_radar", "priority": 1},
 
-    {"url": "https://t.me/s/radarrussiia", "name": "radarrussiia"},
-    {"url": "https://t.me/s/radarYR", "name": "radarYR"},
+    {"url": "https://t.me/s/radarrussiia", "name": "radarrussiia", "priority": 2},
+    {"url": "https://t.me/s/radarYR", "name": "radarYR", "priority": 2},
     # {"url": "https://t.me/s/russiamonitoring_radar_bpla", "name": "russiamonitoring_radar_bpla"},
-    {"url": "https://t.me/s/radar_rossia_bpla", "name": "radar_rossia_bpla"},
-    {"url": "https://t.me/s/radar_yaroslavl", "name": "radar_yaroslavl"},
-    {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76"},
-    {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar"},
-    {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii"},
-    {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm"},
-    {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik"},
-    {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot"},
-    {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor"},
+    {"url": "https://t.me/s/radar_rossia_bpla", "name": "radar_rossia_bpla", "priority": 2},
+    {"url": "https://t.me/s/radar_yaroslavl", "name": "radar_yaroslavl", "priority": 2},
+    {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76", "priority": 2},
+    {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar", "priority": 2},
+    {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii", "priority": 2},
+    {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
+    {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
+    {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot", "priority": 2},
+    {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor", "priority": 2},
 ]
+
+CHANNEL_PRIORITY = {ch["name"]: ch.get("priority", 2) for ch in CHANNELS}
 
 
 def clean_message_text(raw, channel=""):
@@ -3386,8 +3388,13 @@ def dedup_markers(markers):
             new_time = parse_post_time(m.get('time', ''))
             if new_time > existing_time:
                 seen[key] = m
-            elif new_time == existing_time and len(m.get('text', '')) > len(existing.get('text', '')):
-                seen[key] = m
+            elif new_time == existing_time:
+                existing_pri = CHANNEL_PRIORITY.get(existing.get('source', ''), 99)
+                new_pri = CHANNEL_PRIORITY.get(m.get('source', ''), 99)
+                if new_pri < existing_pri:
+                    seen[key] = m
+                elif new_pri == existing_pri and len(m.get('text', '')) > len(existing.get('text', '')):
+                    seen[key] = m
         else:
             seen[key] = m
     return list(seen.values())
@@ -3422,7 +3429,11 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         if non_clear:
             best_prio = min(p for p, _, _, _ in non_clear)
             candidates = [(item, t, cn) for p, item, t, cn in non_clear if p == best_prio]
-            best_item, best_type, best_city = max(candidates, key=lambda x: parse_post_time(x[0].get('time', '')))
+            def candidate_sort_key(x):
+                t = parse_post_time(x[0].get('time', ''))
+                pri = CHANNEL_PRIORITY.get(x[0].get('source', ''), 99)
+                return (t, -pri, len(x[0].get('text', '')))
+            best_item, best_type, best_city = max(candidates, key=candidate_sort_key)
         else:
             continue
         feat = find_geojson_feature(region_name, geojson_lookup)
@@ -3730,8 +3741,18 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                     rn = CITY_DB[cn].get('subject', '').lower().strip()
             if rn:
                 existing = sighting_items_by_region.get(rn)
-                if existing is None or parse_post_time(item.get('time', '')) > parse_post_time(existing.get('time', '')):
+                if existing is None:
                     sighting_items_by_region[rn] = item
+                else:
+                    existing_time = parse_post_time(existing.get('time', ''))
+                    new_time = parse_post_time(item.get('time', ''))
+                    if new_time > existing_time:
+                        sighting_items_by_region[rn] = item
+                    elif new_time == existing_time:
+                        existing_pri = CHANNEL_PRIORITY.get(existing.get('source', ''), 99)
+                        new_pri = CHANNEL_PRIORITY.get(item.get('source', ''), 99)
+                        if new_pri < existing_pri:
+                            sighting_items_by_region[rn] = item
     for rn, sighting_item in sighting_items_by_region.items():
         if rn in active_threat_regions:
             continue
