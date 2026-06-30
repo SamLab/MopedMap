@@ -36,6 +36,7 @@ for c in cities_data:
             }
 
 SETTLEMENT_DB = {}
+SETTLEMENTS_BY_NAME_SUBJECT = {}
 if os.path.exists(SETTLEMENTS_FILE):
     with open(SETTLEMENTS_FILE, "r", encoding="utf-8") as f:
         settlements_data = json.load(f)
@@ -48,6 +49,15 @@ if os.path.exists(SETTLEMENTS_FILE):
                 "lon": float(s["lon"]),
                 "name": name,
                 "subject": s["subject"],
+            }
+        subj = s["subject"].strip()
+        key = (lk, subj.lower())
+        if key not in CITY_BY_NAME_SUBJECT and key not in SETTLEMENTS_BY_NAME_SUBJECT:
+            SETTLEMENTS_BY_NAME_SUBJECT[key] = {
+                "lat": float(s["lat"]),
+                "lon": float(s["lon"]),
+                "name": name,
+                "subject": subj,
             }
 
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
@@ -3306,6 +3316,13 @@ def extract_locations(text, extra_context=None):
                 key = (r["name"].lower(), region_subj)
                 if key in CITY_BY_NAME_SUBJECT:
                     correct = CITY_BY_NAME_SUBJECT[key]
+                    r["lat"] = correct["lat"]
+                    r["lon"] = correct["lon"]
+                    r["name"] = correct["name"]
+                    r["subject"] = correct["subject"]
+                    break
+                elif key in SETTLEMENTS_BY_NAME_SUBJECT:
+                    correct = SETTLEMENTS_BY_NAME_SUBJECT[key]
                     r["lat"] = correct["lat"]
                     r["lon"] = correct["lon"]
                     r["name"] = correct["name"]
