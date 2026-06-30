@@ -4083,7 +4083,7 @@ data.filter(item => item.direction).forEach(item => {{
   }}).addTo(map);
 
   L.circleMarker(to, {{
-    radius: 8, color: '#333', weight: 2, fill: true, fillColor: color,
+    radius: 6, color: '#333', weight: 2, fill: true, fillColor: color,
     fillOpacity: 0.25, dashArray: '3, 4', opacity: 0.8
   }}).addTo(map).bindTooltip(item.dest_name || '?', {{
     permanent: false, direction: 'top', offset: [0, -4],
