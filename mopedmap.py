@@ -3397,22 +3397,14 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             region_name = CITY_DB[city_name].get('subject', '').lower().strip()
         if region_name:
             region_entries[region_name].append((type_priority[item_type], item, item_type, city_name))
-    # Select best entry per region: most severe, but clear cancels most severe type
+    # Select best entry per region: most severe non-clear threat wins
+    # Clear entries don't affect region fill (they appear as individual markers)
     for region_name, entries in region_entries.items():
-        has_clear = any(t == 'clear' for _, _, t, _ in entries)
         non_clear = [(p, item, t, cn) for p, item, t, cn in entries if t != 'clear']
-        if has_clear and non_clear:
-            min_prio = min(p for p, _, _, _ in non_clear)
-            non_clear = [(p, item, t, cn) for p, item, t, cn in non_clear if p != min_prio]
         if non_clear:
             best_prio = min(p for p, _, _, _ in non_clear)
             candidates = [(item, t, cn) for p, item, t, cn in non_clear if p == best_prio]
             best_item, best_type, best_city = max(candidates, key=lambda x: parse_post_time(x[0].get('time', '')))
-        elif has_clear:
-            clear_items = [item for _, item, t, cn in entries if t == 'clear']
-            best_item = max(clear_items, key=lambda x: parse_post_time(x.get('time', '')))
-            best_type = 'clear'
-            best_city = best_item.get('name', '').lower().strip()
         else:
             continue
         feat = find_geojson_feature(region_name, geojson_lookup)
@@ -3614,7 +3606,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                             should_clear = True
                             break
                     if should_clear:
-                        it['no_marker'] = True; it['cleared'] = True
+                        it['no_marker'] = True
             else:
                 for it in clear_items:
                     it['no_marker'] = True
@@ -3622,12 +3614,12 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
         if 'interception' in types and 'sighting' in types:
             for it in items:
                 if it.get('type') == 'sighting':
-                    it['no_marker'] = True; it['cleared'] = True
+                    it['no_marker'] = True
         # sighting hides danger/attention
         if 'sighting' in types:
             for it in items:
                 if it.get('type') in ('danger', 'attention'):
-                    it['no_marker'] = True; it['cleared'] = True
+                    it['no_marker'] = True
         # danger vs interception: within 1h → interception wins; 1h+ older → danger wins
         if 'danger' in types and 'interception' in types:
             danger_items = [it for it in items if it.get('type') == 'danger']
@@ -3637,10 +3629,10 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
             diff = (latest_danger - latest_int).total_seconds()
             if diff >= 3600:
                 for it in int_items:
-                    it['no_marker'] = True; it['cleared'] = True  # interception 1h+ older → danger wins
+                    it['no_marker'] = True  # interception 1h+ older → danger wins
             else:
                 for it in danger_items:
-                    it['no_marker'] = True; it['cleared'] = True  # within 1h → interception wins
+                    it['no_marker'] = True  # within 1h → interception wins
 
     # Clear region fills where clear is newer than the fill → keep polygon but show clear popup
     # Only clear fills matching the threat type mentioned in the clear text
@@ -3667,6 +3659,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None):
                         other_type = None
                         for other in posts_data:
                             if other.get('type') not in type_priority or other.get('cleared'):
+                                continue
+                            if other.get('type') == 'clear':
                                 continue
                             if other.get('is_region') or other.get('subject'):
                                 other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
