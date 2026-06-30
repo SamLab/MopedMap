@@ -4085,6 +4085,13 @@ def process_posts(posts):
             continue
         post_type = classify_post(post)
 
+        # Skip info-only posts that are just region names (no city-level content)
+        if post_type == "info":
+            all_locs = extract_locations(post)
+            if all_locs and not any(not loc.get("is_region") for loc in all_locs):
+                filtered += 1
+                continue
+
         # Try direction parsing first
         dir_pairs = extract_directions(post)
         if dir_pairs:
