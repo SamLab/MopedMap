@@ -4465,7 +4465,7 @@ L.geoJSON(regionGeoJSON, {{
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
       color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0.15 : 0.1,
+      fillOpacity: alertType === 'clear' ? 0 : 0.1,
       weight: 1.5, opacity: 0.35
     }};
   }},
