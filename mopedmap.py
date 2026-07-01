@@ -4624,7 +4624,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <div class="footer">
   <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
-  <span style="color:#000000;font-size:13px">▲</span> Фиксация
+  <span style="color:#000000;font-size:14px">◆</span> Фиксация
   <span class="dot" style="color:#eab308">●</span> Внимание
   <span style="color:#000000;font-size:14px;font-weight:bold">✕</span> Перехват
   <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
@@ -4734,7 +4734,7 @@ data.forEach(item => {{
   const border = '2px solid #333';
   const extraGlow = glow;
   const shape = item.type === 'sighting'
-    ? 'clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;'
+    ? 'clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);border-radius:0;'
     : 'border-radius:50%;';
   const html = item.type === 'interception'
     ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
