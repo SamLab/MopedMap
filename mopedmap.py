@@ -37,6 +37,7 @@ for c in cities_data:
 
 SETTLEMENT_DB = {}
 SETTLEMENTS_BY_NAME_SUBJECT = {}
+NON_UNIQUE_SETTLEMENT_NAMES = set()
 if os.path.exists(SETTLEMENTS_FILE):
     with open(SETTLEMENTS_FILE, "r", encoding="utf-8") as f:
         settlements_data = json.load(f)
@@ -59,6 +60,16 @@ if os.path.exists(SETTLEMENTS_FILE):
                 "name": name,
                 "subject": subj,
             }
+# Build set of non-unique settlement names (appear in >1 subject)
+_name_subj_counts = {}
+for (lk, subj) in SETTLEMENTS_BY_NAME_SUBJECT:
+    _name_subj_counts.setdefault(lk, set()).add(subj)
+# Also check against CITY_BY_NAME_SUBJECT for same names in different sources
+for (lk, subj) in CITY_BY_NAME_SUBJECT:
+    _name_subj_counts.setdefault(lk, set()).add(subj)
+for lk, subjects in _name_subj_counts.items():
+    if len(subjects) > 1:
+        NON_UNIQUE_SETTLEMENT_NAMES.add(lk)
 
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
     if use_city_db:
@@ -2910,15 +2921,88 @@ for entry in REGION_ALIASES:
         pat = r["pattern"].replace("ё", "е")
         ALL_PATTERNS.append((len(pat), pat, r))
 
+def get_case_forms(name, is_region=False):
+    """Generate common Russian case forms for a place name."""
+    forms = [name]
+    if is_region:
+        return forms
+    n = name
+    # Feminine names ending in -ка: Петровка → Петровки, Петровке, Петровку
+    if n.endswith("ка") and len(n) > 3:
+        stem = n[:-1]  # петровк
+        forms.append(stem + "и")  # genitive
+        forms.append(stem + "е")  # dative/prepositional
+        forms.append(stem + "у")  # accusative
+    # Neuter names ending in -но, -во, -ло, -то: Кузьмино → Кузьмина
+    for suffix in ("но", "во", "ло", "то", "до", "ко", "со", "зо", "ро", "мо", "по"):
+        if n.endswith(suffix) and len(n) > 3:
+            stem = n[:-1]
+            forms.append(stem + "а")  # genitive
+            forms.append(stem + "у")  # dative
+            forms.append(stem + "е")  # prepositional
+            break
+    # Neuter names ending in -ое, -ее: Троицкое → Троицкого
+    for suffix in ("ое", "ее"):
+        if n.endswith(suffix) and len(n) > 3:
+            stem = n[:-2]
+            forms.append(stem + "ого")  # genitive
+            forms.append(stem + "ому")  # dative
+            forms.append(stem + "ом")   # prepositional
+            break
+    # Feminine names ending in -ая: Грушевская → Грушевской
+    if n.endswith("ая") and len(n) > 3:
+        stem = n[:-2]
+        forms.append(stem + "ой")  # genitive/dative/instrumental/prepositional
+        forms.append(stem + "ую")  # accusative
+    # Masculine names ending in consonant: Курск → Курска, Курску, Курске
+    if n and n[-1] not in "аеёиоуыэюя":
+        if n[-1] == "й":
+            stem = n[:-1]
+            forms.append(stem + "я")
+            forms.append(stem + "ю")
+            forms.append(stem + "е")
+            forms.append(stem + "ем")
+        else:
+            forms.append(n + "а")
+            forms.append(n + "у")
+            forms.append(n + "е")
+            forms.append(n + "ом")
+    # Remove duplicates while preserving order
+    seen = set()
+    result = []
+    for f in forms:
+        if f not in seen:
+            seen.add(f)
+            result.append(f)
+    return result
+
 for name_lower, c in CITY_DB.items():
     pat = name_lower.replace("ё", "е")
-    ALL_PATTERNS.append((len(pat), pat, c))
+    for case_form in get_case_forms(pat, is_region=True):
+        ALL_PATTERNS.append((len(case_form), case_form, c))
 
 for name_lower, c in SETTLEMENT_DB.items():
+    if name_lower in NON_UNIQUE_SETTLEMENT_NAMES:
+        continue
     pat = name_lower.replace("ё", "е")
-    ALL_PATTERNS.append((len(pat), pat, c))
+    for case_form in get_case_forms(pat):
+        ALL_PATTERNS.append((len(case_form), case_form, c))
 
 ALL_PATTERNS.sort(key=lambda x: -x[0])
+
+# Combined regex for non-unique settlement names (matched only when region context resolves them)
+if NON_UNIQUE_SETTLEMENT_NAMES:
+    _non_unique_patterns = []
+    _non_unique_to_lk = {}
+    for lk in sorted(NON_UNIQUE_SETTLEMENT_NAMES, key=len, reverse=True):
+        for case_form in get_case_forms(lk):
+            _non_unique_patterns.append(re.escape(case_form))
+            _non_unique_to_lk[case_form] = lk
+    NON_UNIQUE_SETTLEMENT_RE = re.compile(r'(?<!\w)(' + '|'.join(_non_unique_patterns) + r')(?!\w)')
+    _NON_UNIQUE_TO_LK = _non_unique_to_lk
+else:
+    NON_UNIQUE_SETTLEMENT_RE = None
+    _NON_UNIQUE_TO_LK = {}
 
 from datetime import datetime, timezone, timedelta
 
@@ -3328,6 +3412,49 @@ def extract_locations(text, extra_context=None):
                     r["name"] = correct["name"]
                     r["subject"] = correct["subject"]
                     break
+
+    # --- Match non-unique settlement names only when region context resolves them ---
+    if NON_UNIQUE_SETTLEMENT_RE:
+        all_ctx = results
+        if extra_context:
+            all_ctx = results + extra_context
+        ctx_subjects = set()
+        for ctx in all_ctx:
+            subj = ctx.get("subject", "").lower().strip()
+            if subj:
+                ctx_subjects.add(subj)
+        if ctx_subjects:
+            for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
+                matched_form = m.group(1)
+                lk = _NON_UNIQUE_TO_LK.get(matched_form) or matched_form
+                if lk not in NON_UNIQUE_SETTLEMENT_NAMES:
+                    continue
+                idx, end = m.start(), m.end()
+                is_overlap = any(
+                    not (end <= s_start or s_end <= idx)
+                    for s_start, s_end in matched_spans
+                )
+                if is_overlap:
+                    continue
+                # Find the variant matching one of the context subjects
+                entry = None
+                for cs in ctx_subjects:
+                    key = (lk, cs)
+                    if key in SETTLEMENTS_BY_NAME_SUBJECT:
+                        entry = SETTLEMENTS_BY_NAME_SUBJECT[key]
+                        break
+                if entry is None:
+                    continue
+                matched_spans.add((idx, end))
+                r = {
+                    "name": entry["name"],
+                    "lat": entry["lat"],
+                    "lon": entry["lon"],
+                    "type": "city",
+                    "matched": text[idx:end],
+                    "subject": entry["subject"],
+                }
+                results.append(r)
 
     unique = {}
     found_keys = set()
