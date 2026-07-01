@@ -3017,7 +3017,8 @@ for name_lower, c in SETTLEMENT_DB.items():
     # Skip cardinal directions — too common as words in direction context
     if name_lower in ('восток', 'запад', 'север', 'юг',
                       'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
-                      'мера', 'меры', 'мере', 'меру'):
+                      'мера', 'меры', 'мере', 'меру',
+                      'богатырь', 'богатырьа', 'богатырьу', 'богатырье', 'богатырьом'):
         continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
@@ -3562,6 +3563,10 @@ def extract_locations(text, extra_context=None):
             if subj in REGION_GEOJSON_MAP:
                 _extra_subjs.add(REGION_GEOJSON_MAP[subj])
         ctx_subjects.update(_extra_subjs)
+        # If ДНР or ЛНР is in context, ignore all other regions
+        dnr_lnr = {'донецкая область', 'луганская область', 'днр', 'лнр'}
+        if ctx_subjects & dnr_lnr:
+            ctx_subjects &= dnr_lnr
         if ctx_subjects:
             for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
                 matched_form = m.group(1)
