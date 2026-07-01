@@ -71,6 +71,21 @@ for lk, subjects in _name_subj_counts.items():
     if len(subjects) > 1:
         NON_UNIQUE_SETTLEMENT_NAMES.add(lk)
 
+# Hardcoded settlements for annexed regions not in Wikidata
+_extra_settlements = [
+    ("Красный Луч", 48.167, 38.933, "Луганская область"),
+]
+for name, lat, lon, subj in _extra_settlements:
+    lk = name.lower()
+    subj_lower = subj.lower()
+    key = (lk, subj_lower)
+    if key not in SETTLEMENTS_BY_NAME_SUBJECT and key not in CITY_BY_NAME_SUBJECT:
+        entry = {"name": name, "lat": lat, "lon": lon, "subject": subj}
+        SETTLEMENTS_BY_NAME_SUBJECT[key] = entry
+        _name_subj_counts.setdefault(lk, set()).add(subj_lower)
+        if len(_name_subj_counts[lk]) > 1:
+            NON_UNIQUE_SETTLEMENT_NAMES.add(lk)
+
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
     if use_city_db:
         ck = city_name.lower()
@@ -2495,8 +2510,8 @@ REGION_ALIASES = [
     make_region_alias_with_cases("тюменская область", "Тюмень", 57.1535, 65.5423),
     make_region_alias_with_cases("херсонская область", "Херсон", 46.6354, 32.6169),
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
-    make_region_alias("днр", "Донецк", 48.0159, 37.8028, use_city_db=False),
-    make_region_alias("лнр", "Луганск", 48.574, 39.3078),
+    make_region_alias("днр", "Донецк", 48.0159, 37.8028, subject="Донецкая область", use_city_db=False),
+    make_region_alias("лнр", "Луганск", 48.574, 39.3078, subject="Луганская область"),
     make_region_alias("артёмовск", "Артёмовск", 48.594, 38.002, "ДНР", use_city_db=False),
     make_region_alias("бахмут", "Бахмут", 48.594, 38.002, "ДНР", use_city_db=False),
     make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019),
@@ -3241,6 +3256,13 @@ def extract_locations(text, extra_context=None):
     matched_spans = set()
     results = []
 
+    # Pre-compute non-unique compound spans — these MUST override individual
+    # word matches to prevent the compound from being blocked in the second pass
+    _non_unique_spans = set()
+    if NON_UNIQUE_SETTLEMENT_RE:
+        for _nu_m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
+            _non_unique_spans.add((_nu_m.start(), _nu_m.end()))
+
     for _, pattern, entry in ALL_PATTERNS:
         if isinstance(entry, dict) and "type" in entry:
             name = entry["name"]
@@ -3275,6 +3297,15 @@ def extract_locations(text, extra_context=None):
                 for s_start, s_end in matched_spans
             )
             if not is_overlap:
+                # Also reject if this span overlaps with a non-unique compound —
+                # the compound will be resolved in the second pass with region context
+                _nu_overlap = any(
+                    not (end <= nu_start or nu_end <= idx)
+                    for nu_start, nu_end in _non_unique_spans
+                )
+                if _nu_overlap:
+                    start = idx + 1
+                    continue
                 matched_spans.add((idx, end))
                 r = {"name": name, "lat": lat, "lon": lon,
                      "type": ftype, "matched": text[idx:end]}
@@ -3508,6 +3539,12 @@ def extract_locations(text, extra_context=None):
             subj = ctx.get("subject", "").lower().strip()
             if subj:
                 ctx_subjects.add(subj)
+        # Normalize short-form subjects (e.g. "лнр" → "луганская область")
+        _extra_subjs = set()
+        for subj in ctx_subjects:
+            if subj in REGION_GEOJSON_MAP:
+                _extra_subjs.add(REGION_GEOJSON_MAP[subj])
+        ctx_subjects.update(_extra_subjs)
         if ctx_subjects:
             for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
                 matched_form = m.group(1)
