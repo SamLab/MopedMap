@@ -119,22 +119,28 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
             subject = subject.title()
     result = [make_region_alias(alias, city_name, lat, lon, subject)]
     a = alias.lower()
-    # область -> области (genitive)
+    # область -> области (genitive), областью (instrumental), bare adjective
     if a.endswith("ая область"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ой области", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ой областью", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ой", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ая обл"):
         stem = a[:-6]
         result.append(make_region_alias(stem + "ой обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ой", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ская область"):
         stem = a[:-12]
         result.append(make_region_alias(stem + "ской области", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ской областью", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     elif a.endswith("ская обл"):
         stem = a[:-8]
         result.append(make_region_alias(stem + "ской обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     # край -> края (genitive)
     elif a.endswith("ий край"):
@@ -2943,9 +2949,19 @@ def get_case_forms(name, is_region=False):
         return forms
     n = name
     # Feminine names ending in -ка: Петровка → Петровки, Петровке, Петровку
+    # Also feminine names ending in -а (not -ка): Москва → Москвы, Москве, Москву
     if n.endswith("ка") and len(n) > 3:
         stem = n[:-1]  # петровк
         forms.append(stem + "и")  # genitive
+        forms.append(stem + "е")  # dative/prepositional
+        forms.append(stem + "у")  # accusative
+    elif n.endswith("а") and len(n) > 2 and not n.endswith("ая"):
+        stem = n[:-1]
+        # Russian orthography: after г/к/х/ж/ш/ч/щ/ц use "и" instead of "ы"
+        if stem and stem[-1] in "гкхжшчщц":
+            forms.append(stem + "и")  # genitive
+        else:
+            forms.append(stem + "ы")  # genitive
         forms.append(stem + "е")  # dative/prepositional
         forms.append(stem + "у")  # accusative
     # Neuter names ending in -но, -во, -ло, -то: Кузьмино → Кузьмина
@@ -2992,7 +3008,7 @@ def get_case_forms(name, is_region=False):
 
 for name_lower, c in CITY_DB.items():
     pat = name_lower.replace("ё", "е")
-    for case_form in get_case_forms(pat, is_region=True):
+    for case_form in get_case_forms(pat, is_region=False):
         ALL_PATTERNS.append((len(case_form), case_form, c))
 
 for name_lower, c in SETTLEMENT_DB.items():
@@ -3653,13 +3669,7 @@ def extract_directions(text):
             dsts = extract_locations(after, extra_context=full_context)
 
         for s in srcs:
-            s_matched = (s.get("matched") or "").lower()
-            if any(t in s_matched for t in ["область", "край", "республика", "автономн"]):
-                continue
             for d in dsts:
-                d_matched = (d.get("matched") or "").lower()
-                if any(t in d_matched for t in ["область", "край", "республика", "автономн"]):
-                    continue
                 if round(s["lat"], 1) == round(d["lat"], 1) and round(s["lon"], 1) == round(d["lon"], 1):
                     continue
                 pairs.append((s, d))
