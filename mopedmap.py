@@ -4881,53 +4881,6 @@ def process_posts(posts):
                             _drop_indices.add(idx)
                 survivors = [s for i, s in enumerate(survivors) if i not in _drop_indices]
 
-                # For rayon markers without explicit direction, create direction arrows
-                # pointing north toward the region's capital (or due north if capital not north)
-                _has_direction = bool(re.search(r'в сторон[уе]|в направлени[иею]|направлени[иею]|[→➡️]', sentence.lower()))
-                if not _has_direction:
-                    # Find capital markers (область/край/республика) by subject
-                    _capital_by_subj = {}
-                    for s in survivors:
-                        _mt = s.get("matched", "").lower()
-                        if s.get("is_region") and any(t in _mt for t in ('область', 'край', 'республика')):
-                            _subj = s.get("subject", "").lower().strip()
-                            if _subj:
-                                _capital_by_subj[_subj] = s
-                    # Replace rayon markers with direction arrows toward capital
-                    for i, s in enumerate(survivors):
-                        if not s.get("is_region"):
-                            continue
-                        _mt = s.get("matched", "").lower()
-                        if not any(t in _mt for t in ('район', 'р-н')):
-                            continue
-                        _subj = s.get("subject", "").lower().strip()
-                        if not _subj:
-                            continue
-                        _cap = _capital_by_subj.get(_subj)
-                        if not _cap:
-                            continue
-                        # If capital is north of rayon, use capital coords; else due north
-                        if _cap["lat"] > s["lat"]:
-                            _dst = [_cap["lat"], _cap["lon"]]
-                            _dst_name = _cap["name"]
-                        else:
-                            _dst = [s["lat"] + 2.0, s["lon"]]
-                            _dst_name = _cap["name"]
-                        marker = {
-                            "lat": s["lat"], "lon": s["lon"],
-                            "name": s["name"], "type": sent_type,
-                            "text": original_post[:5000] + ("..." if len(original_post) > 5000 else ""),
-                            "source": source, "time": post_time,
-                            "direction": _dst,
-                            "dest_name": _dst_name,
-                        }
-                        marker["is_region"] = True
-                        if s.get("subject"):
-                            marker["subject"] = s["subject"]
-                        if s.get("matched"):
-                            marker["matched"] = s["matched"]
-                        all_markers.append(marker)
-                        # Keep the original rayon marker (triangle) too
                 for loc in survivors:
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
