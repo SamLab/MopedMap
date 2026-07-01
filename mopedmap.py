@@ -4927,10 +4927,8 @@ def process_posts(posts):
                         if s.get("matched"):
                             marker["matched"] = s["matched"]
                         all_markers.append(marker)
-                        survivors[i] = None  # mark as consumed
+                        # Keep the original rayon marker (triangle) too
                 for loc in survivors:
-                    if loc is None:
-                        continue
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
                         "name": loc["name"], "type": sent_type,
