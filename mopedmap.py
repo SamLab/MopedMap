@@ -2938,6 +2938,12 @@ DISAMBIGUATION_MAP = {
     "углегорск": {
         "__any__": {"context_subject": "донецкая область", "text_keyword": "днр", "lat": 48.3178, "lon": 38.2703, "name": "Углегорск", "subject": "ДНР"},
     },
+    "сусанино": {
+        "__any__": {"context_subject": "республика крым", "text_keyword": "крым", "lat": 45.35, "lon": 34.14, "name": "Сусанино", "subject": "Республика Крым"},
+    },
+    "виноградово": {
+        "__any__": {"context_subject": "республика крым", "text_keyword": "крым", "lat": 45.28, "lon": 34.07, "name": "Виноградово", "subject": "Республика Крым"},
+    },
     "чернышево": {
         "__any__": {"context_subject": "республика крым", "lat": 45.776, "lon": 33.524, "name": "Чернышево", "subject": "Республика Крым"},
     },
@@ -3830,13 +3836,16 @@ def extract_directions(text):
         from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
 
         # "от X области/края/республики" = source of danger, not a direction
+        # Only check first 3 words after "от" — "от 7 БПЛА на Саратовскую область"
+        # should NOT skip (the region word is a target, not a source)
         if from_sep:
             region_words = {'область', 'области', 'областью', 'областей',
                             'край', 'края', 'краем', 'краю',
                             'республик', 'республики', 'республика', 'республику',
                             'район', 'районе', 'района', 'районов', 'районом',
                             'р-н', 'р-не', 'мо', 'го'}
-            if any(w in region_words for w in after_lower.split()):
+            after_words = after_lower.split()
+            if any(w in region_words for w in after_words[:3]):
                 continue
 
         # Extract locations from full sentence for disambiguation context
