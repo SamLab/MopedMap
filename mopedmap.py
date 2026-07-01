@@ -2532,6 +2532,9 @@ REGION_ALIASES = [
     {"pattern": "геническом р-не", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
     make_region_alias("днр", "Донецк", 48.0159, 37.8028, subject="Донецкая область", use_city_db=False),
+    {"pattern": "лднр", "name": "Донецк", "lat": 48.0159, "lon": 37.8028, "type": "region", "is_region": True, "subject": "Донецкая область"},
+    {"pattern": "горловка", "name": "Горловка", "lat": 48.3342, "lon": 37.8919, "type": "city", "subject": "ДНР"},
+    {"pattern": "енакиево", "name": "Енакиево", "lat": 48.2300, "lon": 38.2042, "type": "city", "subject": "ДНР"},
     make_region_alias("лнр", "Луганск", 48.574, 39.3078, subject="Луганская область"),
     make_region_alias("артёмовск", "Артёмовск", 48.594, 38.002, "ДНР", use_city_db=False),
     make_region_alias("бахмут", "Бахмут", 48.594, 38.002, "ДНР", use_city_db=False),
@@ -2738,7 +2741,7 @@ DISAMBIGUATION_MAP = {
     },
     "володарск": {
         "нижегородская область": {
-            "context_subject": "днр",
+            "context_subject": "донецкая область",
             "lat": 47.167,
             "lon": 37.317,
             "name": "Володарское",
@@ -2747,7 +2750,7 @@ DISAMBIGUATION_MAP = {
     },
     "володарский": {
         "нижегородская область": {
-            "context_subject": "днр",
+            "context_subject": "донецкая область",
             "lat": 47.167,
             "lon": 37.317,
             "name": "Володарское",
@@ -2890,23 +2893,50 @@ DISAMBIGUATION_MAP = {
     "калинино": {
         "__any__": [
             {"context_subject": "республика крым", "lat": 45.48, "lon": 33.70, "name": "Калинино", "subject": "Республика Крым"},
-            {"context_subject": "днр", "lat": 48.28, "lon": 38.20, "name": "Калинино", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.28, "lon": 38.20, "name": "Калинино", "subject": "ДНР"},
         ],
     },
     "братское": {
         "__any__": [
             {"context_subject": "республика крым", "lat": 46.685, "lon": 40.002, "name": "Братское", "subject": "Республика Крым"},
-            {"context_subject": "днр", "lat": 48.52, "lon": 38.58, "name": "Братское", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.52, "lon": 38.58, "name": "Братское", "subject": "ДНР"},
         ],
     },
     "новопавловка": {
         "__any__": [
             {"context_subject": "республика крым", "lat": 45.981, "lon": 40.967, "name": "Новопавловка", "subject": "Республика Крым"},
-            {"context_subject": "днр", "lat": 48.13, "lon": 37.90, "name": "Новопавловка", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.13, "lon": 37.90, "name": "Новопавловка", "subject": "ДНР"},
         ],
     },
     "высокая": {
-        "__any__": {"context_subject": "днр", "lat": 48.30, "lon": 38.25, "name": "Высокое", "subject": "ДНР"},
+        "__any__": {"context_subject": "донецкая область", "text_keyword": "днр", "lat": 48.30, "lon": 38.25, "name": "Высокое", "subject": "ДНР"},
+    },
+    "пантелеймоновка": {
+        "__any__": {"context_subject": "донецкая область", "text_keyword": "пантелеймоновка", "lat": 48.20, "lon": 38.00, "name": "Пантелеймоновка", "subject": "ДНР"},
+    },
+    "макеевка": {
+        "__any__": {"context_subject": "донецкая область", "text_keyword": "макеевка", "lat": 48.05, "lon": 37.97, "name": "Макеевка", "subject": "ДНР"},
+    },
+    "бобровское": {
+        "__any__": {"context_subject": "воронежская область", "text_keyword": "бобровск", "lat": 51.0946, "lon": 40.0333, "name": "Бобров", "subject": "Воронежская область"},
+    },
+    "терновка": {
+        "__any__": {"context_subject": "воронежская область", "text_keyword": "воронежск", "lat": 51.6833, "lon": 41.6333, "name": "Терновка", "subject": "Воронежская область"},
+    },
+    "панинское": {
+        "__any__": {"context_subject": "воронежская область", "text_keyword": "воронежск", "lat": 51.6333, "lon": 40.1333, "name": "Панино", "subject": "Воронежская область"},
+    },
+    "аркадьевка": {
+        "__any__": {"context_subject": "республика крым", "text_keyword": "крым", "lat": 44.85, "lon": 33.55, "name": "Аркадьевка", "subject": "Республика Крым"},
+    },
+    "родниковое": {
+        "__any__": {"context_subject": "республика крым", "text_keyword": "крым", "lat": 45.03, "lon": 33.87, "name": "Родниковое", "subject": "Республика Крым"},
+    },
+    "заозёрное": {
+        "__any__": {"context_subject": "республика крым", "text_keyword": "крым", "lat": 45.19, "lon": 33.65, "name": "Заозёрное", "subject": "Республика Крым"},
+    },
+    "углегорск": {
+        "__any__": {"context_subject": "донецкая область", "text_keyword": "днр", "lat": 48.3178, "lon": 38.2703, "name": "Углегорск", "subject": "ДНР"},
     },
     "чернышево": {
         "__any__": {"context_subject": "республика крым", "lat": 45.776, "lon": 33.524, "name": "Чернышево", "subject": "Республика Крым"},
@@ -2917,7 +2947,7 @@ DISAMBIGUATION_MAP = {
     "раздольное": {
         "__any__": [
             {"context_subject": "республика крым", "lat": 45.806, "lon": 33.479, "name": "Раздольное", "subject": "Республика Крым"},
-            {"context_subject": "днр", "lat": 48.35, "lon": 38.40, "name": "Раздольное", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.35, "lon": 38.40, "name": "Раздольное", "subject": "ДНР"},
         ],
     },
     "червоное": {
@@ -2938,13 +2968,13 @@ DISAMBIGUATION_MAP = {
     },
     "ждановка": {
         "__any__": [
-            {"context_subject": "днр", "lat": 48.25, "lon": 38.40, "name": "Ждановка", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.25, "lon": 38.40, "name": "Ждановка", "subject": "ДНР"},
             {"context_subject": "республика крым", "lat": 45.35, "lon": 33.80, "name": "Ждановка", "subject": "Республика Крым"},
         ],
     },
     "авдеевка": {
         "__any__": [
-            {"context_subject": "днр", "lat": 48.22, "lon": 37.75, "name": "Авдеевка", "subject": "ДНР"},
+            {"context_subject": "донецкая область", "lat": 48.22, "lon": 37.75, "name": "Авдеевка", "subject": "ДНР"},
             {"context_subject": "республика крым", "lat": 45.20, "lon": 33.50, "name": "Авдеевка", "subject": "Республика Крым"},
         ],
     },
@@ -2986,7 +3016,7 @@ DISAMBIGUATION_MAP = {
     },
     "дзержинск": {
         "нижегородская область": {
-            "context_subject": "днр",
+            "context_subject": "донецкая область",
             "text_keyword": "днр",
             "lat": 48.3964,
             "lon": 37.858,
@@ -3033,9 +3063,9 @@ DISAMBIGUATION_MAP = {
         },
     },
     "чертково": {
-        "пензенская область": {
+        "__any__": {
             "context_subject": "луганская область",
-            "text_keyword": "лнр",
+            "text_keyword": "чертково",
             "lat": 49.3833,
             "lon": 40.1500,
             "name": "Чертково",
@@ -3125,10 +3155,11 @@ for name_lower, c in SETTLEMENT_DB.items():
         continue
     # Skip cardinal directions — too common as words in direction context
     if name_lower in ('восток', 'запад', 'север', 'юг',
-                      'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
+                       'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
                        'мера', 'меры', 'мере', 'меру',
                        'богатырь', 'богатырьа', 'богатырьу', 'богатырье', 'богатырьом',
-                       'крымский', 'крымския', 'крымскию', 'крымские', 'крымскием'):
+                       'крымский', 'крымския', 'крымскию', 'крымские', 'крымскием',
+                       'или'):
         continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
@@ -3188,7 +3219,7 @@ CHANNELS = [
     {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76", "priority": 2},
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar", "priority": 2},
     {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii", "priority": 2},
-    {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
+    # {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
     {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
     {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot", "priority": 2},
     {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor", "priority": 2},
@@ -3664,6 +3695,22 @@ def extract_locations(text, extra_context=None):
                     r["name"] = correct["name"]
                     r["subject"] = correct["subject"]
                     break
+
+    # --- ДНР/ЛНР filter: remove city/settlement results not from ДНР/ЛНР
+    #     when the text explicitly mentions those regions ---
+    _dnr_lnr_subjects = {'донецкая область', 'луганская область', 'днр', 'лнр'}
+    _has_dnr_lnr = any(
+        r.get('subject', '').lower().strip() in _dnr_lnr_subjects
+        for r in results
+    )
+    if _has_dnr_lnr:
+        _dnr_text_keywords = ('днр', 'лнр', 'донецк', 'луганск')
+        if any(kw in text_lower for kw in _dnr_text_keywords):
+            results = [
+                r for r in results
+                if r.get('is_region')
+                or r.get('subject', '').lower().strip() in _dnr_lnr_subjects
+            ]
 
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
