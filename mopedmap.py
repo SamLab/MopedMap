@@ -3702,21 +3702,37 @@ def extract_locations(text, extra_context=None):
                     r["subject"] = correct["subject"]
                     break
 
-    # --- ДНР/ЛНР filter: remove city/settlement results not from ДНР/ЛНР
-    #     when the text explicitly mentions those regions ---
-    _dnr_lnr_subjects = {'донецкая область', 'луганская область', 'днр', 'лнр'}
-    _has_dnr_lnr = any(
-        r.get('subject', '').lower().strip() in _dnr_lnr_subjects
-        for r in results
-    )
-    if _has_dnr_lnr:
-        _dnr_text_keywords = ('днр', 'лнр', 'донецк', 'луганск')
-        if any(kw in text_lower for kw in _dnr_text_keywords):
-            results = [
-                r for r in results
-                if r.get('is_region')
-                or r.get('subject', '').lower().strip() in _dnr_lnr_subjects
-            ]
+    # --- Context region filter: if text explicitly mentions a specific
+    #     region (ДНР/ЛНР/Крым), remove city/settlement results not from
+    #     that region (unless a variant exists in the target region) ---
+    _ctx_regions = [
+        (('донецкая область', 'днр'), ('днр', 'лнр', 'донецк', 'луганск')),
+        (('луганская область', 'лнр'), ('лнр', 'луганск')),
+        (('республика крым', 'крым'), ('крым',)),
+    ]
+    for _ctx_subjs, _ctx_kws in _ctx_regions:
+        _has_ctx = any(
+            r.get('subject', '').lower().strip() in _ctx_subjs
+            for r in results
+        )
+        if _has_ctx and any(kw in text_lower for kw in _ctx_kws):
+            _main_subj = _ctx_subjs[0]
+            _filtered = []
+            for r in results:
+                if r.get('is_region'):
+                    _filtered.append(r)
+                    continue
+                _rs = r.get('subject', '').lower().strip()
+                if _rs in _ctx_subjs:
+                    _filtered.append(r)
+                    continue
+                # Check if a variant exists in the target region
+                _key = (r['name'].lower(), _main_subj)
+                if _key in CITY_BY_NAME_SUBJECT or _key in SETTLEMENTS_BY_NAME_SUBJECT:
+                    _filtered.append(r)
+                    continue
+            results = _filtered
+            break
 
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
