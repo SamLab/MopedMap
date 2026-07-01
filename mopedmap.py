@@ -4494,7 +4494,7 @@ data.filter(item => item.direction).forEach(item => {{
   const angle = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI;
   const arrowSvg = '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + (angle - 90) + 'deg)"><polygon points="0,0 14,7 0,14" fill="' + color + '" opacity="0.9"/></svg>';
   L.marker([midLat, midLon], {{
-    icon: L.divIcon({ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }),
+    icon: L.divIcon({{ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }}),
     interactive: false
   }}).addTo(map);
 
