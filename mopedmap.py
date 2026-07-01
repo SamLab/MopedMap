@@ -2941,13 +2941,12 @@ def get_case_forms(name, is_region=False):
             forms.append(stem + "у")  # dative
             forms.append(stem + "е")  # prepositional
             break
-    # Neuter names ending in -ое, -ее: Троицкое → Троицкого
+    # Neuter names ending in -ое, -ее: Троицкое → Троицкого. Skip -ом (clashes with rayon names like Яковлевском)
     for suffix in ("ое", "ее"):
         if n.endswith(suffix) and len(n) > 3:
             stem = n[:-2]
             forms.append(stem + "ого")  # genitive
             forms.append(stem + "ому")  # dative
-            forms.append(stem + "ом")   # prepositional
             break
     # Feminine names ending in -ая: Грушевская → Грушевской
     if n.endswith("ая") and len(n) > 3:
@@ -2989,6 +2988,22 @@ for name_lower, c in SETTLEMENT_DB.items():
         ALL_PATTERNS.append((len(case_form), case_form, c))
 
 ALL_PATTERNS.sort(key=lambda x: -x[0])
+
+# Build reverse lookup: rayon adjective form → correct city data
+# Maps "борисовском" → {"name": "Борисовка", "lat": 50.6, "lon": 36.017, "subject": "Белгородская область"}
+RAYON_ADJ_TO_CITY = {}
+_rayon_suffixes = [' район', ' районе', ' р-н', ' р-не']
+for _, pattern, entry in ALL_PATTERNS:
+    for rs in _rayon_suffixes:
+        if pattern.endswith(rs):
+            adj_form = pattern[:-len(rs)]
+            RAYON_ADJ_TO_CITY[adj_form] = {
+                "name": entry["name"],
+                "lat": entry["lat"],
+                "lon": entry["lon"],
+                "subject": entry["subject"],
+            }
+            break
 
 # Combined regex for non-unique settlement names (matched only when region context resolves them)
 if NON_UNIQUE_SETTLEMENT_NAMES:
@@ -3271,69 +3286,133 @@ def extract_locations(text, extra_context=None):
                 break
             start = idx + 1
 
-    # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район forms not already matched
+    # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район/МО/ГО forms
     # Handles both nominative and prepositional adjective forms
     RAYON_RE = re.compile(
-        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не)(?!\w)',
+        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го)(?!\w)',
         re.IGNORECASE
     )
+    # Also match bare adjective forms in district lists (e.g. "Белгородском, Валуйском, ... Чернянском МО")
+    # Pattern: adjective in prepositional/nominative followed by comma, "и", or at end
+    BARE_RAYON_RE = re.compile(
+        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)(?=\s*[,;)\]]|\s+и\s+|$)',
+        re.IGNORECASE
+    )
+    # Collect all rayon matches (both explicit and bare) for cross-region deduction
+    rayon_matches = []  # list of (idx, end, stem, suffix, matched_text, is_bare)
     for m in RAYON_RE.finditer(text_lower):
-        idx, end = m.start(), m.end()
+        rayon_matches.append((m.start(), m.end(), m.group(1), m.group(2).lower(), m.group(), False))
+    for m in BARE_RAYON_RE.finditer(text_lower):
+        # Skip if this span overlaps with an explicit rayon match
+        overlap = any(
+            not (m.end() <= s_start or s_end <= m.start())
+            for s_start, s_end, _, _, _, _ in rayon_matches
+        )
+        if not overlap:
+            rayon_matches.append((m.start(), m.end(), m.group(1), m.group(2).lower(), m.group(), True))
+
+    # Process bare adjectives first (they often find a city in CITY_DB),
+    # then explicit (МО/ГО) which can use region deduction from earlier matches
+    explicit_matches = [m for m in rayon_matches if not m[5]]
+    bare_matches = [m for m in rayon_matches if m[5]]
+    # Collect region subjects from successful rayon matches for deduction
+    rayon_region_subjects = {}  # stem_lower -> subject_lower
+    for idx, end, stem, adj_suffix, matched_text, is_bare in bare_matches + explicit_matches:
         is_overlap = any(
             not (end <= s_start or s_end <= idx)
             for s_start, s_end in matched_spans
         )
         if is_overlap:
             continue
-        adj_suffix = m.group(2).lower()
-        stem = m.group(1)
-        # Normalize suffix to infer city stem
-        if adj_suffix in ('ском',):
-            # prepositional of -ский → remove -ском → stem is city name for -ск/ consonant cities
-            pass
-        elif adj_suffix in ('цком',):
-            # prepositional of -цкий
-            pass
-        # Build candidate city names from stem
-        candidates = []
-        # Strategy 1: stem directly (works for consonant-ending cities: Кирсанов→кирсановский)
-        candidates.append(stem)
-        # Strategy 2: stem + 'ск' (most -ск cities: Абинск→абинский)
-        candidates.append(stem + 'ск')
-        # Strategy 3: stem + 'к' (some -к cities: Ряжск→ряжский)
-        candidates.append(stem + 'к')
-        # Strategy 4: try common Russian town endings
-        for ending in ('ово', 'ево', 'ино', 'а', 'я', 'ь', 'й', 'град', 'горск', 'озёрск', 'уральск'):
-            cand = stem + ending
-            if cand not in candidates:
-                candidates.append(cand)
-        # Strategy 5: for -ском/цком prepositional, also try stem minus last consonant
+        adj_suffix = adj_suffix
+        # First try RAYON_ADJ_TO_CITY (most accurate — from REGION_ALIASES)
+        adj_form = stem + adj_suffix
+        adj_city = RAYON_ADJ_TO_CITY.get(adj_form)
+        if adj_city:
+            # Check consistency with other successful rayon matches
+            if rayon_region_subjects:
+                majority_subj = max(set(rayon_region_subjects.values()), key=list(rayon_region_subjects.values()).count)
+                if adj_city["subject"].lower() != majority_subj:
+                    adj_city = None
+        if adj_city:
+            matched_spans.add((idx, end))
+            r = {
+                "name": adj_city["name"], "lat": adj_city["lat"], "lon": adj_city["lon"],
+                "type": "region", "matched": text[idx:end],
+                "is_region": True, "subject": adj_city["subject"],
+            }
+            results.append(r)
+            rayon_region_subjects[stem] = adj_city["subject"].lower()
+            continue
+        # Fall back to prefix search in CITY_DB
+        city_prefixes = [stem]
+        # Try adding back common adjectival suffixes
+        if not any(cand.startswith(stem) for cand in CITY_DB):
+            city_prefixes.append(stem + "ск")
+            city_prefixes.append(stem + "к")
+            city_prefixes.append(stem + "ов")
+            city_prefixes.append(stem + "ин")
+        # For -ском/цком stems, also try stem minus last char (prepositional removes the final consonant)
         if adj_suffix in ('ском', 'цком') and len(stem) > 3:
-            candidates.append(stem[:-1])
-            candidates.append(stem[:-1] + 'ск')
+            city_prefixes.append(stem[:-1])
+            city_prefixes.append(stem[:-1] + "ск")
+            city_prefixes.append(stem[:-1] + "к")
         city_key = None
-        for cand in candidates:
-            if cand in CITY_DB:
-                city_key = cand
-                break
-        if city_key is None:
-            # Fallback: rayon/city not in DB → create marker at region's main city
-            fallback_subj = None
-            for existing in results:
-                if existing.get("subject"):
-                    fallback_subj = existing["subject"]
-                    fallback_lat = existing["lat"]
-                    fallback_lon = existing["lon"]
-                    fallback_name = existing["name"]
+        for prefix in city_prefixes:
+            for ck in CITY_DB:
+                if ck.startswith(prefix):
+                    city_key = ck
                     break
-            if fallback_subj:
+            if city_key:
+                break
+        if city_key is not None:
+            # Verify city subject is consistent with other successful rayon matches
+            c = CITY_DB[city_key]
+            if rayon_region_subjects:
+                majority_subj = max(set(rayon_region_subjects.values()), key=list(rayon_region_subjects.values()).count)
+                if c["subject"].lower() != majority_subj:
+                    # Inconsistent with other rayons — treat as not found
+                    city_key = None
+        if city_key is None:
+            # Fallback: deduce region from other matched rayons + existing results
+            subj_freq = {}
+            for existing in results:
+                esubj = existing.get("subject", "")
+                if esubj:
+                    subj_lower = esubj.lower()
+                    subj_freq[subj_lower] = subj_freq.get(subj_lower, 0) + 1
+            for rstem, rsubj in rayon_region_subjects.items():
+                subj_freq[rsubj] = subj_freq.get(rsubj, 0) + 2
+            best_subj = max(subj_freq, key=subj_freq.get) if subj_freq else None
+            if best_subj:
                 matched_spans.add((idx, end))
-                r = {
-                    "name": fallback_name, "lat": fallback_lat, "lon": fallback_lon,
-                    "type": "region", "matched": text[idx:end],
-                    "is_region": True, "subject": fallback_subj,
-                }
-                results.append(r)
+                fallback_lat, fallback_lon, fallback_name = None, None, None
+                for existing in results:
+                    if existing.get("subject", "").lower() == best_subj:
+                        fallback_lat = existing["lat"]
+                        fallback_lon = existing["lon"]
+                        fallback_name = existing["name"]
+                        break
+                if fallback_name is None:
+                    for cname, centry in CITY_DB.items():
+                        if centry["subject"].lower() == best_subj:
+                            fallback_name = centry["name"]
+                            fallback_lat = centry["lat"]
+                            fallback_lon = centry["lon"]
+                            break
+                if fallback_name:
+                    # Look up proper subject casing from CITY_DB
+                    proper_subj = best_subj
+                    for centry in CITY_DB.values():
+                        if centry["subject"].lower() == best_subj:
+                            proper_subj = centry["subject"]
+                            break
+                    r = {
+                        "name": fallback_name, "lat": fallback_lat, "lon": fallback_lon,
+                        "type": "region", "matched": text[idx:end],
+                        "is_region": True, "subject": proper_subj,
+                    }
+                    results.append(r)
             continue
         c = CITY_DB[city_key]
         matched_spans.add((idx, end))
@@ -3343,6 +3422,8 @@ def extract_locations(text, extra_context=None):
             "is_region": True, "subject": c["subject"],
         }
         results.append(r)
+        # Record this rayon's subject for deduction of subsequent bare rayons
+        rayon_region_subjects[stem] = c["subject"].lower()
 
     # --- Disambiguation: if a name matched a wrong subject but context
     #     from another result points elsewhere, reassign ---
