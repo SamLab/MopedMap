@@ -3846,6 +3846,7 @@ REGION_GEOJSON_MAP = {
     'тыва': 'республика тыва',
     'удмуртия': 'удмуртская республика',
     'хакасия': 'республика хакасия',
+    'чувашская республика': 'чувашская республика - чувашия',
     'чувашия': 'чувашская республика - чувашия',
     'чечня': 'чеченская республика',
     'ханты-мансийский автономный округ': 'ханты-мансийский автономный округ - югра',
@@ -4230,11 +4231,16 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                             new_type = other_type
                         else:
                             new_type = 'clear'
-                        region_map[rn]['properties']['alert_type'] = new_type
-                        region_map[rn]['properties']['popup_name'] = item.get('name', '')
-                        region_map[rn]['properties']['popup_text'] = item.get('text', '')
-                        region_map[rn]['properties']['popup_source'] = item.get('source', '')
-                        region_map[rn]['properties']['popup_time'] = item.get('time', '')
+                        # Update all region_map entries for this GeoJSON polygon
+                        this_name = region_map[rn]['properties'].get('NAME', '').lower()
+                        for rm_key in list(region_map):
+                            rm_name = region_map[rm_key]['properties'].get('NAME', '').lower()
+                            if rm_name == this_name:
+                                region_map[rm_key]['properties']['alert_type'] = new_type
+                                region_map[rm_key]['properties']['popup_name'] = item.get('name', '')
+                                region_map[rm_key]['properties']['popup_text'] = item.get('text', '')
+                                region_map[rm_key]['properties']['popup_source'] = item.get('source', '')
+                                region_map[rm_key]['properties']['popup_time'] = item.get('time', '')
             # Also clear city-level polygon fill
             cn = item.get('name', '').lower().strip()
             if cn in region_map:
