@@ -4436,7 +4436,7 @@ const styleMap = {{
   danger: {{ color: '#a83232', size: 12, glow: null }},
   aviation: {{ color: '#2a6a90', size: 12, glow: null }},
   sighting: {{ color: '#555555', size: 10, glow: null }},
-  clear: {{ color: '#6a6a5a', size: 10, glow: null }},
+  clear: {{ color: '#22c55e', size: 10, glow: null }},
   attention: {{ color: '#8a6830', size: 10, glow: null }},
   interception: {{ color: '#333333', size: 10, glow: null }},
   rocket: {{ color: '#6d4a9e', size: 14, glow: null }},
@@ -4465,7 +4465,7 @@ L.geoJSON(regionGeoJSON, {{
     const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
     return {{
       color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0 : 0.1,
+      fillOpacity: alertType === 'clear' ? 0.15 : 0.1,
       weight: 1.5, opacity: 0.35
     }};
   }},
