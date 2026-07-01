@@ -3357,7 +3357,8 @@ def extract_locations(text, extra_context=None):
                     not (end <= nu_start or nu_end <= idx)
                     for nu_start, nu_end in _non_unique_spans
                 )
-                if _nu_overlap:
+                entry_name_lower = name.strip().lower()
+                if _nu_overlap and entry_name_lower in NON_UNIQUE_SETTLEMENT_NAMES:
                     start = idx + 1
                     continue
                 matched_spans.add((idx, end))
