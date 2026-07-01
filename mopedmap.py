@@ -4445,9 +4445,9 @@ L.geoJSON(regionGeoJSON, {{
     const alertType = feature.properties.alert_type || 'danger';
     if (alertType === 'history') {{
       return {{
-        color: '#999', fillColor: '#999',
-        fillOpacity: 0, weight: 1, opacity: 0.5,
-        dashArray: '4, 4'
+        color: 'transparent', fillColor: 'transparent',
+        fillOpacity: 0, weight: 0, opacity: 0,
+        interactive: true
       }};
     }}
     const s = styleMap[alertType] || styleMap.danger;
