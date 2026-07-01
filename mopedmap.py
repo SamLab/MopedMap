@@ -4488,6 +4488,16 @@ data.filter(item => item.direction).forEach(item => {{
     color, weight: 3, opacity: 0.75, dashArray: '6, 5'
   }}).addTo(map);
 
+  // Arrow at midpoint
+  const midLat = (from[0] + to[0]) / 2;
+  const midLon = (from[1] + to[1]) / 2;
+  const angle = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI;
+  const arrowSvg = '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + (angle - 90) + 'deg)"><polygon points="0,0 14,7 0,14" fill="' + color + '" opacity="0.9"/></svg>';
+  L.marker([midLat, midLon], {{
+    icon: L.divIcon({ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }),
+    interactive: false
+  }}).addTo(map);
+
   L.circleMarker(to, {{
     radius: 6, color: '#333', weight: 2, fill: true, fillColor: color,
     fillOpacity: 0.25, dashArray: '3, 4', opacity: 0.8
