@@ -119,27 +119,31 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
             subject = subject.title()
     result = [make_region_alias(alias, city_name, lat, lon, subject)]
     a = alias.lower()
-    # область -> области (genitive), областью (instrumental), bare adjective
+    # область -> области (genitive), областью (instrumental), ую область (accusative), bare adjective
     if a.endswith("ая область"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ой области", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ой областью", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ую область", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ой", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ая обл"):
         stem = a[:-6]
         result.append(make_region_alias(stem + "ой обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ую обл", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ой", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ая", city_name, lat, lon, subject))
     elif a.endswith("ская область"):
         stem = a[:-12]
         result.append(make_region_alias(stem + "ской области", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ской областью", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "скую область", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     elif a.endswith("ская обл"):
         stem = a[:-8]
         result.append(make_region_alias(stem + "ской обл", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "скую обл", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     # край -> края (genitive)
@@ -3049,6 +3053,16 @@ DISAMBIGUATION_MAP = {
             "subject": "Херсонская область",
         },
     },
+    "волово": {
+        "липецкая область": {
+            "context_subject": "тульская область",
+            "text_keyword": "тульская",
+            "lat": 53.95,
+            "lon": 38.0,
+            "name": "Волово",
+            "subject": "Тульская область",
+        },
+    },
     "приморское": {
         "ульяновская область": {
             "context_subject": "запорожская область",
@@ -3852,10 +3866,12 @@ def extract_directions(text):
 
         from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
 
-        # "от X области/края/республики" = source of danger, not a direction
-        # Only check first 3 words after "от" — "от 7 БПЛА на Саратовскую область"
-        # should NOT skip (the region word is a target, not a source)
         if from_sep:
+            # "от [число]" = quantifier ("от 7 БПЛА"), not a direction
+            first_word = after_lower.split()[0] if after_lower.split() else ''
+            if any(c.isdigit() for c in first_word):
+                continue
+            # "от X области/края/республики" = source of danger, not a direction
             region_words = {'область', 'области', 'областью', 'областей',
                             'край', 'края', 'краем', 'краю',
                             'республик', 'республики', 'республика', 'республику',
