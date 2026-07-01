@@ -4854,6 +4854,33 @@ def process_posts(posts):
                             break
                     if not dup:
                         survivors.append(loc)
+                # Suppress generic city markers when a more specific location exists in same subject
+                _subj_groups = {}
+                for s in survivors:
+                    _ss = s.get("subject", "").lower().strip()
+                    if not _ss:
+                        continue
+                    _subj_groups.setdefault(_ss, []).append(s)
+                _drop_indices = set()
+                for _ss, _group in _subj_groups.items():
+                    _region_coords = set()
+                    for s in _group:
+                        if s.get("is_region"):
+                            _region_coords.add((round(s["lat"], 4), round(s["lon"], 4)))
+                    if not _region_coords:
+                        continue
+                    _all_coords = set()
+                    for s in _group:
+                        _all_coords.add((round(s["lat"], 4), round(s["lon"], 4)))
+                    if len(_all_coords) < 2:
+                        continue
+                    for idx, s in enumerate(survivors):
+                        if s.get("is_region") or s.get("subject", "").lower().strip() != _ss:
+                            continue
+                        if (round(s["lat"], 4), round(s["lon"], 4)) in _region_coords:
+                            _drop_indices.add(idx)
+                survivors = [s for i, s in enumerate(survivors) if i not in _drop_indices]
+
                 for loc in survivors:
                     marker = {
                         "lat": loc["lat"], "lon": loc["lon"],
