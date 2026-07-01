@@ -4773,8 +4773,8 @@ data.filter(item => item.direction).forEach(item => {{
   const arrowSvg = '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + (angle - 90) + 'deg)"><polygon points="0,0 14,7 0,14" fill="' + color + '" opacity="0.9"/></svg>';
   L.marker([midLat, midLon], {{
     icon: L.divIcon({{ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }}),
-    interactive: false
-  }}).addTo(map);
+    interactive: true
+  }}).addTo(map).bindPopup('<div class="popup-name">' + item.name + ' → ' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + '</div>');
 
   L.circleMarker(to, {{
     radius: 6, color: '#333', weight: 2, fill: true, fillColor: color,
