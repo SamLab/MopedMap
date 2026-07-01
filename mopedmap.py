@@ -4338,9 +4338,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                 h_text = h_entry.get('text', '')[:500]
                 h_time = h_entry.get('time', '')
                 h_source = h_entry.get('source', '')
-                # Threat types get real fill; clear/info get grey dashed outline
-                threat_fill = {'danger', 'rocket', 'aviation', 'attention', 'sighting', 'interception'}
-                alert_type = h_type if h_type in threat_fill else 'history'
+                # All history entries get transparent fill with [История] popup
+                alert_type = 'history'
                 feat_copy['properties']['alert_type'] = alert_type
                 feat_copy['properties']['popup_name'] = f"[История] {h_name}"
                 feat_copy['properties']['popup_text'] = f"Последнее ({h_time}):\n{h_text}"
@@ -4406,7 +4405,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </div>
 <script>
 const PC = window.innerWidth >= 1024;
-const map = L.map('map', {{ center: PC ? [55.76, 37.62] : [56.74, 38.86], zoom: 6, zoomControl: true, attributionControl: false }});
+const map = L.map('map', {{ center: PC ? [54.19, 37.62] : [56.74, 38.86], zoom: 6, zoomControl: true, attributionControl: false }});
 
 map.createPane('lightning-0');
 map.getPane('lightning-0').style.filter = 'invert(0.15) brightness(0.7) sepia(1) hue-rotate(90deg) saturate(4)';
@@ -4557,7 +4556,7 @@ data.filter(item => item.direction).forEach(item => {{
 }});
 
 if (bounds.length > 0) {{
-  map.setView(PC ? [55.76, 37.62] : [56.74, 38.86], 6);
+  map.setView(PC ? [54.19, 37.62] : [56.74, 38.86], 6);
 }}
 
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
