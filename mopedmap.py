@@ -2983,6 +2983,10 @@ for name_lower, c in CITY_DB.items():
 for name_lower, c in SETTLEMENT_DB.items():
     if name_lower in NON_UNIQUE_SETTLEMENT_NAMES:
         continue
+    # Skip cardinal directions — too common as words in direction context
+    if name_lower in ('восток', 'запад', 'север', 'юг',
+                      'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад'):
+        continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
         ALL_PATTERNS.append((len(case_form), case_form, c))
