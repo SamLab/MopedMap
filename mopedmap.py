@@ -2515,6 +2515,19 @@ REGION_ALIASES = [
     make_region_alias_with_cases("мурманская область", "Мурманск", 68.9792, 33.0925),
     make_region_alias_with_cases("тюменская область", "Тюмень", 57.1535, 65.5423),
     make_region_alias_with_cases("херсонская область", "Херсон", 46.6354, 32.6169),
+    # Херсонская область — районы
+    {"pattern": "чаплынский район", "name": "Чаплынка", "lat": 46.365, "lon": 33.533, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "чаплынском районе", "name": "Чаплынка", "lat": 46.365, "lon": 33.533, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "чаплынский р-н", "name": "Чаплынка", "lat": 46.365, "lon": 33.533, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "чаплынском р-не", "name": "Чаплынка", "lat": 46.365, "lon": 33.533, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "новотроицкий район", "name": "Новотроицк", "lat": 46.348, "lon": 34.325, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "новотроицком районе", "name": "Новотроицк", "lat": 46.348, "lon": 34.325, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "новотроицкий р-н", "name": "Новотроицк", "lat": 46.348, "lon": 34.325, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "новотроицком р-не", "name": "Новотроицк", "lat": 46.348, "lon": 34.325, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "генический район", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "геническом районе", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "генический р-н", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "геническом р-не", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
     make_region_alias("днр", "Донецк", 48.0159, 37.8028, subject="Донецкая область", use_city_db=False),
     make_region_alias("лнр", "Луганск", 48.574, 39.3078, subject="Луганская область"),
@@ -2969,6 +2982,64 @@ DISAMBIGUATION_MAP = {
             "subject": "Херсонская область",
         },
     },
+    "дзержинск": {
+        "нижегородская область": {
+            "context_subject": "днр",
+            "text_keyword": "днр",
+            "lat": 48.3964,
+            "lon": 37.858,
+            "name": "Дзержинск",
+            "subject": "Донецкая область",
+        },
+    },
+    "новотроицк": {
+        "оренбургская область": {
+            "context_subject": "херсонская область",
+            "text_keyword": "чаплын",
+            "lat": 46.348,
+            "lon": 34.325,
+            "name": "Новотроицк",
+            "subject": "Херсонская область",
+        },
+        "__any__": {
+            "context_subject": "херсонская область",
+            "text_keyword": "чаплын",
+            "lat": 46.348,
+            "lon": 34.325,
+            "name": "Новотроицк",
+            "subject": "Херсонская область",
+        },
+    },
+    "приморское": {
+        "ульяновская область": {
+            "context_subject": "запорожская область",
+            "text_keyword": "запорожская",
+            "lat": 46.73,
+            "lon": 36.35,
+            "name": "Приморское",
+            "subject": "Запорожская область",
+        },
+    },
+    "родники": {
+        "ивановская область": {
+            "context_subject": "донецкая область",
+            "text_keyword": "днр",
+            "lat": 48.05,
+            "lon": 37.55,
+            "name": "Родники",
+            "subject": "Донецкая область",
+        },
+    },
+    "чертково": {
+        "пензенская область": {
+            "context_subject": "луганская область",
+            "text_keyword": "лнр",
+            "lat": 49.3833,
+            "lon": 40.1500,
+            "name": "Чертково",
+            "subject": "Ростовская область",
+        },
+    },
 }
 
 ALL_PATTERNS = []
@@ -3053,8 +3124,9 @@ for name_lower, c in SETTLEMENT_DB.items():
     # Skip cardinal directions — too common as words in direction context
     if name_lower in ('восток', 'запад', 'север', 'юг',
                       'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
-                      'мера', 'меры', 'мере', 'меру',
-                      'богатырь', 'богатырьа', 'богатырьу', 'богатырье', 'богатырьом'):
+                       'мера', 'меры', 'мере', 'меру',
+                       'богатырь', 'богатырьа', 'богатырьу', 'богатырье', 'богатырьом',
+                       'крымский', 'крымския', 'крымскию', 'крымские', 'крымскием'):
         continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
@@ -3464,9 +3536,13 @@ def extract_locations(text, extra_context=None):
                     # Inconsistent with other rayons — treat as not found
                     city_key = None
         if city_key is None:
-            # Fallback: deduce region from other matched rayons + existing results
+            # Fallback: deduce region from other matched rayons + existing region results
+            # City-only matches (is_region=False) are excluded to prevent wrong
+            # CITY_DB cities (e.g. Новотроицк→Оренбург) from cascading to all rayons
             subj_freq = {}
             for existing in results:
+                if not existing.get("is_region"):
+                    continue
                 esubj = existing.get("subject", "")
                 if esubj:
                     subj_lower = esubj.lower()
@@ -3542,7 +3618,10 @@ def extract_locations(text, extra_context=None):
                         all_results = results + extra_context
                     for entry in candidates:
                         target = entry["context_subject"]
-                        if any(r2.get("subject", "").lower() == target for r2 in all_results):
+                        matched = any(r2.get("subject", "").lower() == target for r2 in all_results)
+                        if not matched and "text_keyword" in entry:
+                            matched = entry["text_keyword"] in text.lower()
+                        if matched:
                             r["lat"] = entry["lat"]
                             r["lon"] = entry["lon"]
                             r["name"] = entry["name"]
