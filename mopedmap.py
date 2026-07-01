@@ -3016,7 +3016,8 @@ for name_lower, c in SETTLEMENT_DB.items():
         continue
     # Skip cardinal directions — too common as words in direction context
     if name_lower in ('восток', 'запад', 'север', 'юг',
-                      'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад'):
+                      'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
+                      'мера', 'меры', 'мере', 'меру'):
         continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
