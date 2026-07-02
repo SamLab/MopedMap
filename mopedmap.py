@@ -3063,6 +3063,16 @@ DISAMBIGUATION_MAP = {
             "subject": "Тульская область",
         },
     },
+    "козловка": {
+        "чувашия": {
+            "context_subject": "воронежская область",
+            "text_keyword": "воронежская",
+            "lat": 50.8643,
+            "lon": 40.4497,
+            "name": "Козловка",
+            "subject": "Воронежская область",
+        },
+    },
     "приморское": {
         "ульяновская область": {
             "context_subject": "запорожская область",
@@ -3241,7 +3251,7 @@ CHANNELS = [
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar", "priority": 2},
     {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii", "priority": 2},
     # {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
-    {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
+    # {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
     {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot", "priority": 2},
     {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor", "priority": 2},
 ]
