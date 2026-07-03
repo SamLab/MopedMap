@@ -14,9 +14,9 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -28,10 +28,13 @@ jobs:
         env:
           OUTPUT_FILE: index.html
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          include_files: index.html
-          force_orphan: false
+      - name: Deploy to gh-pages branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages
+          git rm -rf . || true
+          cp index.html .
+          git add index.html
+          git commit -m "deploy: update map $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -f origin gh-pages
