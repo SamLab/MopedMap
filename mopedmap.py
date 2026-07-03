@@ -5105,7 +5105,7 @@ def process_posts(posts):
                 if src.get("is_region"):
                     subj = src.get("subject", "").lower()
                     dst_key = (round(dst["lat"], 1), round(dst["lon"], 1))
-                    if any(s_subj == subj and s_dst == dst_key for s_subj, s_dst in specific_srcs):
+                    if any(s_subj == subj and (s_lat, s_lon) == dst_key for s_subj, s_lat, s_lon in specific_srcs):
                         continue
                 key = (round(src["lat"], 1), round(src["lon"], 1), round(dst["lat"], 1), round(dst["lon"], 1))
                 if key in seen_pairs:
