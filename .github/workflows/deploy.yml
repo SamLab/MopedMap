@@ -32,17 +32,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p /tmp/ghpages
+          rm -rf /tmp/ghpages
+          mkdir /tmp/ghpages
           cp index.html /tmp/ghpages/
+          echo "" > /tmp/ghpages/.nojekyll
           cd /tmp/ghpages
           git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          git fetch origin gh-pages --depth=1 || true
-          git checkout -B gh-pages
-          cp index.html .
-          git add -f index.html
-          git diff --cached --quiet && echo "No changes" && exit 0
+          git add -A
           git commit -m "deploy: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push origin gh-pages
+          git push -f origin HEAD:gh-pages
