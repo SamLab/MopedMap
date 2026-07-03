@@ -3995,7 +3995,10 @@ def extract_directions(text):
             srcs = extract_locations(after, extra_context=full_context)
             dsts = extract_locations(before, extra_context=full_context)
         else:
-            srcs = extract_locations(before, extra_context=full_context)
+            # Remove "со стороны X" phrases from before — these are direction context, not event locations
+            cleaned_before = re.sub(r'\bсо стороны\b[^,!\-.?]*', '', before, flags=re.IGNORECASE)
+            cleaned_before = re.sub(r'\bот\b[^,!\-.?]*', '', cleaned_before, flags=re.IGNORECASE) if not from_sep else before
+            srcs = extract_locations(cleaned_before.strip() or before, extra_context=full_context)
             dsts = extract_locations(after, extra_context=full_context)
 
         for s in srcs:
@@ -5091,8 +5094,19 @@ def process_posts(posts):
         # Try direction parsing first
         dir_pairs = extract_directions(post)
         if dir_pairs:
+            # Suppress region markers when a specific settlement exists in same subject+destination
+            specific_srcs = set()
+            for src, dst in dir_pairs:
+                if not src.get("is_region"):
+                    specific_srcs.add((src.get("subject", "").lower(), round(dst["lat"], 1), round(dst["lon"], 1)))
             seen_pairs = set()
             for src, dst in dir_pairs:
+                # Skip region src if a specific settlement exists for same subject+destination
+                if src.get("is_region"):
+                    subj = src.get("subject", "").lower()
+                    dst_key = (round(dst["lat"], 1), round(dst["lon"], 1))
+                    if any(s_subj == subj and s_dst == dst_key for s_subj, s_dst in specific_srcs):
+                        continue
                 key = (round(src["lat"], 1), round(src["lon"], 1), round(dst["lat"], 1), round(dst["lon"], 1))
                 if key in seen_pairs:
                     continue
