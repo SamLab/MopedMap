@@ -3995,10 +3995,7 @@ def extract_directions(text):
             srcs = extract_locations(after, extra_context=full_context)
             dsts = extract_locations(before, extra_context=full_context)
         else:
-            # Remove "со стороны X" phrases from before — these are direction context, not event locations
-            cleaned_before = re.sub(r'\bсо стороны\b[^,!\-.?]*', '', before, flags=re.IGNORECASE)
-            cleaned_before = re.sub(r'\bот\b[^,!\-.?]*', '', cleaned_before, flags=re.IGNORECASE) if not from_sep else before
-            srcs = extract_locations(cleaned_before.strip() or before, extra_context=full_context)
+            srcs = extract_locations(before, extra_context=full_context)
             dsts = extract_locations(after, extra_context=full_context)
 
         for s in srcs:
