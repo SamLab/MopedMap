@@ -8,15 +8,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -30,21 +37,11 @@ jobs:
         env:
           OUTPUT_FILE: index.html
 
-      - name: Deploy to gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p /tmp/ghpages
-          cp index.html /tmp/ghpages/
-          cd /tmp/ghpages
-          git init
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-          git fetch origin gh-pages --depth=1 || true
-          git checkout -B gh-pages
-          cp index.html .
-          git add -f index.html
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "deploy: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git push origin gh-pages
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
