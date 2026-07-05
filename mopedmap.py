@@ -3948,6 +3948,27 @@ def extract_locations(text, extra_context=None):
             results = _filtered
             break
 
+    # --- Auto-remove settlement/city results whose region conflicts with
+    #     region-type mentions (rayon, область/край). Only triggers when
+    #     at least one other non-region result DOES match a region mention.
+    #     Catches Малоархангельское→Самарская, Брянское→Крым etc. ---
+    _region_subjs = set()
+    for r in results:
+        if r.get("is_region") and r.get("subject"):
+            _region_subjs.add(r["subject"].lower().strip())
+    if _region_subjs:
+        _any_non_region_matches = any(
+            not r.get("is_region") and r.get("subject", "").lower().strip() in _region_subjs
+            for r in results
+        )
+        if _any_non_region_matches:
+            results = [
+                r for r in results
+                if r.get("is_region")
+                or not r.get("subject")
+                or r["subject"].lower().strip() in _region_subjs
+            ]
+
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
         all_ctx = results
