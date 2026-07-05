@@ -2539,6 +2539,13 @@ REGION_ALIASES = [
     {"pattern": "геническом районе", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "генический р-н", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
     {"pattern": "геническом р-не", "name": "Геническ", "lat": 46.175, "lon": 34.803, "type": "region", "is_region": True, "subject": "Херсонская область"},
+    {"pattern": "геническ", "name": "Геническ", "lat": 46.78, "lon": 34.80, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "геническа", "name": "Геническ", "lat": 46.78, "lon": 34.80, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "геническе", "name": "Геническ", "lat": 46.78, "lon": 34.80, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "новоалексеевка", "name": "Новоалексеевка", "lat": 46.63, "lon": 34.38, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "новоалексеевки", "name": "Новоалексеевка", "lat": 46.63, "lon": 34.38, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "новоалексеевке", "name": "Новоалексеевка", "lat": 46.63, "lon": 34.38, "type": "city", "subject": "Херсонская область"},
+    {"pattern": "новоалексеевку", "name": "Новоалексеевка", "lat": 46.63, "lon": 34.38, "type": "city", "subject": "Херсонская область"},
     make_region_alias_with_cases("запорожская область", "Запорожье", 47.8388, 35.1396),
     make_region_alias("днр", "Донецк", 48.0159, 37.8028, subject="Донецкая область", use_city_db=False),
     {"pattern": "лднр", "name": "Донецк", "lat": 48.0159, "lon": 37.8028, "type": "region", "is_region": True, "subject": "Донецкая область"},
@@ -3110,7 +3117,6 @@ DISAMBIGUATION_MAP = {
     "рыково": {
         "ивановская область": {
             "context_subject": "херсонская область",
-            "text_keyword": "херсонская",
             "lat": 46.3318,
             "lon": 34.749,
             "name": "Рыково",
