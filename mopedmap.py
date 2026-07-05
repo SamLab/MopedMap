@@ -3221,6 +3221,15 @@ DISAMBIGUATION_MAP = {
             "subject": "Орловская область",
         },
     },
+    "боговарово": {
+        "костромская область": {
+            "context_subject": "ростовская область",
+            "lat": 49.0,
+            "lon": 40.5,
+            "name": "Боговарово",
+            "subject": "Ростовская область",
+        },
+    },
     "пречистое": {
         "ярославская область": {
             "context_subject": "республика крым",
@@ -3963,11 +3972,11 @@ def extract_locations(text, extra_context=None):
         if r.get("is_region") and r.get("subject"):
             _region_subjs.add(r["subject"].lower().strip())
     if _region_subjs:
-        _any_non_region_matches = any(
-            not r.get("is_region") and r.get("subject", "").lower().strip() in _region_subjs
+        _any_region_match = any(
+            r.get("subject", "").lower().strip() in _region_subjs
             for r in results
         )
-        if _any_non_region_matches:
+        if _any_region_match:
             results = [
                 r for r in results
                 if r.get("is_region")
