@@ -3387,6 +3387,7 @@ DISAMBIGUATION_MAP = {
         "__any__": [
             {
                 "context_subject": "запорожская область",
+                "text_keyword": "белозерк",
                 "lat": 47.21,
                 "lon": 34.93,
                 "name": "Великая Белозерка",
@@ -4081,7 +4082,7 @@ def extract_locations(text, extra_context=None):
                         target = entry["context_subject"]
                         matched = any(r2.get("subject", "").lower() == target for r2 in all_results)
                         if not matched and "text_keyword" in entry:
-                            matched = entry["text_keyword"] in text.lower()
+                            matched = entry["text_keyword"] in text_lower
                         if matched:
                             r["lat"] = entry["lat"]
                             r["lon"] = entry["lon"]
@@ -5365,6 +5366,7 @@ SUMMARY_PATTERNS = [
     r'крымская оборонительная операция',
     r'ключевые принципы, которых мы придерживаемся',
     r'видео ночного киев\w*',
+    r'· лпр ·',
 ]
 
 
@@ -5403,6 +5405,7 @@ def process_posts(posts):
         original_post = display_text
         # Replace newlines with spaces so multi-word patterns can match across lines
         post = re.sub(r'\n+', ' ', post)
+        post = re.sub(r'\s+', ' ', post).strip()
         if "max.ru/join/" in post:
             filtered += 1
             continue
