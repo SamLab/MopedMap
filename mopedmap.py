@@ -4047,25 +4047,30 @@ def extract_locations(text, extra_context=None):
                             break
                     break
 
-    # --- Automatic region-subject matching: if a city result has a
-    #     different subject than a nearby region result, look up the
-    #     correct city variant by (name, subject) in cities.json ---
+    # --- Automatic context-based subject matching: if a result has fewer
+    #     context mentions in its subject than another subject, try to
+    #     re-resolve it in the more common subject ---
     all_ctx = results
     if extra_context:
         all_ctx = results + extra_context
-    region_results = [ctx for ctx in all_ctx if ctx.get("is_region") and ctx.get("subject")]
-    if region_results:
+    _ctx_subj_counts = {}
+    for ctx in all_ctx:
+        subj = ctx.get("subject", "").lower().strip()
+        if subj:
+            _ctx_subj_counts[subj] = _ctx_subj_counts.get(subj, 0) + 1
+    if _ctx_subj_counts:
+        _max_count = max(_ctx_subj_counts.values())
+        _dominant_subjs = {s for s, c in _ctx_subj_counts.items() if c == _max_count}
         for r in results:
             if r.get("is_region"):
                 continue
             cur_subj = r.get("subject", "").lower().strip()
-            if not cur_subj:
+            if not cur_subj or cur_subj in _dominant_subjs:
                 continue
-            for rr in region_results:
-                region_subj = rr.get("subject", "").lower().strip()
-                if region_subj == cur_subj:
-                    continue
-                key = (r["name"].lower(), region_subj)
+            if _ctx_subj_counts.get(cur_subj, 0) >= _max_count:
+                continue
+            for target_subj in _dominant_subjs:
+                key = (r["name"].lower(), target_subj)
                 if key in CITY_BY_NAME_SUBJECT:
                     correct = CITY_BY_NAME_SUBJECT[key]
                     r["lat"] = correct["lat"]
