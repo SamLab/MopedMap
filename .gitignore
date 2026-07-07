@@ -2,3 +2,5 @@ mopedmap.html
 _site/
 __pycache__/
 *.pyc
+districts_europe.geojson
+yaroslavl_districts.geojson

@@ -5046,14 +5046,18 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
 
     districts_geojson = ""
-    districts_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yaroslavl_districts.geojson")
-    if os.path.exists(districts_path):
-        with open(districts_path, encoding="utf-8") as df:
-            dg = json.load(df)
-        region_name = "Ярославская область"
-        for feat in dg.get("features", []):
-            feat["properties"]["region"] = region_name
-        districts_geojson = json.dumps(dg, ensure_ascii=False)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    for fn in ["districts_europe.geojson", "yaroslavl_districts.geojson"]:
+        dp = os.path.join(script_dir, fn)
+        if os.path.exists(dp):
+            with open(dp, encoding="utf-8") as df:
+                dg = json.load(df)
+            # For legacy yaroslavl_districts, add region property
+            if fn == "yaroslavl_districts.geojson":
+                for feat in dg.get("features", []):
+                    feat["properties"]["region"] = feat["properties"].get("region", "Ярославская область")
+            districts_geojson = json.dumps(dg, ensure_ascii=False)
+            break
 
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
