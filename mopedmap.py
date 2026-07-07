@@ -5045,6 +5045,12 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     region_features = list(region_map.values())
     region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
 
+    districts_geojson = ""
+    districts_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yaroslavl_districts.geojson")
+    if os.path.exists(districts_path):
+        with open(districts_path, encoding="utf-8") as df:
+            districts_geojson = df.read()
+
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5142,6 +5148,7 @@ const bounds = [];
 const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиационная опасность', sighting: 'Фиксация', clear: 'Отбой', attention: 'Внимание', interception: 'Перехват', rocket: 'Ракетная опасность', history: 'Архив' }};
 
 const regionGeoJSON = {region_geojson};
+const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 
 // Draw region polygon fills
 L.geoJSON(regionGeoJSON, {{
@@ -5171,6 +5178,22 @@ L.geoJSON(regionGeoJSON, {{
     }}
   }}
 }}).addTo(map);
+
+// District boundaries overlay (informational)
+if (districtsGeoJSON) {{
+  L.geoJSON(districtsGeoJSON, {{
+    style: {{
+      color: '#888', weight: 0.8, opacity: 0.5,
+      fillColor: 'transparent', fillOpacity: 0
+    }},
+    onEachFeature: function(feature, layer) {{
+      const dname = feature.properties.district;
+      if (dname) {{
+        layer.bindTooltip(dname, {{ permanent: false, direction: 'center', className: 'district-label' }});
+      }}
+    }}
+  }}).addTo(map);
+}}
 
 const lightningCtrl = L.control({{ position: 'topleft' }});
 lightningCtrl.onAdd = function() {{
