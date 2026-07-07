@@ -5441,7 +5441,7 @@ def process_posts(posts):
         if is_summary_post(post):
             filtered += 1
             continue
-        if "лпр" in post.lower():
+        if "лпр" in source.lower() or "лпр" in post.lower():
             filtered += 1
             continue
         if "#сводка" in post.lower():
