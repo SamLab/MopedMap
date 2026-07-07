@@ -5155,18 +5155,8 @@ const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиа�
 const regionGeoJSON = {region_geojson};
 const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 
-// Build region popup lookup
-const regionPopup = {{}};
-regionGeoJSON.features.forEach(function(f) {{
-  const p = f.properties;
-  if (p.popup_text) {{
-    const label = typeLabel[p.alert_type] || p.alert_type || '';
-    regionPopup[p.NAME] = `<div class="popup-name">${{p.popup_name || ''}}</div><div class="popup-text">${{p.popup_text}}</div><div class="popup-source">${{label}}${{p.popup_source ? ' · ' + p.popup_source : ''}}${{p.popup_time ? ' · ' + p.popup_time : ''}}</div>`;
-  }}
-}});
-
 // Draw region polygon fills
-const regionLayer = L.geoJSON(regionGeoJSON, {{
+L.geoJSON(regionGeoJSON, {{
   style: function(feature) {{
     const alertType = feature.properties.alert_type || 'danger';
     if (alertType === 'history') {{
@@ -5194,27 +5184,49 @@ const regionLayer = L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-// District boundaries overlay (тултип на всю площадь, клик показывает попап региона)
+// District boundaries overlay (визуальные линии, тултип через mousemove map)
 if (districtsGeoJSON) {{
   L.geoJSON(districtsGeoJSON, {{
+    interactive: false,
     style: {{
-      color: '#777', weight: 0.8, opacity: 0.35,
-      fillColor: 'transparent', fillOpacity: 0
-    }},
-    onEachFeature: function(feature, layer) {{
-      const dn = feature.properties.district;
-      const rn = feature.properties.region;
-      if (dn) layer.bindTooltip(dn, {{ sticky: true, className: 'district-tooltip' }});
-      if (rn && regionPopup[rn]) {{
-        layer.on('click', function(e) {{
-          L.popup()
-            .setLatLng(e.latlng)
-            .setContent(regionPopup[rn])
-            .openOn(map);
-        }});
-      }}
+      color: '#777', weight: 0.8, opacity: 0.4,
+      fill: false
     }}
   }}).addTo(map);
+  // Pre-process district polygons for point-in-polygon check
+  const dPolys = [];
+  districtsGeoJSON.features.forEach(function(f) {{
+    const dn = f.properties.district;
+    if (!dn) return;
+    const coords = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates[0][0] : f.geometry.coordinates[0];
+    dPolys.push({{ name: dn, coords: coords.map(function(c) {{ return [c[1], c[0]]; }}) }});
+  }});
+  let tip = null;
+  map.on('mousemove', function(e) {{
+    const ll = [e.latlng.lat, e.latlng.lng];
+    let found = null;
+    for (let i = 0; i < dPolys.length; i++) {{
+      const pts = dPolys[i].coords;
+      let inside = false;
+      for (let j = 0, k = pts.length - 1; j < pts.length; k = j++) {{
+        const xi = pts[j][0], yi = pts[j][1];
+        const xk = pts[k][0], yk = pts[k][1];
+        if (((yi > ll[1]) !== (yk > ll[1])) && (ll[0] < (xk - xi) * (ll[1] - yi) / (yk - yi) + xi)) {{
+          inside = !inside;
+        }}
+      }}
+      if (inside) {{ found = dPolys[i]; break; }}
+    }}
+    if (found) {{
+      if (!tip) {{
+        tip = L.tooltip({{ permanent: true, direction: 'center', className: 'district-tooltip' }})
+          .setLatLng(e.latlng).addTo(map);
+      }}
+      tip.setLatLng(e.latlng).setContent(found.name);
+    }} else {{
+      if (tip) {{ tip.remove(); tip = null; }}
+    }}
+  }});
 }}
 
 const lightningCtrl = L.control({{ position: 'topleft' }});
