@@ -23,9 +23,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download district boundaries
-        run: python download_districts.py
-
       - name: Generate map
         run: python mopedmap.py
         env:
@@ -37,8 +34,7 @@ jobs:
         run: |
           rm -rf /tmp/ghpages
           mkdir /tmp/ghpages
-          cp index.html /tmp/ghpages/
-          [ -f districts_europe.geojson ] && cp districts_europe.geojson /tmp/ghpages/
+          cp index.html yaroslavl_districts.geojson /tmp/ghpages/
           echo "" > /tmp/ghpages/.nojekyll
           cd /tmp/ghpages
           git init

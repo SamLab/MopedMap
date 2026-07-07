@@ -5047,17 +5047,13 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
 
     districts_geojson = ""
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    for fn in ["districts_europe.geojson", "yaroslavl_districts.geojson"]:
-        dp = os.path.join(script_dir, fn)
-        if os.path.exists(dp):
-            with open(dp, encoding="utf-8") as df:
-                dg = json.load(df)
-            # For legacy yaroslavl_districts, add region property
-            if fn == "yaroslavl_districts.geojson":
-                for feat in dg.get("features", []):
-                    feat["properties"]["region"] = feat["properties"].get("region", "Ярославская область")
-            districts_geojson = json.dumps(dg, ensure_ascii=False)
-            break
+    dp = os.path.join(script_dir, "yaroslavl_districts.geojson")
+    if os.path.exists(dp):
+        with open(dp, encoding="utf-8") as df:
+            dg = json.load(df)
+        for feat in dg.get("features", []):
+            feat["properties"]["region"] = feat["properties"].get("region", "Ярославская область")
+        districts_geojson = json.dumps(dg, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
