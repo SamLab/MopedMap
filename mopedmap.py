@@ -5049,7 +5049,11 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     districts_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yaroslavl_districts.geojson")
     if os.path.exists(districts_path):
         with open(districts_path, encoding="utf-8") as df:
-            districts_geojson = df.read()
+            dg = json.load(df)
+        region_name = "Ярославская область"
+        for feat in dg.get("features", []):
+            feat["properties"]["region"] = region_name
+        districts_geojson = json.dumps(dg, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
@@ -5151,8 +5155,18 @@ const typeLabel = {{ danger: 'Опасность БПЛА', aviation: 'Авиа�
 const regionGeoJSON = {region_geojson};
 const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 
+// Build region popup lookup
+const regionPopup = {{}};
+regionGeoJSON.features.forEach(function(f) {{
+  const p = f.properties;
+  if (p.popup_text) {{
+    const label = typeLabel[p.alert_type] || p.alert_type || '';
+    regionPopup[p.NAME] = `<div class="popup-name">${{p.popup_name || ''}}</div><div class="popup-text">${{p.popup_text}}</div><div class="popup-source">${{label}}${{p.popup_source ? ' · ' + p.popup_source : ''}}${{p.popup_time ? ' · ' + p.popup_time : ''}}</div>`;
+  }}
+}});
+
 // Draw region polygon fills
-L.geoJSON(regionGeoJSON, {{
+const regionLayer = L.geoJSON(regionGeoJSON, {{
   style: function(feature) {{
     const alertType = feature.properties.alert_type || 'danger';
     if (alertType === 'history') {{
@@ -5180,16 +5194,25 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-// District boundaries overlay (fill:false — клики сквозь на регион, тултип при наведении на линию)
+// District boundaries overlay (тултип на всю площадь, клик показывает попап региона)
 if (districtsGeoJSON) {{
   L.geoJSON(districtsGeoJSON, {{
     style: {{
       color: '#777', weight: 0.8, opacity: 0.35,
-      fill: false
+      fillColor: 'transparent', fillOpacity: 0
     }},
     onEachFeature: function(feature, layer) {{
       const dn = feature.properties.district;
+      const rn = feature.properties.region;
       if (dn) layer.bindTooltip(dn, {{ sticky: true, className: 'district-tooltip' }});
+      if (rn && regionPopup[rn]) {{
+        layer.on('click', function(e) {{
+          L.popup()
+            .setLatLng(e.latlng)
+            .setContent(regionPopup[rn])
+            .openOn(map);
+        }});
+      }}
     }}
   }}).addTo(map);
 }}
