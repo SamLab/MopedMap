@@ -4403,36 +4403,36 @@ def simplify_coords(coords, precision=2):
 
 def load_region_geojson():
     """Download and simplify GeoJSON, return dict name_lower→feature."""
+    lookup = {}
     try:
         r = requests.get(GEOJSON_URL, timeout=60)
         data = r.json()
     except Exception:
-        print("  Не удалось загрузить GeoJSON регионов")
-        return {}
-    lookup = {}
-    for f in data['features']:
-        name = f['properties'].get('NAME', '').strip()
-        if not name:
-            continue
-        geom = f['geometry']
-        if geom['type'] == 'MultiPolygon':
-            geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
-        elif geom['type'] == 'Polygon':
-            geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
-        else:
-            continue
-        lookup[name.lower()] = {
-            'type': 'Feature',
-            'properties': {'NAME': name},
-            'geometry': {'type': geom['type'], 'coordinates': geom['coordinates']}
-        }
-    print(f"  Загружено {len(lookup)} регионов из GeoJSON")
-    # Add static polygons for regions not in the upstream GeoJSON (disputed territories)
+        print("  Не удалось загрузить GeoJSON регионов — используем статические полигоны")
+    else:
+        for f in data['features']:
+            name = f['properties'].get('NAME', '').strip()
+            if not name:
+                continue
+            geom = f['geometry']
+            if geom['type'] == 'MultiPolygon':
+                geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
+            elif geom['type'] == 'Polygon':
+                geom['coordinates'] = simplify_coords(geom['coordinates'], 2)
+            else:
+                continue
+            lookup[name.lower()] = {
+                'type': 'Feature',
+                'properties': {'NAME': name},
+                'geometry': {'type': geom['type'], 'coordinates': geom['coordinates']}
+            }
+        print(f"  Загружено {len(lookup)} регионов из GeoJSON")
+    # Always add static polygons — fills gaps (disputed territories) and covers upstream failure
     for name_lower, feat in STATIC_GEOJSON_FEATURES.items():
         if name_lower not in lookup:
             lookup[name_lower] = feat
     if STATIC_GEOJSON_FEATURES:
-        print(f"  Добавлено {len(STATIC_GEOJSON_FEATURES)} статических регионов")
+        print(f"  Всего регионов: {len(lookup)} (включая статические)")
     return lookup
 
 
