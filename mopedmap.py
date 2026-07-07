@@ -5078,6 +5078,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .popup-name {{ font-size: 15px; font-weight: bold; color: #d32f2f; margin-bottom: 4px; }}
 .popup-source {{ color: #666; font-size: 11px; margin-top: 4px; }}
 .dest-tooltip {{ background: #fff; border: 1px solid #ccc; color: #333; font-size: 11px; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+.district-tooltip.leaflet-tooltip {{ background: rgba(255,255,255,0.85); border: none; color: #555; font-size: 11px; padding: 1px 5px; border-radius: 3px; box-shadow: 0 0 3px rgba(0,0,0,0.1); }}
 .leaflet-popup-content-wrapper {{ max-height: 80vh; overflow-y: auto; }}
 .leaflet-popup-content {{ max-height: 75vh; overflow-y: auto; }}
 @media (max-width:600px) {{ .header {{ font-size: 12px; }} .info {{ font-size: 10px; }} .header h1 {{ font-size: 13px; }} #dist-info {{ font-size: 11px !important; }} .legend {{ display: none !important; }} }}
@@ -5179,13 +5180,16 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-// District boundaries overlay (informational, non-interactive — clicks pass to region)
+// District boundaries overlay (fill:false — клики сквозь на регион, тултип при наведении на линию)
 if (districtsGeoJSON) {{
   L.geoJSON(districtsGeoJSON, {{
-    interactive: false,
     style: {{
-      color: '#888', weight: 0.8, opacity: 0.4,
+      color: '#777', weight: 0.8, opacity: 0.35,
       fill: false
+    }},
+    onEachFeature: function(feature, layer) {{
+      const dn = feature.properties.district;
+      if (dn) layer.bindTooltip(dn, {{ sticky: true, className: 'district-tooltip' }});
     }}
   }}).addTo(map);
 }}
