@@ -5179,18 +5179,13 @@ L.geoJSON(regionGeoJSON, {{
   }}
 }}).addTo(map);
 
-// District boundaries overlay (informational)
+// District boundaries overlay (informational, non-interactive — clicks pass to region)
 if (districtsGeoJSON) {{
   L.geoJSON(districtsGeoJSON, {{
+    interactive: false,
     style: {{
-      color: '#888', weight: 0.8, opacity: 0.5,
-      fillColor: 'transparent', fillOpacity: 0
-    }},
-    onEachFeature: function(feature, layer) {{
-      const dname = feature.properties.district;
-      if (dname) {{
-        layer.bindTooltip(dname, {{ permanent: false, direction: 'center', className: 'district-label' }});
-      }}
+      color: '#888', weight: 0.8, opacity: 0.4,
+      fill: false
     }}
   }}).addTo(map);
 }}
