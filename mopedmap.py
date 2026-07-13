@@ -2806,6 +2806,7 @@ DISAMBIGUATION_MAP = {
         "ленинградская область": [
             {"context_subject": "республика крым", "lat": 44.860, "lon": 33.733, "name": "Отрадное", "subject": "Республика Крым"},
             {"context_subject": "севастополь", "lat": 44.860, "lon": 33.733, "name": "Отрадное", "subject": "Республика Крым"},
+            {"context_subject": "ростовская область", "lat": 47.396, "lon": 38.744, "name": "Отрадное", "subject": "Ростовская область"},
         ],
     },
     "киров": {
@@ -3160,17 +3161,6 @@ DISAMBIGUATION_MAP = {
                 "lon": 39.634,
                 "name": "Михайловка",
                 "subject": "Воронежская область",
-            },
-        ],
-    },
-    "отрадное": {
-        "ленинградская область": [
-            {
-                "context_subject": "ростовская область",
-                "lat": 47.396,
-                "lon": 38.744,
-                "name": "Отрадное",
-                "subject": "Ростовская область",
             },
         ],
     },
@@ -3628,7 +3618,7 @@ for name_lower, c in CITY_DB.items():
 for name_lower, c in SETTLEMENT_DB.items():
     if name_lower in NON_UNIQUE_SETTLEMENT_NAMES:
         continue
-    # Skip cardinal directions — too common as words in direction context
+    # Skip common words that match settlement names but aren't location references
     if name_lower in ('восток', 'запад', 'север', 'юг',
                        'северо-восток', 'северо-запад', 'юго-восток', 'юго-запад',
                        'мера', 'меры', 'мере', 'меру',
