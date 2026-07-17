@@ -1349,6 +1349,12 @@ REGION_ALIASES = [
     {"pattern": "бобровском районе", "name": "Бобров", "lat": 51.1, "lon": 40.03, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "бобровский р-н", "name": "Бобров", "lat": 51.1, "lon": 40.03, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "бобровском р-не", "name": "Бобров", "lat": 51.1, "lon": 40.03, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "борисоглебский район", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "борисоглебском районе", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "борисоглебский р-н", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "борисоглебском р-не", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "борисоглебский", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "city", "subject": "Воронежская область"},
+    {"pattern": "борисоглебском", "name": "Борисоглебск", "lat": 51.367, "lon": 42.083, "type": "city", "subject": "Воронежская область"},
     {"pattern": "богучарский район", "name": "Богучар", "lat": 49.93, "lon": 40.55, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "богучарском районе", "name": "Богучар", "lat": 49.93, "lon": 40.55, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "богучарский р-н", "name": "Богучар", "lat": 49.93, "lon": 40.55, "type": "region", "is_region": True, "subject": "Воронежская область"},
@@ -1393,6 +1399,8 @@ REGION_ALIASES = [
     {"pattern": "лискинском районе", "name": "Лиски", "lat": 50.98, "lon": 39.5, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "лискинский р-н", "name": "Лиски", "lat": 50.98, "lon": 39.5, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "лискинском р-не", "name": "Лиски", "lat": 50.98, "lon": 39.5, "type": "region", "is_region": True, "subject": "Воронежская область"},
+    {"pattern": "монастырщина", "name": "Монастырщина", "lat": 49.832, "lon": 40.921, "type": "city", "subject": "Воронежская область"},
+    {"pattern": "монастырщине", "name": "Монастырщина", "lat": 49.832, "lon": 40.921, "type": "city", "subject": "Воронежская область"},
     {"pattern": "нижнедевицкий район", "name": "Нижнедевицк", "lat": 51.55, "lon": 38.367, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "нижнедевицком районе", "name": "Нижнедевицк", "lat": 51.55, "lon": 38.367, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "нижнедевицкий р-н", "name": "Нижнедевицк", "lat": 51.55, "lon": 38.367, "type": "region", "is_region": True, "subject": "Воронежская область"},
@@ -2838,6 +2846,16 @@ DISAMBIGUATION_MAP = {
             "name": "Березники",
             "subject": "Курская область",
         },
+    },
+    "борисоглебский": {
+        "ярославская область": [
+            {"context_subject": "воронежская область", "lat": 51.367, "lon": 42.083, "name": "Борисоглебск", "subject": "Воронежская область"},
+        ],
+    },
+    "монастырщинский": {
+        "смоленская область": [
+            {"context_subject": "воронежская область", "lat": 49.832, "lon": 40.921, "name": "Монастырщина", "subject": "Воронежская область"},
+        ],
     },
     "архангельская": {
         "архангельская область": {
