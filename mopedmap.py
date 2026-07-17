@@ -2683,6 +2683,7 @@ DISAMBIGUATION_MAP = {
             {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
         ],
         "ярославская область": [
+            {"context_subject": "тамбовская область", "lat": 53.25, "lon": 40.283, "name": "Первомайский", "subject": "Тамбовская область"},
             {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
         ],
     },
@@ -4407,6 +4408,8 @@ def classify_post(text):
         return "sighting"
     elif "внимание" in text_lower:
         return "attention"
+    elif "бпла" in text_lower or "беспилотн" in text_lower:
+        return "sighting"
     return "info"
 
 
