@@ -2677,6 +2677,12 @@ REGION_ALIASES = [
     {"pattern": "красноармейском районе", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
     {"pattern": "красноармейский р-н", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
     {"pattern": "красноармейском р-не", "name": "Красноармейская", "lat": 45.36, "lon": 38.21, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    # Красносельский район, Краснодарский край
+    {"pattern": "красносельский район", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красносельском районе", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красносельский р-н", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красносельском р-не", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "region", "is_region": True, "subject": "Краснодарский край"},
+    {"pattern": "красносельская", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "city", "subject": "Краснодарский край"},
     {"pattern": "староджерелиевская", "name": "Староджерелиевская", "lat": 45.35, "lon": 38.28, "type": "city", "subject": "Краснодарский край"},
     {"pattern": "старовеличковская", "name": "Старовеличковская", "lat": 45.42, "lon": 38.22, "type": "city", "subject": "Краснодарский край"},
 ]
@@ -2855,6 +2861,26 @@ DISAMBIGUATION_MAP = {
     "монастырщинский": {
         "смоленская область": [
             {"context_subject": "воронежская область", "lat": 49.832, "lon": 40.921, "name": "Монастырщина", "subject": "Воронежская область"},
+        ],
+    },
+    "красносельский": {
+        "костромская область": [
+            {"context_subject": "краснодарский край", "lat": 46.35, "lon": 39.0, "name": "Красносельская", "subject": "Краснодарский край"},
+        ],
+    },
+    "красное-на-волге": {
+        "костромская область": [
+            {"context_subject": "краснодарский край", "lat": 46.35, "lon": 39.0, "name": "Красносельская", "subject": "Краснодарский край"},
+        ],
+    },
+    "белозерский": {
+        "вологодская область": [
+            {"context_subject": "московская область", "lat": 55.46, "lon": 37.47, "name": "Белоозёрский", "subject": "Московская область"},
+        ],
+    },
+    "белозерск": {
+        "вологодская область": [
+            {"context_subject": "московская область", "lat": 55.46, "lon": 37.47, "name": "Белоозёрский", "subject": "Московская область"},
         ],
     },
     "архангельская": {
@@ -3826,7 +3852,7 @@ def fetch_channel(url, name, hours_filter=None):
             display = re.sub(r'Радар\.РФ[^\n]*', '', display).strip()
             display = re.sub(r'radar\.RF[^\n]*', '', display).strip()
             display = re.sub(r'🔎[^\n]*Радар[^\n]*Россия[^\n]*', '', display).strip()
-            display = re.sub(r'[📡❗️🔎🌐]\s*', '', display).strip()
+            display = re.sub(r'[\U0001F300-\U0001F9FF\u2600-\u27BF\uFE00-\uFE0F\u200D]+', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
                 page_posts += 1
