@@ -6,6 +6,7 @@ import sys
 import webbrowser
 import time
 import traceback
+import html as html_module
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CITIES_FILE = os.path.join(BASE_DIR, "cities.json")
@@ -3754,6 +3755,7 @@ CHANNEL_PRIORITY = {ch["name"]: ch.get("priority", 2) for ch in CHANNELS}
 def clean_message_text(raw, channel=""):
     clean = raw.replace('<br>', '\n').replace('<br/>', '\n')
     clean = re.sub(r'<[^>]+>', ' ', clean).strip()
+    clean = html_module.unescape(clean)
     clean = re.sub(r'\s+', ' ', clean)
     clean = re.split(r'📡', clean)[0].strip()
     clean = re.sub(r'@locatorru.*$', '', clean).strip()
@@ -3834,6 +3836,7 @@ def fetch_channel(url, name, hours_filter=None):
             # Create display version: preserve <br> as newlines, strip other HTML, remove noise
             display = msg_html.replace('<br>', '\n').replace('<br/>', '\n')
             display = re.sub(r'<[^>]+>', ' ', display)
+            display = html_module.unescape(display)
             display = re.sub(r'\s*\n\s*', '\n', display).strip()
             display = re.sub(r'@\w+\s*', '', display).strip()
             display = re.sub(r'@ \w+\s*', '', display).strip()
