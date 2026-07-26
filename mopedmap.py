@@ -4697,6 +4697,7 @@ def sanitize_popup_text(text):
     t = re.sub(r'Мы в MAX[^\n]*', '', t).strip()
     t = re.sub(r'Радар\.РФ[^\n]*', '', t).strip()
     t = re.sub(r'radar\.RF[^\n]*', '', t).strip()
+    t = re.sub(r'[^·\n]{1,40}\s*·\s*\w+\s*·\s*\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}', '', t).strip()
     t = re.sub(r'@\w+\s*', '', t).strip()
     t = re.sub(r'Подписаться', '', t).strip()
     t = re.sub(r'\n{3,}', '\n\n', t)
