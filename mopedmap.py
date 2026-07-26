@@ -3855,6 +3855,9 @@ def fetch_channel(url, name, hours_filter=None):
             display = re.sub(r'Радар\.РФ[^\n]*', '', display).strip()
             display = re.sub(r'radar\.RF[^\n]*', '', display).strip()
             display = re.sub(r'🔎[^\n]*Радар[^\n]*Россия[^\n]*', '', display).strip()
+            display = re.sub(r'&#x[0-9a-fA-F]+;', '', display)
+            display = re.sub(r'&#\d+;', '', display)
+            display = display.replace('📡', '').replace('🛰', '').replace('⚡', '').replace('🔔', '')
             display = re.sub(r'[\U0001F300-\U0001F9FF\u2600-\u27BF\uFE00-\uFE0F\u200D]+', '', display).strip()
             if clean and len(clean) > 10:
                 posts.append((clean, display, name, dt))
