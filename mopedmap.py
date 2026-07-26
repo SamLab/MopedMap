@@ -4680,6 +4680,29 @@ def dedup_markers(markers):
     return list(seen.values())
 
 
+def sanitize_popup_text(text):
+    if not text:
+        return text
+    t = text
+    t = html_module.unescape(t)
+    t = re.sub(r'&#x[0-9a-fA-F]+;', '', t)
+    t = re.sub(r'&#\d+;', '', t)
+    t = t.replace('\U0001f4e1', '').replace('\U0001f6f0', '').replace('\u26a1', '').replace('\U0001f514', '')
+    t = re.sub(r'[\U0001F300-\U0001F9FF\u2600-\u27BF\uFE00-\uFE0F\u200D]', '', t)
+    t = re.sub(r'Локатор России[^\n]*', '', t).strip()
+    t = re.sub(r'Радар Ярославль[^\n]*', '', t).strip()
+    t = re.sub(r'Радар Чувашия[^\n]*', '', t).strip()
+    t = re.sub(r'Радар по всей России[^\n]*', '', t).strip()
+    t = re.sub(r'Мониторинг\.РФ[^\n]*', '', t).strip()
+    t = re.sub(r'Мы в MAX[^\n]*', '', t).strip()
+    t = re.sub(r'Радар\.РФ[^\n]*', '', t).strip()
+    t = re.sub(r'radar\.RF[^\n]*', '', t).strip()
+    t = re.sub(r'@\w+\s*', '', t).strip()
+    t = re.sub(r'Подписаться', '', t).strip()
+    t = re.sub(r'\n{3,}', '\n\n', t)
+    return t.strip()
+
+
 def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
@@ -4734,7 +4757,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             feat_copy = json.loads(json.dumps(feat))
             feat_copy['properties']['alert_type'] = best_type
             feat_copy['properties']['popup_name'] = best_item.get('name', '')
-            feat_copy['properties']['popup_text'] = best_item.get('text', '')
+            feat_copy['properties']['popup_text'] = sanitize_popup_text(best_item.get('text', ''))
             feat_copy['properties']['popup_source'] = best_item.get('source', '')
             feat_copy['properties']['popup_time'] = best_item.get('time', '')
             region_map[region_name] = feat_copy
@@ -4744,7 +4767,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     city_copy = json.loads(json.dumps(city_feat))
                     city_copy['properties']['alert_type'] = best_type
                     city_copy['properties']['popup_name'] = best_item.get('name', '')
-                    city_copy['properties']['popup_text'] = best_item.get('text', '')
+                    city_copy['properties']['popup_text'] = sanitize_popup_text(best_item.get('text', ''))
                     city_copy['properties']['popup_source'] = best_item.get('source', '')
                     city_copy['properties']['popup_time'] = best_item.get('time', '')
                     region_map[best_city] = city_copy
@@ -4787,7 +4810,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     feat_copy = json.loads(json.dumps(feat))
                     feat_copy['properties']['alert_type'] = item['type']
                     feat_copy['properties']['popup_name'] = item.get('name', '')
-                    feat_copy['properties']['popup_text'] = item.get('text', '')
+                    feat_copy['properties']['popup_text'] = sanitize_popup_text(item.get('text', ''))
                     feat_copy['properties']['popup_source'] = item.get('source', '')
                     feat_copy['properties']['popup_time'] = item.get('time', '')
                     region_map[rn] = feat_copy
@@ -5000,7 +5023,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                             if rm_name == this_name:
                                 region_map[rm_key]['properties']['alert_type'] = new_type
                                 region_map[rm_key]['properties']['popup_name'] = item.get('name', '')
-                                region_map[rm_key]['properties']['popup_text'] = item.get('text', '')
+                                region_map[rm_key]['properties']['popup_text'] = sanitize_popup_text(item.get('text', ''))
                                 region_map[rm_key]['properties']['popup_source'] = item.get('source', '')
                                 region_map[rm_key]['properties']['popup_time'] = item.get('time', '')
             # Also clear city-level polygon fill
@@ -5012,7 +5035,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
                         region_map[cn]['properties']['alert_type'] = 'clear'
                         region_map[cn]['properties']['popup_name'] = item.get('name', '')
-                        region_map[cn]['properties']['popup_text'] = item.get('text', '')
+                        region_map[cn]['properties']['popup_text'] = sanitize_popup_text(item.get('text', ''))
                         region_map[cn]['properties']['popup_source'] = item.get('source', '')
                     region_map[cn]['properties']['popup_time'] = item.get('time', '')
 
@@ -5055,7 +5078,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             if at == 'sighting':
                 region_map[rn]['properties']['alert_type'] = 'attention'
                 region_map[rn]['properties']['popup_name'] = sighting_item.get('name', '')
-                region_map[rn]['properties']['popup_text'] = f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}"
+                region_map[rn]['properties']['popup_text'] = sanitize_popup_text(f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}")
                 region_map[rn]['properties']['popup_source'] = sighting_item.get('source', '')
                 region_map[rn]['properties']['popup_time'] = sighting_item.get('time', '')
             continue
@@ -5064,7 +5087,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             feat_copy = json.loads(json.dumps(feat))
             feat_copy['properties']['alert_type'] = 'attention'
             feat_copy['properties']['popup_name'] = sighting_item.get('name', '')
-            feat_copy['properties']['popup_text'] = f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}"
+            feat_copy['properties']['popup_text'] = sanitize_popup_text(f"Фиксации БПЛА в районе\n{sighting_item.get('text', '')}")
             feat_copy['properties']['popup_source'] = sighting_item.get('source', '')
             feat_copy['properties']['popup_time'] = sighting_item.get('time', '')
             region_map[rn] = feat_copy
@@ -5564,7 +5587,7 @@ def process_posts(posts):
         # Normalize spacing: insert space before uppercase Cyrillic after lowercase (fixes concatenated text like "районТульская")
         post = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', post)
         display_text = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', display_text)
-        original_post = display_text
+        original_post = sanitize_popup_text(display_text)
         # Replace newlines with spaces so multi-word patterns can match across lines
         post = re.sub(r'\n+', ' ', post)
         post = re.sub(r'\s+', ' ', post).strip()
