@@ -2470,6 +2470,7 @@ REGION_ALIASES = [
     make_region_alias_with_cases("ростовская обл", "Ростов-на-Дону", 47.2357, 39.7015),
     make_region_alias_with_cases("московская область", "Москва", 55.7558, 37.6173, subject="Московская область"),
     make_region_alias_with_cases("московская обл", "Москва", 55.7558, 37.6173, subject="Московская область"),
+    make_region_alias("мо", "Москва", 55.7558, 37.6173, subject="Московская область"),
     make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
     make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
     make_region_alias_with_cases("краснодарский край", "Краснодар", 45.0355, 38.9753),
@@ -2538,6 +2539,11 @@ REGION_ALIASES = [
     # Аэропорты
     {"pattern": "аэропорт иваново", "name": "Аэропорт Иваново (Южный)", "lat": 56.9417, "lon": 40.9408, "type": "city", "is_region": False, "subject": "Ивановская область"},
     {"pattern": "аэропорт ярославль", "name": "Аэропорт Ярославль (Туношна)", "lat": 57.5608, "lon": 40.1544, "type": "city", "is_region": False, "subject": "Ярославская область"},
+    # Аэропорты Московской области
+    {"pattern": "аэропорт жуковский", "name": "Аэропорт Жуковский", "lat": 55.5533, "lon": 38.15, "type": "city", "is_region": False, "subject": "Московская область"},
+    {"pattern": "аэропорт домодедово", "name": "Аэропорт Домодедово", "lat": 55.4088, "lon": 37.9063, "type": "city", "is_region": False, "subject": "Московская область"},
+    {"pattern": "аэропорт внуково", "name": "Аэропорт Внуково", "lat": 55.5916, "lon": 37.2615, "type": "city", "is_region": False, "subject": "Московская область"},
+    {"pattern": "аэропорт шереметьево", "name": "Аэропорт Шереметьево", "lat": 55.9726, "lon": 37.4146, "type": "city", "is_region": False, "subject": "Московская область"},
     make_region_alias_with_cases("иркутская область", "Иркутск", 52.2864, 104.2807),
     make_region_alias_with_cases("калининградская область", "Калининград", 54.7104, 20.4522),
     make_region_alias_with_cases("калужская область", "Калуга", 54.5293, 36.2754),
@@ -3841,6 +3847,7 @@ CHANNELS = [
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar", "priority": 2},
     {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii", "priority": 2},
     {"url": "https://t.me/s/ivanovo_radar", "name": "ivanovo_radar", "priority": 2},
+    {"url": "https://t.me/s/RDFradar", "name": "RDFradar", "priority": 2},
     # {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
     # {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
     {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot", "priority": 2},
@@ -4040,7 +4047,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     text_lower = text.lower().replace("ё", "е")
     # Filter false-positive "суш" (Республика Тыва) from "по суше" / "в суше" phrases
     text_lower = re.sub(r'\b[впо]\s+суше\b', ' СУХОПУТНО ', text_lower)
-    WORD_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789абвгдежзийклмнопрстуфхцчшщъыьэюя")
+    WORD_CHARS = set("abcdefghijklmnopqrstuvwxyz0123456789абвгдежзийклмнопрстуфхцчшщъыьэюя-")
     matched_spans = set()
     results = []
 
@@ -4079,6 +4086,20 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             if end < len(text_lower) and text_lower[end] in WORD_CHARS:
                 start = idx + 1
                 continue
+            # Skip if this match is a rayon suffix preceded by a rayon adjective
+            # (RAYON_RE handles these better, e.g. "Рузский МО" → RAYON_RE finds Руза)
+            if len(pattern) <= 4 and pattern in ('мо', 'го', 'ао'):
+                _pre = text_lower[max(0, idx-40):idx].strip()
+                if _pre:
+                    _prev_word = _pre.split()[-1].strip(",(;")
+                    if re.search(r'(ский|ской|цкий|цкой|ском|цком)$', _prev_word):
+                        start = idx + 1
+                        continue
+            # Skip if followed by район/ГО/МО/АО (RAYON_RE handles these better)
+            _nx = text_lower[end:end+12]
+            if any(_nx.startswith(' ' + sfx) for sfx in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао')):
+                start = idx + 1
+                continue
 
             is_overlap = any(
                 not (end <= s_start or s_end <= idx)
@@ -4114,7 +4135,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район/МО/ГО forms
     # Handles both nominative and prepositional adjective forms
     RAYON_RE = re.compile(
-        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го)(?!\w)',
+        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го|АО|ао)(?!\w)',
         re.IGNORECASE
     )
     # Also match bare adjective forms in district lists (e.g. "Белгородском, Валуйском, ... Чернянском МО")
@@ -4135,6 +4156,54 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         )
         if not overlap:
             rayon_matches.append((m.start(), m.end(), m.group(1), m.group(2).lower(), m.group(), True))
+
+    # Match "ГО/МО + Город" (e.g. "ГО Одинцово", "МО Чехов") — before standalone МО
+    MO_GO_PREFIX_RE = re.compile(r'\b(ГО|МО)\s+([А-Я][а-яё\-]+)\b')
+    for m in MO_GO_PREFIX_RE.finditer(text):
+        _is_overlap = any(
+            not (m.end() <= s_start or s_end <= m.start())
+            for s_start, s_end in matched_spans
+        )
+        if _is_overlap:
+            continue
+        city_name = m.group(2).lower()
+        if city_name in CITY_DB:
+            matched_spans.add((m.start(), m.end()))
+            c = CITY_DB[city_name]
+            results.append({
+                "name": c["name"], "lat": c["lat"], "lon": c["lon"],
+                "type": "region", "matched": text[m.start():m.end()],
+                "is_region": True, "subject": c["subject"],
+            })
+
+    # Match standalone "МО" (Московская область) — "в МО", "БПЛА в МО"
+    # Skip if preceded by a rayon adjective (e.g. "Рузский МО" — handled by RAYON_RE)
+    MO_STANDALONE_RE = re.compile(r'\bМО\b')
+    for m in MO_STANDALONE_RE.finditer(text_lower):
+        _is_overlap = any(
+            not (m.end() <= s_start or s_end <= m.start())
+            for s_start, s_end in matched_spans
+        )
+        if _is_overlap:
+            continue
+        # Skip if "МО" is preceded by a rayon adjective (Рузский/Чернянский/etc)
+        _pre = text_lower[max(0, m.start()-40):m.start()].strip()
+        if _pre:
+            _prev_word = _pre.split()[-1].strip(",(;")
+            if re.search(r'(ский|ской|цкий|цкой|ском|цком)$', _prev_word):
+                continue
+        # Skip if "МО" is followed by a word in CITY_DB (MO_GO_PREFIX_RE should handle it)
+        _post = text_lower[m.end():m.end()+40].strip()
+        if _post:
+            _next_word = _post.split()[0].strip(",(;")
+            if _next_word in CITY_DB:
+                continue
+        matched_spans.add((m.start(), m.end()))
+        results.append({
+            "name": "Москва", "lat": 55.7558, "lon": 37.6173,
+            "type": "region", "matched": text[m.start():m.end()],
+            "is_region": True, "subject": "Московская область",
+        })
 
     # Process bare adjectives first (they often find a city in CITY_DB),
     # then explicit (МО/ГО) which can use region deduction from earlier matches
