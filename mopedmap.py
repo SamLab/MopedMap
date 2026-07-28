@@ -75,6 +75,8 @@ for lk, subjects in _name_subj_counts.items():
 # Hardcoded settlements for annexed regions not in Wikidata
 _extra_settlements = [
     ("Красный Луч", 48.167, 38.933, "Луганская область"),
+    ("Тамала", 52.54097, 43.25145, "Пензенская область"),
+    ("Сосновка", 52.42125, 43.50979, "Пензенская область"),
 ]
 for name, lat, lon, subj in _extra_settlements:
     lk = name.lower()
@@ -5896,10 +5898,14 @@ def process_posts(posts):
             for src, dst in dir_pairs:
                 if not src.get("is_region"):
                     specific_srcs.add((src.get("subject", "").lower(), round(dst["lat"], 1), round(dst["lon"], 1)))
+                # Rayon-level region sources suppress oblast-level for same subject+dst
+                elif src.get("is_region") and "район" in src.get("matched", "").lower():
+                    specific_srcs.add((src.get("subject", "").lower(), round(dst["lat"], 1), round(dst["lon"], 1)))
             seen_pairs = set()
             for src, dst in dir_pairs:
                 # Skip region src if a specific settlement exists for same subject+destination
-                if src.get("is_region"):
+                # But do NOT skip rayon-level sources themselves (they are the more specific one)
+                if src.get("is_region") and "район" not in src.get("matched", "").lower():
                     subj = src.get("subject", "").lower()
                     dst_key = (round(dst["lat"], 1), round(dst["lon"], 1))
                     if any(s_subj == subj and (s_lat, s_lon) == dst_key for s_subj, s_lat, s_lon in specific_srcs):
