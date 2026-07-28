@@ -2535,6 +2535,9 @@ REGION_ALIASES = [
     make_region_alias_with_cases("воронежская область", "Воронеж", 51.6717, 39.2106),
     make_region_alias_with_cases("воронежская обл", "Воронеж", 51.6717, 39.2106),
     make_region_alias_with_cases("ивановская область", "Иваново", 56.9997, 40.9726),
+    # Аэропорты
+    {"pattern": "аэропорт иваново", "name": "Аэропорт Иваново (Южный)", "lat": 56.9417, "lon": 40.9408, "type": "city", "is_region": False, "subject": "Ивановская область"},
+    {"pattern": "аэропорт ярославль", "name": "Аэропорт Ярославль (Туношна)", "lat": 57.5608, "lon": 40.1544, "type": "city", "is_region": False, "subject": "Ярославская область"},
     make_region_alias_with_cases("иркутская область", "Иркутск", 52.2864, 104.2807),
     make_region_alias_with_cases("калининградская область", "Калининград", 54.7104, 20.4522),
     make_region_alias_with_cases("калужская область", "Калуга", 54.5293, 36.2754),
@@ -4606,6 +4609,8 @@ def classify_post(text):
         return "interception"
     elif "авиацион" in text_lower and "бпла" not in text_lower and "беспилот" not in text_lower:
         return "aviation"
+    elif "аэропорт" in text_lower and ("временные ограничения" in text_lower or "ограничения на прием" in text_lower):
+        return "info"
     elif "меры безопасности" in text_lower or "пуск" in text_lower or "опасность" in text_lower or "тревога" in text_lower or ("угроз" in text_lower and "в случае" not in text_lower):
         return "danger"
     elif "фиксаци" in text_lower and "не наблюда" in text_lower:
