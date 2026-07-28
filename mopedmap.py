@@ -3719,8 +3719,9 @@ for name_lower, c in SETTLEMENT_DB.items():
                        'богатырь', 'богатырьа', 'богатырьу', 'богатырье', 'богатырьом',
                        'крымский', 'крымския', 'крымскию', 'крымские', 'крымскием',
                        'центральный', 'центральныя', 'центральныю', 'центральные', 'центральныем',
-                       'суда', 'черное', 'чёрное',
-                       'или'):
+                        'суда', 'черное', 'чёрное',
+                        'или',
+                        'дай', 'дайте', 'даю', 'дают'):
         continue
     pat = name_lower.replace("ё", "е")
     for case_form in get_case_forms(pat):
@@ -4498,6 +4499,8 @@ def classify_post(text):
         return "danger"
     elif "фиксаци" in text_lower and "не наблюда" in text_lower:
         return "clear"
+    elif ("на карте" in text_lower or "в прямом эфире" in text_lower) and ("сайт" in text_lower or "присылай" in text_lower or "показывающ" in text_lower):
+        return "info"
     elif "фиксаци" in text_lower or "пролёт" in text_lower or "пролет" in text_lower or "группа" in text_lower:
         return "sighting"
     elif "внимание" in text_lower:
