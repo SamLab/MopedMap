@@ -3192,6 +3192,22 @@ DISAMBIGUATION_MAP = {
             "subject": "Тульская область",
         },
     },
+    "мантуровский": {
+        "костромская область": [
+            {
+                "context_subject": "курская область",
+                "lat": 51.483, "lon": 37.117,
+                "name": "Мантурово",
+                "subject": "Курская область",
+            },
+            {
+                "context_subject": "воронежская область",
+                "lat": 50.494, "lon": 39.733,
+                "name": "Мантурово",
+                "subject": "Воронежская область",
+            },
+        ],
+    },
     "козловка": {
         "чувашия": {
             "context_subject": "воронежская область",
@@ -4140,14 +4156,34 @@ def extract_locations(text, extra_context=None):
             city_prefixes.append(stem[:-1])
             city_prefixes.append(stem[:-1] + "ск")
             city_prefixes.append(stem[:-1] + "к")
+        # Collect existing region subjects from results to prefer matching region
+        _existing_region_subjs = set()
+        for r in results:
+            if r.get("is_region") and r.get("subject"):
+                _existing_region_subjs.add(r["subject"].lower().strip())
         city_key = None
         for prefix in city_prefixes:
             for ck in CITY_DB:
                 if ck.startswith(prefix):
-                    city_key = ck
-                    break
+                    if _existing_region_subjs:
+                        # Prefer city from a region already mentioned in results
+                        if CITY_DB[ck]["subject"].lower().strip() in _existing_region_subjs:
+                            city_key = ck
+                            break
+                    else:
+                        city_key = ck
+                        break
             if city_key:
                 break
+        # If no match in existing regions, pick the first match anyway
+        if city_key is None:
+            for prefix in city_prefixes:
+                for ck in CITY_DB:
+                    if ck.startswith(prefix):
+                        city_key = ck
+                        break
+                if city_key:
+                    break
         if city_key is not None:
             # Verify city subject is consistent with other successful rayon matches
             c = CITY_DB[city_key]
