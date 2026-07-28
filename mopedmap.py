@@ -4114,13 +4114,13 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район/МО/ГО forms
     # Handles both nominative and prepositional adjective forms
     RAYON_RE = re.compile(
-        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го)(?!\w)',
+        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го)(?!\w)',
         re.IGNORECASE
     )
     # Also match bare adjective forms in district lists (e.g. "Белгородском, Валуйском, ... Чернянском МО")
     # Pattern: adjective in prepositional/nominative followed by comma, "и", or at end
     BARE_RAYON_RE = re.compile(
-        r'(?<!\w)(\w+?)(ский|ской|цкой|цкий|ском|цком)(?=\s*[,;)\]]|\s+и\s+|$)',
+        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)(?=\s*[,;)\]]|\s+и\s+|$)',
         re.IGNORECASE
     )
     # Collect all rayon matches (both explicit and bare) for cross-region deduction
@@ -4230,6 +4230,12 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 if esubj:
                     subj_lower = esubj.lower()
                     subj_freq[subj_lower] = subj_freq.get(subj_lower, 0) + 1
+            # Also count subjects from extra_context (which is already disambiguated)
+            # to break ties in favor of the broader context
+            if extra_context:
+                for existing in extra_context:
+                    if existing.get("is_region") and existing.get("subject"):
+                        subj_freq[existing["subject"].lower()] = subj_freq.get(existing["subject"].lower(), 0) + 1
             for rstem, rsubj in rayon_region_subjects.items():
                 subj_freq[rsubj] = subj_freq.get(rsubj, 0) + 2
             best_subj = max(subj_freq, key=subj_freq.get) if subj_freq else None
@@ -4460,17 +4466,25 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                         if city_subj in ctx_subjects:
                             entry = CITY_DB[lk]
                 if entry is None:
-                    # No subject match; only include if cross-region is allowed
-                    if not include_cross_region_nonunique:
-                        continue
-                    # Try CITY_DB first, then any settlement entry
-                    if lk in CITY_DB:
-                        entry = CITY_DB[lk]
+                    if ctx_subjects:
+                        if not include_cross_region_nonunique:
+                            continue
+                        # With known context, only allow CITY_DB cross-region entries
+                        if lk in CITY_DB:
+                            entry = CITY_DB[lk]
+                        if entry is None:
+                            continue
                     else:
-                        for key, e in SETTLEMENTS_BY_NAME_SUBJECT.items():
-                            if key[0] == lk:
-                                entry = e
-                                break
+                        # No context: only include if cross-region is allowed
+                        if not include_cross_region_nonunique:
+                            continue
+                        if lk in CITY_DB:
+                            entry = CITY_DB[lk]
+                        else:
+                            for key, e in SETTLEMENTS_BY_NAME_SUBJECT.items():
+                                if key[0] == lk:
+                                    entry = e
+                                    break
                 if entry is None:
                     continue
                 matched_spans.add((idx, end))
