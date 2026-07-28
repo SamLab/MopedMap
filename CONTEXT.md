@@ -1,230 +1,61 @@
-# YarLocator — контекст проекта
+## Goal
+Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Oblast locations are present in the map generator.
 
-## Структура
-- `F:\Locator\MopedMap\mopedmap.py` — основной скрипт (генерация карты)
-- `F:\Locator\MopedMap\cities.json` — база городов
-- `F:\Locator\MopedMap\mopedmap.html` — выходной файл карты
-- `F:\Locator\MopedMap\locator_map.html` — старая версия (не обновлялась с мая)
+## Constraints & Preferences
+- User communicates in Russian; codebase comments in Russian
+- Fixes committed and pushed to GitHub automatically
+- Disambiguation rules use `DISAMBIGUATION_MAP` with `context_subject` matching
+- Duplicate rayon patterns in `REGION_ALIASES` cause first-match-wins issues — never add same pattern to multiple subjects; use `DISAMBIGUATION_MAP` instead
+- If a post explicitly names an oblast/krai/republic, false location matches from other regions must be filtered out
 
-## Каналы (CHANNELS)
-locatorru, vrv_radar, radarrussiia, radarYR, russiamonitoring_radar_bpla,
-radar_rossia_bpla, radar_yaroslavl, radar_yar76, radarr_yar,
-radar_rossii_rossii, LPRalarm, lpr1_treugolnik, migalka_alerts_bot
+## Progress
+### Done
+- **Пречистое/Первомайский → Тамбовская**: DISAMBIGUATION_MAP redirect (commit `8d36e86`)
+- **classify_post: "бпла"/"беспилотн" → sighting**: Fallback before `return "info"` (commit `8d36e86`)
+- **Борисоглебский → Воронежская**: REGION_ALIASES + DISAMBIGUATION_MAP (commit `a52f736`)
+- **Монастырщина → Воронежская**: City entries + DISAMBIGUATION_MAP (commit `a52f736`)
+- **Summary filter: "за последние сутки"**: Added to SUMMARY_PATTERNS (commit `aa692cc`)
+- **Красносельский/Белозерский disambiguation**: REGION_ALIASES + DISAMBIGUATION_MAP (commit `08a40fd`)
+- **Robust emoji filter in display_text**: Unicode range `[\U0001F300-\U0001F9FF\u2600-\u27BF\uFE00-\uFE0F\u200D]+` (commit `08a40fd`)
+- **HTML entity decoding + emoji stripping**: `html.unescape()`, explicit `&#x...;` + `&#...;` removal, `📡`/`🛰`/`⚡`/`🔔` replacement (commits `edfa39a`, `e5926ac`)
+- **sanitize_popup_text() function**: Created cleanup function applied to ALL `popup_text` assignments in `generate_html` — strips HTML entities, emoji, channel footers (`Локатор России`, `Радар.*`, `@mention`), metadata line (`type · channel · date`), `Подписаться`. Applied at `original_post` source in `process_posts` + all 7 `popup_text` sites (commits `47e4d8c`, `f51e44b`)
+- **Выгоничи → Ивановская/Амурская fix**: Root cause — `extract_directions` splits post; `extract_locations(after, extra_context=full_context)` called on `"в сторону Голубого моста"` had `auto-remove` only checking `_region_subjs` from `results` (empty for `after`), ignoring `extra_context` which held `Брянская область`. Fixed: auto-remove in `extract_locations` now also collects `is_region` subjects from `extra_context`. Added `filter_locations_by_post_region()` safety net at `process_posts` marker level (commit `1902191`)
+- **Yaroslavl Oblast missing settlements (14.07.2026)**: Added 13 missing settlements to REGION_ALIASES — Телищево (57.52631,39.98217), Нижний Поселок (57.62089,39.99506), Ермолово (57.63262,39.99856), Красный Бор (57.64794,40.01385), Кобыляево (57.65165,40.04280), Козьмодемьянск (57.49236,39.69240), Дубки (57.52836,39.73805), Гаврилково (57.42255,39.61766), Шалаево (57.35987,39.59351), Грешнево (57.70472,40.21583), Полесье (57.62917,39.95760), Любашино (57.49029,39.94044), Заволжье (58.073,38.858). Все с subject="Ярославская область", is_region=False. Проверено: Тутаев и Гаврилов-Ям уже есть в CITY_DB.
+- **Yaroslavl Oblast batch 2 (29.07.2026)**: Added 20 locations to REGION_ALIASES — Алексеевское, Климовское, Еремеевское, Заячий Холм, Станция Река, Щедрино, Нагорный, Сергеево, Брагино, Нефтестрой, Новоселки, Суздалка, Пятерка, Ананьино, Карабиха, Красные Ткачи, Белкино, Кормилицино, Бурмакино, Туношна. Все с subject="Ярославская область".
+- **Yaroslavl Oblast batch 3 (29.07.2026)**: Added Цеденево and Ямищи to REGION_ALIASES.
 
-HOURS_FILTER = 4 (окно 4 часа), обновление каждые 5 мин.
+### In Progress
+- (none)
 
-## Сделанные фиксы
+### Blocked
+- (none)
 
-### 1. Архангельская → Краснодарский край
-Добавлена DISAMBIGUATION_MAP для "архангельская": если в тексте есть "краснодарский край" → станица Архангельская (45.707, 40.350), Краснодарский край.
+## Key Decisions
+- **Duplicate rayon patterns**: Never add same pattern to multiple subjects in REGION_ALIASES — use DISAMBIGUATION_MAP for context-based redirects
+- **sanitize_popup_text applied at source + output**: Both `original_post` in `process_posts` AND all `popup_text` sites in `generate_html` — belts-and-suspenders approach
+- **Auto-remove in extract_locations uses extra_context**: Fixes `extract_directions` path where `after`/`before` text lacks region mention but `extra_context` has it
+- **filter_locations_by_post_region**: Separate safety net at process_posts level; redundant with auto-remove fix but provides defense-in-depth
+- **Non-unique settlement names in Yaroslavl**: Locations that already exist in settlements.json for other regions (Дубки, Ермолово, Гаврилково, Красный Бор) were added to REGION_ALIASES with Yaroslavl subject to match when post context includes Ярославская область
+- **Missing-from-DB entries**: Locations not in settlements.json at all (Телищево, Нижний Поселок, Кобыляево, Шалаево, Грешнево, Полесье, Любашино, Козьмодемьянск, Заволжье) added as new REGION_ALIASES entries
 
-### 2. Lightning-слои разделены
-type=0 (0-15 мин, зелёный) и type=1 (15-30 мин, тёмно-зелёный) в отдельных panes с CSS-фильтрами. Обновление каждые 120с через setInterval(lightningLayer.setUrl).
+## Next Steps
+1. Коммитнуть и запушить
+2. Удалить временные файлы (check_settlements.py, check_s.py, check_result.txt)
+3. (опционально) Добавить Никольское и районы Ярославля, если пользователь попросит
 
-### 3. max.ru/join/ — полный пропуск поста
-Строка 4082: `if "max.ru/join/" in post: filtered += 1; continue`
+## Critical Context
+- `REGION_ALIASES` at line ~170 — linear search, first match wins
+- `ALL_PATTERNS` built from REGION_ALIASES + CITY_DB + SETTLEMENT_DB, sorted by pattern length desc
+- `extract_locations` at line ~3941 — has auto-remove logic that filters settlements/cities whose region doesn't match any `is_region` result
+- Auto-remove now also scans `extra_context` for region subjects (commit `1902191`)
+- `extract_directions` at line ~4366 — calls `extract_locations(before)` and `extract_locations(after)` with full-sentence context; direction markers bypass sentence-level filter in process_posts
+- `sanitize_popup_text()` defined before `generate_html()` — strips HTML entities, emoji, channel footers, @mentions, metadata line
+- Key bug pattern: Common Russian words matching settlement names (e.g., "моста" → Моста, Ивановская; "голубого" → Голубое, Амурская) in unrelated posts
+- User is testing with locatorru channel posts (Брянская/Курская/Белгородская области)
 
-### 4. Радар Ярославль/Ярославская область — очистка префиксов
-clean_message_text: `r'Радар Ярославль\s*[-–—]\s*'` → пусто
-
-### 5. Бетлица/Куйбышевский район
-REGION_ALIASES: добавлен Куйбышевский район, Ростовская область (координаты г. Куйбышево).
-DISAMBIGUATION_MAP: "куйбышевский район" → Ростовская область.
-
-### 6. Приморск/Акимовка
-REGION_ALIASES: добавлена Акимовка, Запорожская область.
-DISAMBIGUATION_MAP: "приморск" → Запорожская область.
-
-### 7. Новые каналы
-LPRalarm, lpr1_treugolnik, migalka_alerts_bot
-
-### 8. migalka_alerts_bot — полицейская активность
-Добавлен в clean_message_text: `r'@migalka_alerts_bot.*$'`. Классифицируется как "info".
-
-### 9. Отображение текста с переносами строк
-`<br>` → `\n` в display_text. CSS: `white-space: pre-wrap`.
-
-### 10. Очистка футера из display_text
-Удаляются строки, содержащие:
-- Локатор России
-- Радар Ярославль
-- Радар Чувашия
-- Обход белых списков
-- Радар по всей России
-- Мониторинг.РФ / мониторинг.ру / мониторинг.рф
-- Мы в MAX
-
-### 11. Пропуск info-постов (без события)
-Если classify_post вернул "info" → пропуск (filtered += 1).
-
-### 12. Пропуск сводок (is_summary_post)
-SUMMARY_PATTERNS: сводки МО, ночные итоги и т.д.
-
-### 13. История регионов (region_history.json)
-Если за последние 4 часа для региона нет событий — на карте показывается контур серым пунктиром с popup `[История]` и последним известным событием. Данные сохраняются в `region_history.json` между запусками. При каждом запуске файл обновляется самым свежим событием на регион.
-
-## Ключевые функции
-
-### fetch_all() → fetch_channel(url, name)
-Парсинг `t.me/s/{channel}`. Извлекает data-post, текст, datetime через regex.
-Пагинация через `?before={id}` (до 20 страниц по 20 постов).
-**Важно:** если t.me недоступен — возвращает пустой список, карта будет с 0 точек.
-
-### clean_message_text(raw, channel)
-- Замена <br> → \n, удаление HTML-тегов
-- Удаление @username до конца строки
-- Удаление футеров (Радар по всей России, Мониторинг.РФ и т.д.)
-- Фильтр не-текстовых символов
-- Если результат < 10 символов — пост отбрасывается
-
-### fetch_channel — display_text
-Второй вариант очистки для отображения:
-- <br> → \n, удаление HTML
-- Удаление строк-футеров по .*паттерну.*
-
-### classify_post(text)
-- crash/smert → "crash"
-- опасность по бпла, угроза бпла, опасность бпла → "danger"
-- внимание бпла → "attention"
-- фиксация бпла, беспилотн → "sighting"
-- отмена/отбой опасности → "clear"
-- ракетн, крылат, кинжал → "rocket"
-- авиационная опасность → "aviation"
-- перехват, сбит → "interception"
-- остальное → "info"
-
-### extract_locations(text, extra_context)
-Ищет паттерны из REGION_ALIASES + CITY_DB + динамические районные формы (-ский/-ской/-цкий + район).
-Word boundaries + защита от перекрытий matched_spans.
-Возвращает список {"name", "lat", "lon", "type", "matched", "is_region"?, "subject"?}.
-
-### process_posts(posts)
-1. Пропуск max.ru/join/
-2. Пропуск is_summary_post
-3. classify_post → пропуск info
-4. extract_directions → если есть, создаёт direction-маркеры
-5. Иначе: разбивка на предложения, для каждого — classify_post + extract_locations → маркеры
-
-### dedup_markers(markers)
-По ключу (name, lat, lon, type, is_region) — остаётся новейший (или самый длинный текст при равном времени).
-
-### generate_html(markers, geojson_lookup)
-- dedup_markers
-- region_map: для каждого региона выбирается наиболее серьёзный тип угрозы
-- Формирует JSON markers + GeoJSON region fills
-- Генерирует HTML с Leaflet.js
-
-### DISAMBIGUATION_MAP
-Словарь для неоднозначных названий: ключ — паттерн, значение — (условие в тексте, имя, лат, лон, субъект).
-Обрабатывается в extract_locations.
-
-## Исправленный баг: clear отменял danger заливку без учёта времени
-
-### Проблема
-Clear (отбой) убирал danger-заливку региона даже если clear был **старше** danger.
-Например: отбой в 07:00, опасность в 08:21 — заливка пропадала.
-
-### Причина
-**Первый проход** `region_map` (строка ~3401): clear удалял самую серьёзную non-clear угрозу
-независимо от времени. Если danger был единственной угрозой — регион получал clear-заливку.
-
-### Фикс
-- **Первый проход**: clear-записи не влияют на выбор заливки. Выбирается самая серьёзная
-  non-clear угроза (danger).
-- **Второй проход** (clear override, строка ~3647): уже проверяет время —
-  `clear_time >= fill_time`. Если clear новее — убирает заливку. Если старше — оставляет.
-- **Coordinate-level логика**: убран `cleared=True` (только `no_marker=True`), чтобы danger
-  не скипался во втором проходе.
-
-Итог: clear убирает заливку только если он **новее** danger. Если danger свежее — заливка остаётся.
-
-## Последние изменения (30.06.2026)
-
-### 14. Центр карты → Переславль-Залесский
-`mopedmap.py:3966,4107` — [56.74, 38.86], zoom 7.
-
-### 15. Clear цвет ещё менее зелёный
-`mopedmap.py:3997` — `#6a6a5a` (серо-оливковый, R=G > B).
-
-### 16. interception в type_priority
-`mopedmap.py:3495` — `'interception': 3` (между aviation=2 и attention=4).
-Раньше interception-события не создавали заливку региона, только точку.
-Также interception добавлен в `clear_types` (`mopedmap.py:3758,3760`) — отбой по БПЛА снимает и заливку перехвата.
-
-### 17. CI: deploy-pages@v4, без concurrency, таймаут 30 мин
-`deploy.yml` — `actions/deploy-pages@v4` + `upload-pages-artifact@v3`, jobs объединены,
-concurrency group убран (отмена предыдущего ранна оставляла зависшие деплои в очереди),
-таймаут увеличен до 30 минут.
-
-### 18. Первомайский район: Ярославская → Тамбовская
-DISAMBIGUATION_MAP["первомайский"]["ярославская область"]: добавлено перенаправление
-в Тамбовскую область (53.25, 40.283, name="Первомайский") когда context_subject="тамбовская область".
-Раньше Первомайский район всегда матчился как Ярославская (п. Пречистое), даже если
-весь контекст поста (Моршанский, Сосновский районы) указывал на Тамбовскую область.
-
-### 19. classify_post: БПЛА без ключевых слов → sighting
-Добавлено `elif "бпла" in text_lower or "беспилотн" in text_lower: return "sighting"`
-перед `return "info"`. Раньше пост "возможно 2 БПЛА в сторону Ярославль" классифицировался
-как "info" и отбрасывался, потому что не содержал "фиксаци", "опасность" или "внимание".
-
-## Проблема: деплой зависает в очереди
-`Deploy to Pages` — статус `deployment_queued` бесконечно, затем timeout.
-Не кодовая проблема — инфраструктура GitHub Pages не подхватывает деплой.
-Лечится повторным запуском (иногда проходит с 7+ раза).
-
-## Установленный факт: рабочие коммиты
-```
-1effa45 center: Переславль-Залесский [56.74, 38.86]; clear color → #6a6a5a
-d9a3fc9 fix: add interception to type_priority and clear_types for region fills
-c7d4717 ci: use upload-pages-artifact@v3 + deploy-pages@v4
-d6a6065 ci: merge build+deploy, remove concurrency, timeout 30m
-```
-
-## Ключевое изменение (01.07.2026, dd2fade)
-
-### Проблема: "все места путает" — неоднозначные названия поселений
-
-**Корень 1: Повторяющиеся названия.**  
-С 25549 settlements в `ALL_PATTERNS` много названий встречаются в >1 регионе
-(Троицкое — 30 регионов, Петровка — 17, Александровка — 26 и т.д.).
-При матчинге без контекста брался первый попавшийся — часто из другого региона.
-
-**Корень 2: Падежные окончания.**  
-В тексте названия в родительном падеже ("в направлении Петровки"), а в БД —
-в именительном ("Петровка"). Из-за этого не матчилось, либо матчилось на
-случайное поселение с совпадающей формой (genitive "Петровки" → nominative "Петровки"
-в Белгородской области).
-
-### Фикс
-
-**1. NON_UNIQUE_SETTLEMENT_NAMES**  
-Названия, встречающиеся в >1 subject, исключены из `ALL_PATTERNS`.
-Больше никаких случайных матчей на "Петровка" → Амурская область.
-
-**2. Вторичный проход в extract_locations**  
-Неуникальные названия матчатся только когда контекст (results + extra_context)
-содержит регион, совпадающий с subject поселения. Поиск по `SETTLEMENTS_BY_NAME_SUBJECT`.
-
-**3. get_case_forms()**  
-Генерирует падежные варианты для ВСЕХ названий:
-- `-ка` → `-ка, -ки, -ке, -ку` (Петровка, Петровки, Петровке, Петровку)
-- `-но/-во/-ло/-то` → `-о, -а, -у, -е` (Кузьмино, Кузьмина, Кузьмину, Кузьмине)
-- `-ое/-ее` → `-ое, -ого, -ому, -ом` (Троицкое, Троицкого, Троицкому, Троицком)
-- `-ая` → `-ая, -ой, -ую` (Грушевская, Грушевской, Грушевскую)
-- согласная → +а, +у, +е, +ом (Курск, Курска, Курску, Курске, Курском)
-- `-й` → `-й, -я, -ю, -е, -ем` (Алтай, Алтая, Алтаю, Алтае, Алтаем)
-
-Варианты добавляются в `ALL_PATTERNS` и в `NON_UNIQUE_SETTLEMENT_RE`.
-
-**4. NON_UNIQUE_SETTLEMENT_RE — комбинированное регулярное выражение**  
-Для неуникальных названий собран единый regex из всех падежных форм.
-При матче через `_NON_UNIQUE_TO_LK` отображается matched форма → канонический `lk`.
-
-### Итог
-- `ALL_PATTERNS`: 60751 паттернов (было 19778) — все уникальные названия + их падежные формы
-- Неуникальные названия (2256) матчатся ТОЛЬКО при наличии региона в контексте
-- Падежные окончания больше не мешают — "Петровки" правильно матчится как "Петровка"
-- Без региона неуникальное название не матчится вообще (лучше пусто, чем wrong location)
-
-## PUSH
-Пользователь: "давай ты будешь сам пушить дальше" — коммитить и пушить без запроса.
+## Relevant Files
+- `F:\Locator\mopedmap.py`: Main script
+- `F:\Locator\CONTEXT.md`: Project context documentation
+- `F:\Locator\region_history.json`: Region history cache
+- `F:\Locator\cities.json`: City database
+- `F:\Locator\settlements.json`: Settlement database
