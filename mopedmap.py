@@ -4272,10 +4272,17 @@ def extract_locations(text, extra_context=None):
     for r in results:
         if r.get("is_region") and r.get("subject"):
             _region_subjs.add(r["subject"].lower().strip())
+    if extra_context:
+        for r in extra_context:
+            if r.get("is_region") and r.get("subject"):
+                _region_subjs.add(r["subject"].lower().strip())
     if _region_subjs:
         _any_region_match = any(
             r.get("subject", "").lower().strip() in _region_subjs
             for r in results
+        ) or any(
+            r.get("subject", "").lower().strip() in _region_subjs
+            for r in (extra_context or [])
         )
         if _any_region_match:
             results = [
@@ -4646,6 +4653,25 @@ def find_geojson_feature(region_name_lower, geojson_lookup):
             if key in geojson_lookup:
                 return geojson_lookup[key]
     return None
+
+
+def filter_locations_by_post_region(locations, post_text):
+    """Filter locations to only those matching a region mentioned in the post text.
+    
+    If the post explicitly names an oblast/krai/republic, discard locations 
+    from other regions (avoids false matches like "моста" → Ивановская область).
+    """
+    if not locations:
+        return locations
+    text_lower = post_text.lower()
+    mentioned_subjects = set()
+    for _, _, entry in ALL_PATTERNS:
+        if entry.get("is_region") and entry["pattern"].lower() in text_lower:
+            mentioned_subjects.add(entry["subject"].strip().lower())
+    if not mentioned_subjects:
+        return locations
+    filtered = [loc for loc in locations if loc.get("subject", "").strip().lower() in mentioned_subjects]
+    return filtered if filtered else locations
 
 
 def parse_post_time(time_str):
@@ -5653,12 +5679,15 @@ def process_posts(posts):
             # Pre-extract from full post for disambiguation context across sentences
             # (e.g. "Видное" as first line needs to see Crimea locations mentioned later)
             full_context = extract_locations(post)
+            full_context = filter_locations_by_post_region(full_context, post)
             # Use post-level type as fallback for info sentences (e.g. "Рыбинск, Ярославская область. Фиксации БПЛА")
             for sentence in sentences:
                 sent_type = classify_post(sentence)
                 if sent_type == "info" and post_type != "info":
                     sent_type = post_type
                 locations = extract_locations(sentence, extra_context=full_context)
+                # Filter by oblast explicitly mentioned in the post to avoid false matches
+                locations = filter_locations_by_post_region(locations, post)
                 # Dedup locations in same sentence by proximity (< 5 km), keep longest name
                 survivors = []
                 for loc in locations:
