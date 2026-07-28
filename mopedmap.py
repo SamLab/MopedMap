@@ -4535,6 +4535,31 @@ def extract_directions(text):
                     continue
                 pairs.append((s, d))
 
+    # --- Handle "тыл"/"тыловые" (rear/hinterland) markers ---
+    # When a post mentions UAVs flying into rear regions, draw a short arrow
+    # from each found location towards Moscow Oblast.
+    if not pairs and re.search(r'(?<!без )тыл', text.lower()):
+        MOSCOW_LAT, MOSCOW_LON = 55.7558, 37.6173
+        ARROW_DEG = 0.5  # ~55 km at 55°N
+        for loc in extract_locations(text):
+            # Skip only explicitly named regions ("Брянская область", "Курск" etc.)
+            # but keep rayon-derived locations ("Хомутовский район" → Хомутовка)
+            if loc.get("is_region") and not loc.get("matched", "").lower().endswith((" район", " р-н")):
+                continue
+            dx = MOSCOW_LON - loc["lon"]
+            dy = MOSCOW_LAT - loc["lat"]
+            dist_sq = dx*dx + dy*dy
+            if dist_sq < 0.0001:
+                continue
+            scale = ARROW_DEG / (dist_sq ** 0.5)
+            dest = {
+                "lat": loc["lat"] + dy * scale,
+                "lon": loc["lon"] + dx * scale,
+                "name": "тыловые регионы",
+                "subject": "Московская область",
+            }
+            pairs.append((loc, dest))
+
     return pairs
 
 
