@@ -25,6 +25,15 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 - **Yaroslavl Oblast batch 3 (29.07.2026)**: Added Цеденево and Ямищи to REGION_ALIASES
 - **GeoNames mass import (29.07.2026)**: Added ~17 368 settlements to settlements.json from GeoNames RU dump для Ярославской и 6 соседних областей (Тверская, Вологодская, Московская, Костромская, Ивановская, Владимирская). Использованы только ALT-записи (кириллица из alternatenames), отфильтрованы записи с латиницей и дубликаты. Из ~29k ALT → 17 368 чистых. Админ-коды GeoNames: 88 (Ярославская), 77 (Тверская), 85 (Вологодская), 47 (Московская), 37 (Костромская), 21 (Ивановская), 83 (Владимирская). Текущее покрытие: 42 917 записей всего.
 
+### Done (continued)
+- **Fleeting vowel handling**: Modified `get_case_forms` for masculine consonant-ending names — tries removing last "о" or "е" before final consonants (Орёл→Орла).
+- **Cross-region non-unique names**: Added `include_cross_region_nonunique` parameter for direction extraction (Железногорск in Орловская context).
+- **Auto-remove second-guard fix**: Added `not r.get("is_region")` to prevent is_region entries in extra_context from falsely triggering removal of all results.
+- **Куйбышевский район disambiguation fix**: Root cause — `DISAMBIGUATION_MAP` key loop for `nl` ("бетлица") would `break` even when no candidate matched, preventing `matched_key` ("куйбышевский") from being checked. Fixed: only `break` from key loop if a candidate actually matched.
+- **CHANNELS: ivanovo_radar**: Added source.
+- **Airport markers**: REGION_ALIASES entries for аэропорт иваново/ярославль + classify_post rule → "info".
+- **Committed & pushed**: Multiple commits for above fixes.
+
 ### In Progress
 - (none)
 
@@ -41,7 +50,7 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 
 ## Next Steps
 1. Коммитнуть и запушить
-2. Удалить временные файлы (check_settlements.py, check_s.py, check_result.txt)
+2. Удалить временные файлы (check_settlements.py, check_s.py, check_result.txt, rayon_debug.py)
 3. (опционально) Добавить Никольское и районы Ярославля, если пользователь попросит
 
 ## Critical Context
@@ -52,6 +61,7 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 - `extract_directions` at line ~4366 — calls `extract_locations(before)` and `extract_locations(after)` with full-sentence context; direction markers bypass sentence-level filter in process_posts
 - `sanitize_popup_text()` defined before `generate_html()` — strips HTML entities, emoji, channel footers, @mentions, metadata line
 - Key bug pattern: Common Russian words matching settlement names (e.g., "моста" → Моста, Ивановская; "голубого" → Голубое, Амурская) in unrelated posts
+- Бетлица DISAMBIGUATION_MAP entry was blocking Куйбышевский entry: key loop checked `nl="бетлица"` first, entered DISAMBIGUATION_MAP branch (no candidate matched), then `break` prevented `matched_key="куйбышевский"` from being checked
 - User is testing with locatorru channel posts (Брянская/Курская/Белгородская области)
 
 ## Relevant Files

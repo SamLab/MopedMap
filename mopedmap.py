@@ -3669,6 +3669,16 @@ DISAMBIGUATION_MAP = {
             },
         ],
     },
+    "куйбышевский": {
+        "калужская область": [
+            {
+                "context_subject": "ростовская область",
+                "lat": 47.818, "lon": 38.912,
+                "name": "Куйбышево",
+                "subject": "Ростовская область",
+            },
+        ],
+    },
 }
 
 ALL_PATTERNS = []
@@ -4026,7 +4036,7 @@ def is_word_boundary(text, idx):
     return text[idx - 1] not in WORD_CHARS
 
 
-def extract_locations(text, extra_context=None, skip_region_filter=False):
+def extract_locations(text, extra_context=None, include_cross_region_nonunique=False):
     text_lower = text.lower().replace("ё", "е")
     # Filter false-positive "суш" (Республика Тыва) from "по суше" / "в суше" phrases
     text_lower = re.sub(r'\b[впо]\s+суше\b', ' СУХОПУТНО ', text_lower)
@@ -4289,6 +4299,7 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
                     all_results = results
                     if extra_context:
                         all_results = results + extra_context
+                    _found = False
                     for entry in candidates:
                         target = entry["context_subject"]
                         matched = any(r2.get("subject", "").lower() == target for r2 in all_results)
@@ -4299,8 +4310,10 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
                             r["lon"] = entry["lon"]
                             r["name"] = entry["name"]
                             r["subject"] = entry["subject"]
+                            _found = True
                             break
-                    break
+                    if _found:
+                        break
 
     # --- Automatic context-based subject matching: if a result has fewer
     #     context mentions in its subject than another subject, try to
@@ -4341,9 +4354,8 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
                     r["subject"] = correct["subject"]
                     break
 
-    # --- Region context filtering: skip when called from direction extraction ---
-    if not skip_region_filter:
-        # ДНР/ЛНР/Крым context filter
+    # --- Region context filtering ---
+    # ДНР/ЛНР/Крым context filter
         _ctx_regions = [
             (('донецкая область', 'днр'), ('днр', 'лнр', 'донецк', 'луганск')),
             (('луганская область', 'лнр'), ('лнр', 'луганск')),
@@ -4387,7 +4399,8 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
                 r.get("subject", "").lower().strip() in _region_subjs
                 for r in results
             ) or any(
-                r.get("subject", "").lower().strip() in _region_subjs
+                not r.get("is_region")
+                and r.get("subject", "").lower().strip() in _region_subjs
                 for r in (extra_context or [])
             )
             if _any_region_match:
@@ -4418,9 +4431,9 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
         dnr_lnr = {'донецкая область', 'луганская область', 'днр', 'лнр'}
         if ctx_subjects & dnr_lnr:
             ctx_subjects &= dnr_lnr
-        # Even without context subjects, process non-unique names when skip_region_filter
+        # Even without context subjects, process non-unique names when include_cross_region_nonunique
         # is set (direction extraction needs cross-region matches)
-        if ctx_subjects or skip_region_filter:
+        if ctx_subjects or include_cross_region_nonunique:
             for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
                 matched_form = m.group(1)
                 lk = _NON_UNIQUE_TO_LK.get(matched_form) or matched_form
@@ -4448,7 +4461,7 @@ def extract_locations(text, extra_context=None, skip_region_filter=False):
                             entry = CITY_DB[lk]
                 if entry is None:
                     # No subject match; only include if cross-region is allowed
-                    if not skip_region_filter:
+                    if not include_cross_region_nonunique:
                         continue
                     # Try CITY_DB first, then any settlement entry
                     if lk in CITY_DB:
@@ -4552,16 +4565,15 @@ def extract_directions(text):
 
         # Extract locations from full sentence for disambiguation context
         # (so Первомайский район in "before" can see Крым in "after")
-        # Skip region filter: direction sources/destinations may span multiple regions
-        full_context = extract_locations(sentence, skip_region_filter=True)
+        full_context = extract_locations(sentence)
         from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
         if from_sep:
             # "от X" → source is after "от" (origin), dest is before (target)
-            srcs = extract_locations(after, extra_context=full_context, skip_region_filter=True)
-            dsts = extract_locations(before, extra_context=full_context, skip_region_filter=True)
+            srcs = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
+            dsts = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
         else:
-            srcs = extract_locations(before, extra_context=full_context, skip_region_filter=True)
-            dsts = extract_locations(after, extra_context=full_context, skip_region_filter=True)
+            srcs = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
+            dsts = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
 
         for s in srcs:
             for d in dsts:
