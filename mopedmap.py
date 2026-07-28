@@ -2723,6 +2723,8 @@ REGION_ALIASES = [
     {"pattern": "красносельская", "name": "Красносельская", "lat": 46.35, "lon": 39.0, "type": "city", "subject": "Краснодарский край"},
     {"pattern": "староджерелиевская", "name": "Староджерелиевская", "lat": 45.35, "lon": 38.28, "type": "city", "subject": "Краснодарский край"},
     {"pattern": "старовеличковская", "name": "Старовеличковская", "lat": 45.42, "lon": 38.22, "type": "city", "subject": "Краснодарский край"},
+    # гг — государственная граница (Брянская область / Украина)
+    {"pattern": "гг", "name": "гос. граница", "lat": 51.95, "lon": 34.2, "type": "region", "is_region": False, "subject": "Брянская область"},
 ]
 
 # Disambiguation rules: when a name matches multiple subjects, reassign
