@@ -3730,6 +3730,17 @@ def get_case_forms(name, is_region=False):
             forms.append(n + "у")
             forms.append(n + "е")
             forms.append(n + "ом")
+            # Also try with fleeting vowel removed (Орёл→Орла, not Орела)
+            # Find the last vowel before final consonant cluster
+            for _vi in range(len(n) - 2, 0, -1):
+                if n[_vi] in "ео":
+                    _stem = n[:_vi] + n[_vi+1:]
+                    if len(_stem) >= 3:
+                        forms.append(_stem + "а")
+                        forms.append(_stem + "у")
+                        forms.append(_stem + "е")
+                        forms.append(_stem + "ом")
+                        break
     # Remove duplicates while preserving order
     seen = set()
     result = []
@@ -4011,7 +4022,7 @@ def is_word_boundary(text, idx):
     return text[idx - 1] not in WORD_CHARS
 
 
-def extract_locations(text, extra_context=None):
+def extract_locations(text, extra_context=None, skip_region_filter=False):
     text_lower = text.lower().replace("ё", "е")
     # Filter false-positive "суш" (Республика Тыва) from "по суше" / "в суше" phrases
     text_lower = re.sub(r'\b[впо]\s+суше\b', ' СУХОПУТНО ', text_lower)
@@ -4073,6 +4084,7 @@ def extract_locations(text, extra_context=None):
                 matched_spans.add((idx, end))
                 r = {"name": name, "lat": lat, "lon": lon,
                      "type": ftype, "matched": text[idx:end]}
+
                 if is_region:
                     r["is_region"] = True
                 if isinstance(entry, dict) and "subject" in entry:
@@ -4325,65 +4337,62 @@ def extract_locations(text, extra_context=None):
                     r["subject"] = correct["subject"]
                     break
 
-    # --- Context region filter: if text explicitly mentions a specific
-    #     region (ДНР/ЛНР/Крым), remove city/settlement results not from
-    #     that region (unless a variant exists in the target region) ---
-    _ctx_regions = [
-        (('донецкая область', 'днр'), ('днр', 'лнр', 'донецк', 'луганск')),
-        (('луганская область', 'лнр'), ('лнр', 'луганск')),
-        (('республика крым', 'крым'), ('крым',)),
-    ]
-    for _ctx_subjs, _ctx_kws in _ctx_regions:
-        _has_ctx = any(
-            r.get('subject', '').lower().strip() in _ctx_subjs
-            for r in results
-        )
-        if _has_ctx and any(kw in text_lower for kw in _ctx_kws):
-            _main_subj = _ctx_subjs[0]
-            _filtered = []
-            for r in results:
-                if r.get('is_region'):
-                    _filtered.append(r)
-                    continue
-                _rs = r.get('subject', '').lower().strip()
-                if _rs in _ctx_subjs:
-                    _filtered.append(r)
-                    continue
-                # Check if a variant exists in the target region
-                _key = (r['name'].lower(), _main_subj)
-                if _key in CITY_BY_NAME_SUBJECT or _key in SETTLEMENTS_BY_NAME_SUBJECT:
-                    _filtered.append(r)
-                    continue
-            results = _filtered
-            break
+    # --- Region context filtering: skip when called from direction extraction ---
+    if not skip_region_filter:
+        # ДНР/ЛНР/Крым context filter
+        _ctx_regions = [
+            (('донецкая область', 'днр'), ('днр', 'лнр', 'донецк', 'луганск')),
+            (('луганская область', 'лнр'), ('лнр', 'луганск')),
+            (('республика крым', 'крым'), ('крым',)),
+        ]
+        for _ctx_subjs, _ctx_kws in _ctx_regions:
+            _has_ctx = any(
+                r.get('subject', '').lower().strip() in _ctx_subjs
+                for r in results
+            )
+            if _has_ctx and any(kw in text_lower for kw in _ctx_kws):
+                _main_subj = _ctx_subjs[0]
+                _filtered = []
+                for r in results:
+                    if r.get('is_region'):
+                        _filtered.append(r)
+                        continue
+                    _rs = r.get('subject', '').lower().strip()
+                    if _rs in _ctx_subjs:
+                        _filtered.append(r)
+                        continue
+                    _key = (r['name'].lower(), _main_subj)
+                    if _key in CITY_BY_NAME_SUBJECT or _key in SETTLEMENTS_BY_NAME_SUBJECT:
+                        _filtered.append(r)
+                        continue
+                results = _filtered
+                break
 
-    # --- Auto-remove settlement/city results whose region conflicts with
-    #     region-type mentions (rayon, область/край). Only triggers when
-    #     at least one other non-region result DOES match a region mention.
-    #     Catches Малоархангельское→Самарская, Брянское→Крым etc. ---
-    _region_subjs = set()
-    for r in results:
-        if r.get("is_region") and r.get("subject"):
-            _region_subjs.add(r["subject"].lower().strip())
-    if extra_context:
-        for r in extra_context:
+        # Auto-remove settlement/city results whose region conflicts with
+        # region-type mentions (rayon, область/край)
+        _region_subjs = set()
+        for r in results:
             if r.get("is_region") and r.get("subject"):
                 _region_subjs.add(r["subject"].lower().strip())
-    if _region_subjs:
-        _any_region_match = any(
-            r.get("subject", "").lower().strip() in _region_subjs
-            for r in results
-        ) or any(
-            r.get("subject", "").lower().strip() in _region_subjs
-            for r in (extra_context or [])
-        )
-        if _any_region_match:
-            results = [
-                r for r in results
-                if r.get("is_region")
-                or not r.get("subject")
-                or r["subject"].lower().strip() in _region_subjs
-            ]
+        if extra_context:
+            for r in extra_context:
+                if r.get("is_region") and r.get("subject"):
+                    _region_subjs.add(r["subject"].lower().strip())
+        if _region_subjs:
+            _any_region_match = any(
+                r.get("subject", "").lower().strip() in _region_subjs
+                for r in results
+            ) or any(
+                r.get("subject", "").lower().strip() in _region_subjs
+                for r in (extra_context or [])
+            )
+            if _any_region_match:
+                results = [
+                    r for r in results
+                    if r.get("is_region")
+                    or not r.get("subject")
+                    or r["subject"].lower().strip() in _region_subjs
+                ]
 
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
@@ -4405,7 +4414,9 @@ def extract_locations(text, extra_context=None):
         dnr_lnr = {'донецкая область', 'луганская область', 'днр', 'лнр'}
         if ctx_subjects & dnr_lnr:
             ctx_subjects &= dnr_lnr
-        if ctx_subjects:
+        # Even without context subjects, process non-unique names when skip_region_filter
+        # is set (direction extraction needs cross-region matches)
+        if ctx_subjects or skip_region_filter:
             for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
                 matched_form = m.group(1)
                 lk = _NON_UNIQUE_TO_LK.get(matched_form) or matched_form
@@ -4425,6 +4436,24 @@ def extract_locations(text, extra_context=None):
                     if key in SETTLEMENTS_BY_NAME_SUBJECT:
                         entry = SETTLEMENTS_BY_NAME_SUBJECT[key]
                         break
+                if entry is None and ctx_subjects:
+                    # Also check CITY_DB entries with matching subject
+                    if lk in CITY_DB:
+                        city_subj = CITY_DB[lk].get("subject", "").lower().strip()
+                        if city_subj in ctx_subjects:
+                            entry = CITY_DB[lk]
+                if entry is None:
+                    # No subject match; only include if cross-region is allowed
+                    if not skip_region_filter:
+                        continue
+                    # Try CITY_DB first, then any settlement entry
+                    if lk in CITY_DB:
+                        entry = CITY_DB[lk]
+                    else:
+                        for key, e in SETTLEMENTS_BY_NAME_SUBJECT.items():
+                            if key[0] == lk:
+                                entry = e
+                                break
                 if entry is None:
                     continue
                 matched_spans.add((idx, end))
@@ -4519,15 +4548,16 @@ def extract_directions(text):
 
         # Extract locations from full sentence for disambiguation context
         # (so Первомайский район in "before" can see Крым in "after")
-        full_context = extract_locations(sentence)
+        # Skip region filter: direction sources/destinations may span multiple regions
+        full_context = extract_locations(sentence, skip_region_filter=True)
         from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
         if from_sep:
             # "от X" → source is after "от" (origin), dest is before (target)
-            srcs = extract_locations(after, extra_context=full_context)
-            dsts = extract_locations(before, extra_context=full_context)
+            srcs = extract_locations(after, extra_context=full_context, skip_region_filter=True)
+            dsts = extract_locations(before, extra_context=full_context, skip_region_filter=True)
         else:
-            srcs = extract_locations(before, extra_context=full_context)
-            dsts = extract_locations(after, extra_context=full_context)
+            srcs = extract_locations(before, extra_context=full_context, skip_region_filter=True)
+            dsts = extract_locations(after, extra_context=full_context, skip_region_filter=True)
 
         for s in srcs:
             for d in dsts:
