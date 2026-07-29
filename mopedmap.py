@@ -4981,6 +4981,8 @@ def filter_locations_by_post_region(locations, post_text):
     
     If the post explicitly names an oblast/krai/republic, discard locations 
     from other regions (avoids false matches like "моста" → Ивановская область).
+    Only considers oblast/krai/republic level entries, NOT rayon-level ones
+    (to avoid "Калининский район → Тверская область" creating false region matches).
     """
     if not locations:
         return locations
@@ -4988,6 +4990,14 @@ def filter_locations_by_post_region(locations, post_text):
     mentioned_subjects = set()
     for _, _, entry in ALL_PATTERNS:
         if entry.get("is_region") and entry["pattern"].lower() in text_lower:
+            p = entry["pattern"].lower()
+            # Only oblast/krai/republic level patterns — skip rayon-level
+            if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
+                                           'край', 'края', 'краем', 'краю',
+                                           'республик', 'республика', 'республику',
+                                           'округ', 'округе', 'ао',
+                                           'автономный', 'автономная')):
+                continue
             mentioned_subjects.add(entry["subject"].strip().lower())
     if not mentioned_subjects:
         return locations
