@@ -5926,9 +5926,21 @@ def closest_point_on_polygon(lat, lon, polygon_coords):
     return (best_lat, best_lon)
 
 
+# Fixed state border points for regions where polygon's closest point
+# falls on internal (oblast-to-oblast) boundary instead of international border.
+# Key = region subject lowercase, value = (lat, lon)
+STATE_BORDER_POINTS = {
+    "курская область": (51.229707, 35.116505),
+    "брянская область": (51.229707, 35.116505),
+}
+
+
 def find_border_point(region_name, src_lat, src_lon, geojson_lookup):
     """Find closest border point of region from source coordinates.
     Returns (lat, lon) or None."""
+    rn = region_name.strip().lower()
+    if rn in STATE_BORDER_POINTS:
+        return STATE_BORDER_POINTS[rn]
     feat = find_geojson_feature(region_name, geojson_lookup)
     if not feat:
         return None
