@@ -4530,12 +4530,9 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     if key in SETTLEMENTS_BY_NAME_SUBJECT:
                         entry = SETTLEMENTS_BY_NAME_SUBJECT[key]
                         break
-                if entry is None and ctx_subjects:
-                    # Also check CITY_DB entries with matching subject
-                    if lk in CITY_DB:
-                        city_subj = CITY_DB[lk].get("subject", "").lower().strip()
-                        if city_subj in ctx_subjects:
-                            entry = CITY_DB[lk]
+                    if key in CITY_BY_NAME_SUBJECT:
+                        entry = CITY_BY_NAME_SUBJECT[key]
+                        break
                 if entry is None:
                     if ctx_subjects:
                         if not include_cross_region_nonunique:
