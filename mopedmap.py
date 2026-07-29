@@ -149,24 +149,25 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
         result.append(make_region_alias(stem + "скую обл", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
-    # край -> края (genitive)
-    elif a.endswith("ий край"):
-        stem = a[:-7]
-        result.append(make_region_alias(stem + "его края", city_name, lat, lon, subject))
-        result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
+    # край -> края (genitive) — "ский край" must precede "ий край" to avoid
+    # generating "краснодарскего края" (wrong) vs "краснодарского края" (correct)
     elif a.endswith("ский край"):
         stem = a[:-9]
         result.append(make_region_alias(stem + "ского края", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
-    # округ -> округа
-    elif a.endswith("ий округ"):
-        stem = a[:-8]
-        result.append(make_region_alias(stem + "его округа", city_name, lat, lon, subject))
+    elif a.endswith("ий край"):
+        stem = a[:-7]
+        result.append(make_region_alias(stem + "его края", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
+    # округ -> округа
     elif a.endswith("ский округ"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ского округа", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
+    elif a.endswith("ий округ"):
+        stem = a[:-8]
+        result.append(make_region_alias(stem + "его округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
     # республика -> республики (genitive), республику (accusative), республикой (instrumental)
     elif a.endswith("ская республика"):
         stem = a[:-15]
