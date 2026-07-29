@@ -5843,7 +5843,60 @@ def is_summary_post(text):
     return False
 
 
-def process_posts(posts):
+def closest_point_on_polygon(lat, lon, polygon_coords):
+    """Find closest point on polygon boundary from (lat, lon)."""
+    best_lat, best_lon = lat, lon
+    best_dist = float('inf')
+    if polygon_coords and isinstance(polygon_coords[0], list) and polygon_coords[0] and isinstance(polygon_coords[0][0], list) and isinstance(polygon_coords[0][0][0], list):
+        rings = []
+        for poly in polygon_coords:
+            rings.extend(poly)
+    else:
+        rings = polygon_coords
+    for ring in rings:
+        for i in range(len(ring) - 1):
+            x1, y1 = ring[i]
+            x2, y2 = ring[i + 1]
+            dx = x2 - x1
+            dy = y2 - y1
+            seg_len_sq = dx * dx + dy * dy
+            if seg_len_sq == 0:
+                continue
+            px = lon - x1
+            py = lat - y1
+            t = max(0.0, min(1.0, (px * dx + py * dy) / seg_len_sq))
+            cx = x1 + t * dx
+            cy = y1 + t * dy
+            d = (cx - lon) ** 2 + (cy - lat) ** 2
+            if d < best_dist:
+                best_dist = d
+                best_lat = cy
+                best_lon = cx
+    return (best_lat, best_lon)
+
+
+def find_border_point(region_name, src_lat, src_lon, geojson_lookup):
+    """Find closest border point of region from source coordinates.
+    Returns (lat, lon) or None."""
+    feat = find_geojson_feature(region_name, geojson_lookup)
+    if not feat:
+        return None
+    geom = feat.get('geometry')
+    if not geom:
+        return None
+    coords = geom.get('coordinates')
+    if not coords:
+        return None
+    return closest_point_on_polygon(src_lat, src_lon, coords)
+
+
+_REGION_DEST_KW = re.compile(r'\b(область|области|областью|обл|'
+                             r'край|края|'
+                             r'республик|'
+                             r'округ|округе|ао)\b')
+
+
+def process_posts(posts, geojson_lookup=None):
     all_markers = []
     filtered = 0
     msk = timezone(timedelta(hours=3))
@@ -5914,6 +5967,12 @@ def process_posts(posts):
                 if key in seen_pairs:
                     continue
                 seen_pairs.add(key)
+                # Region-only destination: point to border instead of capital
+                if dst.get("is_region") and _REGION_DEST_KW.search(dst.get("matched", "").lower()):
+                    if geojson_lookup:
+                        bp = find_border_point(dst.get("subject", "").lower(), src["lat"], src["lon"], geojson_lookup)
+                        if bp:
+                            dst = {**dst, "lat": bp[0], "lon": bp[1], "name": dst.get("subject", dst["name"])}
                 m = {
                     "lat": src["lat"], "lon": src["lon"],
                     "name": src["name"], "type": post_type,
@@ -6020,13 +6079,14 @@ def main():
         if not posts:
             print("\nНе удалось загрузить посты, генерирую пустую карту...")
             posts = []
-    all_markers = process_posts(posts)
-    if not all_markers:
-        print("Не найдено локаций, генерирую пустую карту...")
-        all_markers = []
 
     print("Загрузка границ регионов...")
     geojson_lookup = load_region_geojson()
+
+    all_markers = process_posts(posts, geojson_lookup=geojson_lookup)
+    if not all_markers:
+        print("Не найдено локаций, генерирую пустую карту...")
+        all_markers = []
 
     history = load_region_history()
     history = update_region_history(all_markers, history)
