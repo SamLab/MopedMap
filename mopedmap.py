@@ -4654,6 +4654,19 @@ def extract_directions(text):
     cardinal = {"восток", "запад", "север", "юг", "юго-восток", "юго-запад",
                 "северо-восток", "северо-запад"}
 
+    # Pre-check full text for "от X области" — used to suppress false directions
+    # when a separator like "→" creates a reversed arrow.
+    # "от X области/края/республики" = source of danger, not a direction
+    region_words = {'область', 'области', 'областью', 'областей',
+                    'край', 'края', 'краем', 'краю',
+                    'республик', 'республики', 'республика', 'республику',
+                    'район', 'районе', 'района', 'районов', 'районом',
+                    'р-н', 'р-не', 'мо', 'го'}
+    text_has_ot_region = bool(re.search(
+        r'\bот\b\s+\S+\s+(' + '|'.join(region_words) + r')\b',
+        text.lower()
+    ))
+
     for sentence in sentences:
         sentence = sentence.strip()
         if not sentence:
@@ -4688,15 +4701,20 @@ def extract_directions(text):
             first_word = after_lower.split()[0] if after_lower.split() else ''
             if any(c.isdigit() for c in first_word):
                 continue
-            # "от X области/края/республики" = source of danger, not a direction
-            region_words = {'область', 'области', 'областью', 'областей',
-                            'край', 'края', 'краем', 'краю',
-                            'республик', 'республики', 'республика', 'республику',
-                            'район', 'районе', 'района', 'районов', 'районом',
-                            'р-н', 'р-не', 'мо', 'го'}
             after_words = after_lower.split()
             if any(w in region_words for w in after_words[:3]):
                 continue
+        elif after_lower.startswith('от'):
+            # "от X области" after a non-"от" separator (e.g. "→ от Курской области")
+            # → real source is after "от", the arrow is misleading.
+            rest = after_lower[len('от'):].strip()
+            rest_words = rest.split()
+            if any(w in region_words for w in rest_words[:3]):
+                continue
+        elif text_has_ot_region:
+            # Full post contains "от X области" — this indicates real source.
+            # Skip arrow directions from non-"от" separators (e.g. "Липецк → Курская").
+            continue
 
         # Extract locations from full sentence for disambiguation context
         # (so Первомайский район in "before" can see Крым in "after")
