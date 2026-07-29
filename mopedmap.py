@@ -5999,6 +5999,9 @@ def process_posts(posts, geojson_lookup=None):
         if "#сводка" in post.lower():
             filtered += 1
             continue
+        if "радару требуется ваша поддержка" in post.lower():
+            filtered += 1
+            continue
         post_type = classify_post(post)
 
         # Skip info-only posts with no threat description (just names without context)
