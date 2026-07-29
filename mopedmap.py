@@ -167,6 +167,14 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ского округа", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
+    # республика -> республики (genitive), республику (accusative), республикой (instrumental)
+    elif a.endswith("ская республика"):
+        stem = a[:-15]
+        result.append(make_region_alias(stem + "ской республики", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "скую республику", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ской республикой", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
     return result
 
 REGION_ALIASES = [
@@ -1379,6 +1387,9 @@ REGION_ALIASES = [
     {"pattern": "токарёвке", "name": "Токарёвка", "lat": 51.983, "lon": 41.15, "type": "city", "subject": "Тамбовская область"},
     {"pattern": "умёт", "name": "Умёт", "lat": 52.55, "lon": 42.967, "type": "city", "subject": "Тамбовская область"},
     {"pattern": "умёте", "name": "Умёт", "lat": 52.55, "lon": 42.967, "type": "city", "subject": "Тамбовская область"},
+    {"pattern": "зубова поляна", "name": "Зубова Поляна", "lat": 54.0833, "lon": 42.8167, "type": "city", "subject": "Республика Мордовия"},
+    {"pattern": "зубовой поляны", "name": "Зубова Поляна", "lat": 54.0833, "lon": 42.8167, "type": "city", "subject": "Республика Мордовия"},
+    {"pattern": "зубову поляну", "name": "Зубова Поляна", "lat": 54.0833, "lon": 42.8167, "type": "city", "subject": "Республика Мордовия"},
 
     # Воронежская область — районы
     {"pattern": "аннинский район", "name": "Анна", "lat": 51.48, "lon": 40.42, "type": "region", "is_region": True, "subject": "Воронежская область"},
@@ -2498,10 +2509,10 @@ REGION_ALIASES = [
     make_region_alias("ингушетия", "Магас", 43.1688, 44.8168),
     make_region_alias("республика ингушетия", "Магас", 43.1688, 44.8168),
     make_region_alias("кабардино-балкария", "Нальчик", 43.4982, 43.6059),
-    make_region_alias("кабардино-балкарская республика", "Нальчик", 43.4982, 43.6059),
+    make_region_alias_with_cases("кабардино-балкарская республика", "Нальчик", 43.4982, 43.6059),
     make_region_alias("калмыкия", "Элиста", 46.3082, 44.2558),
     make_region_alias("республика калмыкия", "Элиста", 46.3082, 44.2558),
-    make_region_alias("карачаево-черкесская республика", "Черкесск", 44.2263, 42.0418),
+    make_region_alias_with_cases("карачаево-черкесская республика", "Черкесск", 44.2263, 42.0418),
     make_region_alias("карачаево-черкессия", "Черкесск", 44.2263, 42.0418),
     make_region_alias("карелия", "Петрозаводск", 61.7849, 34.3469),
     make_region_alias("республика карелия", "Петрозаводск", 61.7849, 34.3469),
@@ -2520,13 +2531,13 @@ REGION_ALIASES = [
     make_region_alias("республика татарстан", "Казань", 55.7961, 49.1064),
     make_region_alias("тыва", "Кызыл", 51.7194, 94.4372),
     make_region_alias("удмуртия", "Ижевск", 56.8498, 53.2045),
-    make_region_alias("удмуртская республика", "Ижевск", 56.8498, 53.2045),
+    make_region_alias_with_cases("удмуртская республика", "Ижевск", 56.8498, 53.2045),
     make_region_alias("хакасия", "Абакан", 53.7167, 91.4167),
     make_region_alias("республика хакасия", "Абакан", 53.7167, 91.4167),
     make_region_alias("чувашия", "Чебоксары", 56.1322, 47.2442),
-    make_region_alias("чувашская республика", "Чебоксары", 56.1322, 47.2442),
+    make_region_alias_with_cases("чувашская республика", "Чебоксары", 56.1322, 47.2442),
     make_region_alias("чечня", "Грозный", 43.3125, 45.6947),
-    make_region_alias("чеченская республика", "Грозный", 43.3125, 45.6947),
+    make_region_alias_with_cases("чеченская республика", "Грозный", 43.3125, 45.6947),
     make_region_alias_with_cases("белгородская область", "Белгород", 50.5997, 36.5986),
     make_region_alias_with_cases("белгородская обл", "Белгород", 50.5997, 36.5986),
     make_region_alias_with_cases("брянская область", "Брянск", 53.2521, 34.3717),
@@ -5801,6 +5812,7 @@ def update_region_history(markers, history):
 
 SUMMARY_PATTERNS = [
     r'за полгода сбили более',
+    r'в течение прошедш\w+ ноч',
     r'в период с.*дежурными средствами пво',
     r'средствами пво перехвачены и уничтожен',
     r'за прошедш\w+ ноч',
@@ -5943,6 +5955,16 @@ def process_posts(posts, geojson_lookup=None):
         # Try direction parsing first
         dir_pairs = extract_directions(post)
         if dir_pairs:
+            # Filter source locations by post region (avoids false rayon matches like Красногорский→Брянская when post mentions Марий Эл)
+            _mentioned = set()
+            _post_lower = post.lower()
+            for _, _, _entry in ALL_PATTERNS:
+                if _entry.get("is_region") and _entry["pattern"].lower() in _post_lower:
+                    _mentioned.add(_entry["subject"].strip().lower())
+            if _mentioned:
+                _fp = [(s, d) for s, d in dir_pairs if not s.get("subject") or s["subject"].strip().lower() in _mentioned]
+                if _fp:
+                    dir_pairs = _fp
             # Suppress region markers when a specific settlement exists in same subject+destination
             specific_srcs = set()
             for src, dst in dir_pairs:
