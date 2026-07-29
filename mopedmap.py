@@ -4130,6 +4130,13 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     if re.search(r'(ский|ской|цкий|цкой|ском|цком)$', _prev_word):
                         start = idx + 1
                         continue
+                # Also skip if followed by a rayon adjective ("МО Спасский" = МО Спасского района)
+                _post = text_lower[end:end+20].strip()
+                if _post:
+                    _next_word = _post.split()[0].strip(",(;")
+                    if re.search(r'(ский|ской|цкий|цкой|ском|цком)$', _next_word):
+                        start = idx + 1
+                        continue
             # Skip if followed by район/ГО/МО/АО (RAYON_RE handles these better)
             _nx = text_lower[end:end+12]
             if any(_nx.startswith(' ' + sfx) for sfx in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао')):
@@ -4233,6 +4240,9 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         if _post:
             _next_word = _post.split()[0].strip(",(;")
             if _next_word in CITY_DB:
+                continue
+            # Also skip if followed by a rayon adjective ("МО Спасский" = МО Спасского района)
+            if re.search(r'(ский|ской|цкий|цкой|ском|цком)$', _next_word):
                 continue
         matched_spans.add((m.start(), m.end()))
         results.append({
