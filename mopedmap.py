@@ -6020,6 +6020,9 @@ def process_posts(posts, geojson_lookup=None):
         if "радару требуется ваша поддержка" in post.lower():
             filtered += 1
             continue
+        if re.search(r'ищем админ', post.lower()):
+            filtered += 1
+            continue
         post_type = classify_post(post)
 
         # Skip info-only posts with no threat description (just names without context)
