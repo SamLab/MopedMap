@@ -53,7 +53,10 @@ find_border_point(region_name, src_lat, src_lon, geojson_lookup) → (lat, lon) 
 ### Детекция «регион без города»
 
 ```python
-REGION_KEYWORDS = {'область', 'области', 'областью', 'край', 'края', 'республик'}
+REGION_KEYWORDS = {'область', 'области', 'областью', 'обл',
+                   'край', 'края',
+                   'республик',
+                   'округ', 'округе', 'ао'}
 if dst.get("is_region") and any(kw in dst.get("matched", "").lower() for kw in REGION_KEYWORDS):
     # → region-only, вычисляем границу
 ```
