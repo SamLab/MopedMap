@@ -5889,7 +5889,7 @@ def find_border_point(region_name, src_lat, src_lon, geojson_lookup):
 
 _REGION_DEST_KW = re.compile(r'\b(область|области|областью|областей|обл|'
                              r'край|края|'
-                             r'республик|'
+                             r'республика|республики|республике|республику|республикой|'
                              r'округ|округе|ао)\b')
 
 
@@ -5966,9 +5966,10 @@ def process_posts(posts, geojson_lookup=None):
                 seen_pairs.add(key)
                 # Region-only destination: point to border instead of capital
                 region_check_text = (dst.get("matched", "") + " " + dst.get("name", "") + " " + dst.get("subject", "")).lower()
-                if dst.get("is_region") and _REGION_DEST_KW.search(region_check_text):
+                region_check_subject = dst.get("subject", "").lower().strip()
+                if dst.get("is_region") and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
                     if geojson_lookup:
-                        bp = find_border_point(dst.get("subject", "").lower(), src["lat"], src["lon"], geojson_lookup)
+                        bp = find_border_point(region_check_subject, src["lat"], src["lon"], geojson_lookup)
                         if bp:
                             dst = {**dst, "lat": bp[0], "lon": bp[1], "name": dst.get("subject", dst["name"])}
                 m = {
