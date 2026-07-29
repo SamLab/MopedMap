@@ -997,6 +997,22 @@ REGION_ALIASES = [
     {"pattern": "ниливский р-н", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
     {"pattern": "ниливском р-не", "name": "Нелидово", "lat": 56.22, "lon": 32.78, "type": "region", "is_region": True, "subject": "Тверская область"},
 
+    # Кировская область — районы
+    {"pattern": "кильмезский район", "name": "Кильмезь", "lat": 56.94459, "lon": 51.06363, "type": "region", "is_region": True, "subject": "Кировская область"},
+    {"pattern": "кильмезском районе", "name": "Кильмезь", "lat": 56.94459, "lon": 51.06363, "type": "region", "is_region": True, "subject": "Кировская область"},
+    {"pattern": "кильмезский р-н", "name": "Кильмезь", "lat": 56.94459, "lon": 51.06363, "type": "region", "is_region": True, "subject": "Кировская область"},
+    {"pattern": "кильмезском р-не", "name": "Кильмезь", "lat": 56.94459, "lon": 51.06363, "type": "region", "is_region": True, "subject": "Кировская область"},
+    # Кировская область — населённые пункты не из CITY_DB
+    {"pattern": "вихарево", "name": "Вихарево", "lat": 56.91486, "lon": 51.34248, "type": "city", "subject": "Кировская область"},
+    {"pattern": "вихареве", "name": "Вихарево", "lat": 56.91486, "lon": 51.34248, "type": "city", "subject": "Кировская область"},
+
+    # Удмуртская Республика — районы
+    {"pattern": "сюмсинский район", "name": "Сюмси", "lat": 57.11108, "lon": 51.61494, "type": "region", "is_region": True, "subject": "Удмуртская Республика"},
+    {"pattern": "сюмсинском районе", "name": "Сюмси", "lat": 57.11108, "lon": 51.61494, "type": "region", "is_region": True, "subject": "Удмуртская Республика"},
+    {"pattern": "сюмсинского района", "name": "Сюмси", "lat": 57.11108, "lon": 51.61494, "type": "region", "is_region": True, "subject": "Удмуртская Республика"},
+    {"pattern": "сюмсинский р-н", "name": "Сюмси", "lat": 57.11108, "lon": 51.61494, "type": "region", "is_region": True, "subject": "Удмуртская Республика"},
+    {"pattern": "сюмсинском р-не", "name": "Сюмси", "lat": 57.11108, "lon": 51.61494, "type": "region", "is_region": True, "subject": "Удмуртская Республика"},
+
     # Московская область — районы
     {"pattern": "волоколамский район", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "волоколамском районе", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -4505,6 +4521,15 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     or r["subject"].lower().strip() in _region_subjs
                 ]
 
+        # Suppress false matches on "рай"/"рае" (settlement "Рай" in Костромская область)
+        # — in Telegram posts, "рай" is almost always "район" abbreviation
+        results = [
+            r for r in results
+            if not (r.get("matched", "").lower().strip() in ("рай", "рае")
+                    and r.get("name") == "Рай"
+                    and not r.get("is_region"))
+        ]
+
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
         all_ctx = results
@@ -5993,9 +6018,10 @@ def process_posts(posts, geojson_lookup=None):
                     continue
                 seen_pairs.add(key)
                 # Region-only destination: point to border instead of capital
+                # — only for oblast/krai/republic level, NOT rayon-level
                 region_check_text = (dst.get("matched", "") + " " + dst.get("name", "") + " " + dst.get("subject", "")).lower()
                 region_check_subject = dst.get("subject", "").lower().strip()
-                if dst.get("is_region") and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
+                if dst.get("is_region") and "район" not in dst.get("matched", "").lower() and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
                     if geojson_lookup:
                         bp = find_border_point(region_check_subject, src["lat"], src["lon"], geojson_lookup)
                         if bp:
