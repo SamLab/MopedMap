@@ -4155,7 +4155,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     for nu_start, nu_end in _non_unique_spans
                 )
                 entry_name_lower = name.strip().lower()
-                if _nu_overlap and entry_name_lower in NON_UNIQUE_SETTLEMENT_NAMES:
+                if _nu_overlap and entry_name_lower in NON_UNIQUE_SETTLEMENT_NAMES and not is_region:
                     start = idx + 1
                     continue
                 matched_spans.add((idx, end))
