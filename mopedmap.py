@@ -3885,7 +3885,7 @@ CHANNELS = [
     {"url": "https://t.me/s/RDFradar", "name": "RDFradar", "priority": 2},
     # {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
     # {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
-    {"url": "https://t.me/s/migalka_alerts_bot", "name": "migalka_alerts_bot", "priority": 2},
+
     # {"url": "https://t.me/s/radar_russia_monitor", "name": "radar_russia_monitor", "priority": 2},
 ]
 
