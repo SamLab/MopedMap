@@ -175,6 +175,12 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
         result.append(make_region_alias(stem + "ской республикой", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ской", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ская", city_name, lat, lon, subject))
+    # республика X -> республики X (genitive), республику X (accusative), республикой X (instrumental)
+    elif a.startswith("республика ") and len(a) > 12:
+        rest = a[11:]
+        result.append(make_region_alias("республики " + rest, city_name, lat, lon, subject))
+        result.append(make_region_alias("республику " + rest, city_name, lat, lon, subject))
+        result.append(make_region_alias("республикой " + rest, city_name, lat, lon, subject))
     return result
 
 REGION_ALIASES = [
@@ -2495,45 +2501,45 @@ REGION_ALIASES = [
     make_region_alias_with_cases("камчатский край", "Петропавловск-Камчатский", 53.0167, 158.65),
     make_region_alias_with_cases("пермский край", "Пермь", 58.0105, 56.2502),
     make_region_alias("крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
-    make_region_alias("республика крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
+    make_region_alias_with_cases("республика крым", "Симферополь", 44.9521, 34.1024, subject="Республика Крым"),
     make_region_alias("керченский полуостров", "Керчь", 45.33861, 36.46806, subject="Республика Крым"),
     make_region_alias("керченский", "Керчь", 45.33861, 36.46806, subject="Республика Крым"),
     make_region_alias("адыгея", "Майкоп", 44.6833, 40.1167),
-    make_region_alias("республика адыгея", "Майкоп", 44.6833, 40.1167),
+    make_region_alias_with_cases("республика адыгея", "Майкоп", 44.6833, 40.1167),
     make_region_alias("башкортостан", "Уфа", 54.7355, 55.9587),
-    make_region_alias("республика башкортостан", "Уфа", 54.7355, 55.9587),
+    make_region_alias_with_cases("республика башкортостан", "Уфа", 54.7355, 55.9587),
     make_region_alias("бурятия", "Улан-Удэ", 51.8333, 107.6),
-    make_region_alias("республика бурятия", "Улан-Удэ", 51.8333, 107.6),
+    make_region_alias_with_cases("республика бурятия", "Улан-Удэ", 51.8333, 107.6),
     make_region_alias("дагестан", "Махачкала", 42.9849, 47.5047),
-    make_region_alias("республика дагестан", "Махачкала", 42.9849, 47.5047),
+    make_region_alias_with_cases("республика дагестан", "Махачкала", 42.9849, 47.5047),
     make_region_alias("ингушетия", "Магас", 43.1688, 44.8168),
-    make_region_alias("республика ингушетия", "Магас", 43.1688, 44.8168),
+    make_region_alias_with_cases("республика ингушетия", "Магас", 43.1688, 44.8168),
     make_region_alias("кабардино-балкария", "Нальчик", 43.4982, 43.6059),
     make_region_alias_with_cases("кабардино-балкарская республика", "Нальчик", 43.4982, 43.6059),
     make_region_alias("калмыкия", "Элиста", 46.3082, 44.2558),
-    make_region_alias("республика калмыкия", "Элиста", 46.3082, 44.2558),
+    make_region_alias_with_cases("республика калмыкия", "Элиста", 46.3082, 44.2558),
     make_region_alias_with_cases("карачаево-черкесская республика", "Черкесск", 44.2263, 42.0418),
     make_region_alias("карачаево-черкессия", "Черкесск", 44.2263, 42.0418),
     make_region_alias("карелия", "Петрозаводск", 61.7849, 34.3469),
-    make_region_alias("республика карелия", "Петрозаводск", 61.7849, 34.3469),
+    make_region_alias_with_cases("республика карелия", "Петрозаводск", 61.7849, 34.3469),
     make_region_alias("коми", "Сыктывкар", 61.6688, 50.8361),
-    make_region_alias("республика коми", "Сыктывкар", 61.6688, 50.8361),
+    make_region_alias_with_cases("республика коми", "Сыктывкар", 61.6688, 50.8361),
     make_region_alias("марий эл", "Йошкар-Ола", 56.6344, 47.8999),
-    make_region_alias("республика марий эл", "Йошкар-Ола", 56.6344, 47.8999),
+    make_region_alias_with_cases("республика марий эл", "Йошкар-Ола", 56.6344, 47.8999),
     make_region_alias("мордовия", "Саранск", 54.1838, 45.1749),
-    make_region_alias("республика мордовия", "Саранск", 54.1838, 45.1749),
+    make_region_alias_with_cases("республика мордовия", "Саранск", 54.1838, 45.1749),
     make_region_alias("якутия", "Якутск", 62.0355, 129.6755),
-    make_region_alias("республика саха", "Якутск", 62.0355, 129.6755),
+    make_region_alias_with_cases("республика саха", "Якутск", 62.0355, 129.6755),
     make_region_alias("саха (якутия)", "Якутск", 62.0355, 129.6755),
     make_region_alias("северная осетия", "Владикавказ", 43.0205, 44.6819),
-    make_region_alias("республика северная осетия", "Владикавказ", 43.0205, 44.6819),
+    make_region_alias_with_cases("республика северная осетия", "Владикавказ", 43.0205, 44.6819),
     make_region_alias("татарстан", "Казань", 55.7961, 49.1064),
-    make_region_alias("республика татарстан", "Казань", 55.7961, 49.1064),
+    make_region_alias_with_cases("республика татарстан", "Казань", 55.7961, 49.1064),
     make_region_alias("тыва", "Кызыл", 51.7194, 94.4372),
     make_region_alias("удмуртия", "Ижевск", 56.8498, 53.2045),
     make_region_alias_with_cases("удмуртская республика", "Ижевск", 56.8498, 53.2045),
     make_region_alias("хакасия", "Абакан", 53.7167, 91.4167),
-    make_region_alias("республика хакасия", "Абакан", 53.7167, 91.4167),
+    make_region_alias_with_cases("республика хакасия", "Абакан", 53.7167, 91.4167),
     make_region_alias("чувашия", "Чебоксары", 56.1322, 47.2442),
     make_region_alias_with_cases("чувашская республика", "Чебоксары", 56.1322, 47.2442),
     make_region_alias("чечня", "Грозный", 43.3125, 45.6947),
