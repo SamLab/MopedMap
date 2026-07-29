@@ -4153,7 +4153,8 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     continue
                 matched_spans.add((idx, end))
                 r = {"name": name, "lat": lat, "lon": lon,
-                     "type": ftype, "matched": text[idx:end]}
+                     "type": ftype, "matched": text[idx:end],
+                     "_match_start": idx, "_match_end": end}
 
                 if is_region:
                     r["is_region"] = True
@@ -4170,7 +4171,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     # Dynamic rayon matching: any "Xский/ской/цкой/цкий" + район/МО/ГО forms
     # Handles both nominative and prepositional adjective forms
     RAYON_RE = re.compile(
-        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|р-н|р-не|МО|ГО|мо|го|АО|ао)(?!\w)',
+        r'(?<!\w)([\w-]+?)(ский|ской|цкой|цкий|ском|цком)\s+(район|районе|рае|ре|р-н|р-не|МО|ГО|мо|го|АО|ао)(?!\w)',
         re.IGNORECASE
     )
     # Also match bare adjective forms in district lists (e.g. "Белгородском, Валуйском, ... Чернянском МО")
@@ -4247,6 +4248,16 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     # Collect region subjects from successful rayon matches for deduction
     rayon_region_subjects = {}  # stem_lower -> subject_lower
     for idx, end, stem, adj_suffix, matched_text, is_bare in bare_matches + explicit_matches:
+        # If a rayon match covers a LONGER span starting at same position as an existing
+        # ALL_PATTERNS match, the rayon match is more specific — replace the shorter one
+        _remove = set()
+        for s_start, s_end in matched_spans:
+            if s_start >= idx and s_end <= end:
+                _remove.add((s_start, s_end))
+        if _remove:
+            matched_spans -= _remove
+            # Also remove associated results (they'll be replaced by the rayon match)
+            results = [r for r in results if (r.get("_match_start"), r.get("_match_end")) not in {(s, e) for s, e in _remove}]
         is_overlap = any(
             not (end <= s_start or s_end <= idx)
             for s_start, s_end in matched_spans
