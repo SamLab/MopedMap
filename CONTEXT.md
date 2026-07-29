@@ -33,6 +33,8 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 - **CHANNELS: ivanovo_radar**: Added source.
 - **Airport markers**: REGION_ALIASES entries for аэропорт иваново/ярославль + classify_post rule → "info".
 - **Committed & pushed**: Multiple commits for above fixes.
+- **Ивановская область marker fix (Issue 2)**: always_show check no longer suppresses explicit region references (matched text содержит "область"/"край"/"республика"). Region suppression by city теперь требует CITY_DB membership. Новое подавление settlement-маркеров при наличии explicit region reference (commit `411a20f`)
+- **Рязань/Кораблино dedup fix (Issue 3)**: Region alias coords Рязанской области приведены к cities.json (54.6095→54.61667). В per-sentence dedup добавлено подавление is_region entries, чьи координаты совпадают с CITY_DB capital для того же subject, при наличии других entries с другими координатами (commit `411a20f`)
 
 ### In Progress
 - (none)
