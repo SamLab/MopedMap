@@ -2597,7 +2597,7 @@ REGION_ALIASES = [
     make_region_alias_with_cases("орловская область", "Орёл", 52.9678, 36.0696),
     make_region_alias_with_cases("пензенская область", "Пенза", 53.2001, 45.0175),
     make_region_alias_with_cases("псковская область", "Псков", 57.8167, 28.3333),
-    make_region_alias_with_cases("рязанская область", "Рязань", 54.6095, 39.7126),
+    make_region_alias_with_cases("рязанская область", "Рязань", 54.61667, 39.71667),
     make_region_alias_with_cases("самарская область", "Самара", 53.2415, 50.2212),
     make_region_alias_with_cases("саратовская область", "Саратов", 51.5336, 46.0343),
     make_region_alias_with_cases("сахалинская область", "Южно-Сахалинск", 46.9592, 142.7388),
@@ -5176,6 +5176,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     always_show = {'sighting', 'clear', 'interception'}
     for item in posts_data:
         if item.get('is_region') and item.get('type') not in always_show:
+            mt = item.get('matched', '').lower()
+            if any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
+                continue  # explicit region reference — keep marker
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
                 city_name = item.get('name', '').lower().strip()
@@ -5251,7 +5254,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     has_other_real = True
         if has_other_real and not has_own_real:
             item['no_marker'] = True
-    # Suppress region-level marker if the same post (source+time) has a city marker in the same subject
+    # Suppress region-level marker if the same post (source+time) has a CITY_DB city marker in the same subject
     for item in posts_data:
         if not (item.get('is_region') and not item.get('no_marker')):
             continue
@@ -5267,14 +5270,35 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                 continue
             if other.get('source') != item.get('source') or other.get('time') != item.get('time'):
                 continue
+            other_cn = other.get('name', '').lower().strip()
+            if other_cn not in CITY_DB:
+                continue  # only major cities suppress region markers, not settlements/rayons
             other_subj = other.get('subject', '').lower().strip()
             if not other_subj:
-                other_cn = other.get('name', '').lower().strip()
                 if other_cn in CITY_DB:
                     other_subj = CITY_DB[other_cn].get('subject', '').lower().strip()
             if other_subj == item_subj:
                 item['no_marker'] = True
                 break
+    # Suppress settlement markers (not in CITY_DB) when an explicit region reference
+    # for the same subject exists — the region fill + capital marker is sufficient
+    for item in posts_data:
+        if item.get('is_region') or item.get('no_marker'):
+            continue
+        cn = item.get('name', '').lower().strip()
+        if cn in CITY_DB:
+            continue
+        rn = item.get('subject', '').lower().strip() if item.get('subject') else None
+        if not rn:
+            continue
+        for other in posts_data:
+            if other is item or other.get('no_marker'):
+                continue
+            if other.get('is_region') and other.get('subject', '').lower().strip() == rn:
+                mt = other.get('matched', '').lower()
+                if any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
+                    item['no_marker'] = True
+                    break
 
     # Priority at same coordinates
     coord_items = {}
@@ -6155,6 +6179,17 @@ def process_posts(posts, geojson_lookup=None):
                             continue
                         if (round(s["lat"], 4), round(s["lon"], 4)) in _region_coords:
                             _drop_indices.add(idx)
+                    # Also suppress capital region markers when a more specific location exists
+                    for idx, s in enumerate(survivors):
+                        if not s.get("is_region") or s.get("subject", "").lower().strip() != _ss:
+                            continue
+                        sc = (round(s["lat"], 4), round(s["lon"], 4))
+                        for ck, cv in CITY_DB.items():
+                            if cv.get("subject", "").lower().strip() == _ss:
+                                if (round(cv["lat"], 4), round(cv["lon"], 4)) == sc:
+                                    if any(oc != sc for oc in _all_coords):
+                                        _drop_indices.add(idx)
+                                    break
                 survivors = [s for i, s in enumerate(survivors) if i not in _drop_indices]
 
                 for loc in survivors:
