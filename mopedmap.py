@@ -5887,7 +5887,7 @@ def find_border_point(region_name, src_lat, src_lon, geojson_lookup):
     return closest_point_on_polygon(src_lat, src_lon, coords)
 
 
-_REGION_DEST_KW = re.compile(r'\b(область|области|областью|обл|'
+_REGION_DEST_KW = re.compile(r'\b(область|области|областью|областей|обл|'
                              r'край|края|'
                              r'республик|'
                              r'округ|округе|ао)\b')
@@ -5965,7 +5965,8 @@ def process_posts(posts, geojson_lookup=None):
                     continue
                 seen_pairs.add(key)
                 # Region-only destination: point to border instead of capital
-                if dst.get("is_region") and _REGION_DEST_KW.search(dst.get("matched", "").lower()):
+                region_check_text = (dst.get("matched", "") + " " + dst.get("name", "") + " " + dst.get("subject", "")).lower()
+                if dst.get("is_region") and _REGION_DEST_KW.search(region_check_text):
                     if geojson_lookup:
                         bp = find_border_point(dst.get("subject", "").lower(), src["lat"], src["lon"], geojson_lookup)
                         if bp:
