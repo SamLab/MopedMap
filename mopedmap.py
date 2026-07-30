@@ -3888,7 +3888,7 @@ CHANNELS = [
     {"url": "https://t.me/s/radar_yar76", "name": "radar_yar76", "priority": 2},
     {"url": "https://t.me/s/radarr_yar", "name": "radarr_yar", "priority": 2},
     {"url": "https://t.me/s/radar_rossii_rossii", "name": "radar_rossii_rossii", "priority": 2},
-    {"url": "https://t.me/s/ivanovo_radar", "name": "ivanovo_radar", "priority": 2},
+    # {"url": "https://t.me/s/ivanovo_radar", "name": "ivanovo_radar", "priority": 2},
     {"url": "https://t.me/s/RDFradar", "name": "RDFradar", "priority": 2},
     # {"url": "https://t.me/s/LPRalarm", "name": "LPRalarm", "priority": 2},
     # {"url": "https://t.me/s/lpr1_treugolnik", "name": "lpr1_treugolnik", "priority": 2},
