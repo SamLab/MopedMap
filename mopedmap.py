@@ -4804,6 +4804,8 @@ def classify_post(text):
         return "aviation"
     elif "аэропорт" in text_lower and ("временные ограничения" in text_lower or "ограничения на прием" in text_lower):
         return "info"
+    elif "лепестк" in text_lower:
+        return "info"
     elif "меры безопасности" in text_lower or "пуск" in text_lower or "опасность" in text_lower or "тревога" in text_lower or ("угроз" in text_lower and "в случае" not in text_lower):
         return "danger"
     elif "фиксаци" in text_lower and "не наблюда" in text_lower:
