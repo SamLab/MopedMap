@@ -4785,7 +4785,9 @@ def extract_directions(text):
 
 def classify_post(text):
     text_lower = text.lower()
-    if "отбой" in text_lower or "по обстановке тихо" in text_lower:
+    if "cloudtips" in text_lower:
+        return "info"
+    elif "отбой" in text_lower or "по обстановке тихо" in text_lower:
         return "clear"
     elif "ракетн" in text_lower:
         return "rocket"
