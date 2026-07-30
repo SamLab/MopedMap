@@ -4553,14 +4553,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     )
                 ]
 
-        # Suppress false matches on "рай"/"рае" (settlement "Рай" in Костромская область)
-        # — in Telegram posts, "рай" is almost always "район" abbreviation
-        results = [
-            r for r in results
-            if not (r.get("matched", "").lower().strip() in ("рай", "рае")
-                    and r.get("name") == "Рай"
-                    and not r.get("is_region"))
-        ]
+
 
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
@@ -4639,6 +4632,18 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     "subject": entry["subject"],
                 }
                 results.append(r)
+
+    # Suppress false matches on common Russian words that happen to be
+    # settlement names ("рай"/"рае", "кой", "мирный", "республика", etc.)
+    # — must run regardless of whether region context is present.
+    results = [
+        r for r in results
+        if not (r.get("matched", "").lower().strip() in ("рай", "рае")
+                and r.get("name") == "Рай"
+                and not r.get("is_region"))
+        if not (r.get("matched", "").lower().strip() in ("кой", "мирный", "республика")
+                and not r.get("is_region"))
+    ]
 
     unique = {}
     found_keys = set()
