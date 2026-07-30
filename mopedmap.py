@@ -2938,6 +2938,12 @@ DISAMBIGUATION_MAP = {
             "subject": "Курская область",
         },
     },
+    "алексеевский": {
+        "белгородская область": [
+            {"context_subject": "татарстан", "lat": 55.306, "lon": 50.119, "name": "Алексеевское", "subject": "Республика Татарстан"},
+            {"context_subject": "республика татарстан", "lat": 55.306, "lon": 50.119, "name": "Алексеевское", "subject": "Республика Татарстан"},
+        ],
+    },
     "борисоглебский": {
         "ярославская область": [
             {"context_subject": "воронежская область", "lat": 51.367, "lon": 42.083, "name": "Борисоглебск", "subject": "Воронежская область"},
@@ -4541,6 +4547,10 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     if r.get("is_region")
                     or not r.get("subject")
                     or r["subject"].lower().strip() in _region_subjs
+                    or any(
+                        rs.endswith(" " + r["subject"].lower().strip())
+                        for rs in _region_subjs
+                    )
                 ]
 
         # Suppress false matches on "рай"/"рае" (settlement "Рай" in Костромская область)
