@@ -4804,7 +4804,7 @@ def classify_post(text):
         return "aviation"
     elif "аэропорт" in text_lower and ("временные ограничения" in text_lower or "ограничения на прием" in text_lower):
         return "info"
-    elif "лепестк" in text_lower:
+    elif "лепестк" in text_lower or "на заметку" in text_lower:
         return "info"
     elif "меры безопасности" in text_lower or "пуск" in text_lower or "опасность" in text_lower or "тревога" in text_lower or ("угроз" in text_lower and "в случае" not in text_lower):
         return "danger"
@@ -5006,6 +5006,33 @@ def find_geojson_feature(region_name_lower, geojson_lookup):
     return None
 
 
+def get_mentioned_region_subjects(post_text):
+    """Collect subjects of explicit oblast/krai/republic/okrug mentions in post text.
+
+    Rayon-level patterns ("Xский район") are deliberately ignored: their presence
+    does not mean the oblast is explicitly named, and they pollute the context
+    (e.g. "Каменский район" exists in Тульской, Воронежской и Свердловской
+    областях — matching the rayon must not add all three subjects).
+    """
+    text_lower = post_text.lower()
+    subjects = set()
+    for _, _, entry in ALL_PATTERNS:
+        if not entry.get("is_region"):
+            continue
+        p = entry["pattern"].lower()
+        if p not in text_lower:
+            continue
+        # Only oblast/krai/republic/okrug level patterns — skip rayon-level
+        if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
+                                       'край', 'края', 'краем', 'краю',
+                                       'республик', 'республика', 'республику',
+                                       'округ', 'округе', 'ао',
+                                       'автономный', 'автономная')):
+            continue
+        subjects.add(entry["subject"].strip().lower())
+    return subjects
+
+
 def filter_locations_by_post_region(locations, post_text):
     """Filter locations to only those matching a region mentioned in the post text.
     
@@ -5016,19 +5043,7 @@ def filter_locations_by_post_region(locations, post_text):
     """
     if not locations:
         return locations
-    text_lower = post_text.lower()
-    mentioned_subjects = set()
-    for _, _, entry in ALL_PATTERNS:
-        if entry.get("is_region") and entry["pattern"].lower() in text_lower:
-            p = entry["pattern"].lower()
-            # Only oblast/krai/republic level patterns — skip rayon-level
-            if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
-                                           'край', 'края', 'краем', 'краю',
-                                           'республик', 'республика', 'республику',
-                                           'округ', 'округе', 'ао',
-                                           'автономный', 'автономная')):
-                continue
-            mentioned_subjects.add(entry["subject"].strip().lower())
+    mentioned_subjects = get_mentioned_region_subjects(post_text)
     if not mentioned_subjects:
         return locations
     filtered = [loc for loc in locations if loc.get("subject", "").strip().lower() in mentioned_subjects]
@@ -6097,12 +6112,10 @@ def process_posts(posts, geojson_lookup=None):
         # Try direction parsing first
         dir_pairs = extract_directions(post)
         if dir_pairs:
-            # Filter source locations by post region (avoids false rayon matches like Красногорский→Брянская when post mentions Марий Эл)
-            _mentioned = set()
-            _post_lower = post.lower()
-            for _, _, _entry in ALL_PATTERNS:
-                if _entry.get("is_region") and _entry["pattern"].lower() in _post_lower:
-                    _mentioned.add(_entry["subject"].strip().lower())
+            # Filter source locations by post region (avoids false rayon matches like Красногорский→Брянская when post mentions Марий Эл).
+            # Uses explicit oblast/krai/republic mentions only — rayon patterns ("Каменский район"→Тульская/Воронежская) would
+            # pollute the set and let wrong-region pairs through.
+            _mentioned = get_mentioned_region_subjects(post)
             if _mentioned:
                 _fp = [(s, d) for s, d in dir_pairs if not s.get("subject") or s["subject"].strip().lower() in _mentioned]
                 if _fp:
