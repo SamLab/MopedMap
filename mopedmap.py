@@ -5868,7 +5868,8 @@ if (useItem) {{
     const mins = Math.round((Date.now() - postDate) / 60000);
     if (mins > 0) ago = `, ${{mins}} мин назад`;
   }}
-  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{useItem.name}}${{ago}})`;
+  const subjText = useItem.subject ? `, ${{useItem.subject}}` : '';
+  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{useItem.name}}${{subjText}}${{ago}})`;
 }}
 
 const legendCtrl = L.control({{ position: 'bottomright' }});
