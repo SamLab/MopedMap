@@ -245,7 +245,6 @@ REGION_ALIASES = [
     {"pattern": "каменский район", "name": "Каменка", "lat": 50.717, "lon": 39.417, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "каменский р-н", "name": "Каменка", "lat": 50.717, "lon": 39.417, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "коммунар", "name": "Коммунар", "lat": 51.13, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
-    {"pattern": "никольское", "name": "Никольское", "lat": 52.88, "lon": 36.38, "type": "region", "is_region": True, "subject": "Орловская область"},
     {"pattern": "беловский район", "name": "Белая", "lat": 51.05, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
     {"pattern": "беловский р-н", "name": "Белая", "lat": 51.05, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
     {"pattern": "свердловский район", "name": "Змиёвка", "lat": 52.67, "lon": 36.37, "type": "region", "is_region": True, "subject": "Орловская область"},
@@ -4275,10 +4274,14 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     rayon_region_subjects = {}  # stem_lower -> subject_lower
     for idx, end, stem, adj_suffix, matched_text, is_bare in bare_matches + explicit_matches:
         # If a rayon match covers a LONGER span starting at same position as an existing
-        # ALL_PATTERNS match, the rayon match is more specific — replace the shorter one
+        # ALL_PATTERNS match, the rayon match is more specific — replace the shorter one.
+        # But if the rayon span equals an existing span exactly, keep the ALL_PATTERNS
+        # result: it is already a precise match (e.g. bare adjective "Курской" already
+        # resolves to Курск via "курской" pattern; replacing it would fall back to a
+        # CITY_DB prefix guess like "кур" → Курган).
         _remove = set()
         for s_start, s_end in matched_spans:
-            if s_start >= idx and s_end <= end:
+            if s_start >= idx and s_end <= end and not (s_start == idx and s_end == end):
                 _remove.add((s_start, s_end))
         if _remove:
             matched_spans -= _remove
@@ -4569,21 +4572,29 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         all_ctx = results
         if extra_context:
             all_ctx = results + extra_context
-        ctx_subjects = set()
+        # Ordered list: local results first (their region mentions are more
+        # authoritative for a settlement in this fragment), then extra_context.
+        # A plain set would iterate in arbitrary order and could pick a
+        # secondary region ("возможно далее на Воронежскую область") over the
+        # rayon-derived one ("Советский район, Курская область").
+        ctx_subjects = []
+        _seen_subj = set()
         for ctx in all_ctx:
             subj = ctx.get("subject", "").lower().strip()
-            if subj:
-                ctx_subjects.add(subj)
+            if subj and subj not in _seen_subj:
+                _seen_subj.add(subj)
+                ctx_subjects.append(subj)
         # Normalize short-form subjects (e.g. "лнр" → "луганская область")
-        _extra_subjs = set()
-        for subj in ctx_subjects:
+        for subj in list(ctx_subjects):
             if subj in REGION_GEOJSON_MAP:
-                _extra_subjs.add(REGION_GEOJSON_MAP[subj])
-        ctx_subjects.update(_extra_subjs)
+                mapped = REGION_GEOJSON_MAP[subj]
+                if mapped not in _seen_subj:
+                    _seen_subj.add(mapped)
+                    ctx_subjects.append(mapped)
         # If ДНР or ЛНР is in context, ignore all other regions
         dnr_lnr = {'донецкая область', 'луганская область', 'днр', 'лнр'}
-        if ctx_subjects & dnr_lnr:
-            ctx_subjects &= dnr_lnr
+        if _seen_subj & dnr_lnr:
+            ctx_subjects = [s for s in ctx_subjects if s in dnr_lnr]
         # Even without context subjects, process non-unique names when include_cross_region_nonunique
         # is set (direction extraction needs cross-region matches)
         if ctx_subjects or include_cross_region_nonunique:
@@ -4671,6 +4682,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
 
 DIRECTION_SEPS = [
     r'\bв сторону\b',
+    r'\bв стороу\b',  # typo (missing н): "в стороу Касторное"
     r'\bв направлении\b',
     r'\bнаправлении\b',
     r'\bв направление\b',
