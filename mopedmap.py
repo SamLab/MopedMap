@@ -4085,6 +4085,15 @@ def is_word_boundary(text, idx):
     return text[idx - 1] not in WORD_CHARS
 
 
+# Common Russian function words that happen to be settlement names.
+# These get suppressed in extract_locations regardless of context.
+COMMON_WORD_MATCHES = frozenset({
+    "кой", "мирный", "республика",
+    "ваша", "ваши", "ваше", "вашу",      # "в вашу сторону" → село Ваша (Рязанская)
+    "сутка", "сутки", "суток", "сутке", "сутку",  # "Сутка" → село (Ярославская)
+})
+
+
 def extract_locations(text, extra_context=None, include_cross_region_nonunique=False):
     text_lower = text.lower().replace("ё", "е")
     # Filter false-positive "суш" (Республика Тыва) from "по суше" / "в суше" phrases
@@ -4634,14 +4643,15 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 results.append(r)
 
     # Suppress false matches on common Russian words that happen to be
-    # settlement names ("рай"/"рае", "кой", "мирный", "республика", etc.)
-    # — must run regardless of whether region context is present.
+    # settlement names ("рай"/"рае", "кой", "мирный", "республика",
+    # "ваш*", "сутка") — must run regardless of whether region context
+    # is present.
     results = [
         r for r in results
         if not (r.get("matched", "").lower().strip() in ("рай", "рае")
                 and r.get("name") == "Рай"
                 and not r.get("is_region"))
-        if not (r.get("matched", "").lower().strip() in ("кой", "мирный", "республика")
+        if not (r.get("matched", "").lower().strip() in COMMON_WORD_MATCHES
                 and not r.get("is_region"))
     ]
 
