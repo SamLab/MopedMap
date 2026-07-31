@@ -4092,13 +4092,160 @@ def is_word_boundary(text, idx):
     return text[idx - 1] not in WORD_CHARS
 
 
-# Common Russian function words that happen to be settlement names.
-# These get suppressed in extract_locations regardless of context.
-COMMON_WORD_MATCHES = frozenset({
-    "кой", "мирный", "республика",
-    "ваша", "ваши", "ваше", "вашу",      # "в вашу сторону" → село Ваша (Рязанская)
-    "сутка", "сутки", "суток", "сутке", "сутку",  # "Сутка" → село (Ярославская)
+# ── Контекстный гейтинг топонимов ─────────────────────────────────────
+# Частотные русские слова, которые в постах про БПЛА никогда не являются
+# топонимами. Если базовое имя села/города или совпавшая форма входит в
+# этот набор — матч подавляется независимо от контекста (кроме is_region).
+# См. docs/superpowers/specs/2026-08-01-context-gating-design.md.
+COMMON_RUSSIAN_WORDS = frozenset({
+    # союзы / частицы / вводные
+    "и", "а", "но", "или", "либо", "то", "не", "ни", "же", "ли", "бы", "да",
+    "ну", "вот", "только", "просто", "тоже", "также", "еще", "ещё", "даже",
+    "уже", "сразу", "вместе", "опять", "снова", "тут", "там", "здесь", "тогда",
+    "потом", "сейчас", "теперь", "когда", "если", "чтобы", "потому", "поэтому",
+    "зато", "хотя", "как", "так", "словно", "будто", "пусть", "вообще", "впрочем",
+    "именно", "лишь", "вовсе", "разве", "неужели", "вряд", "почти", "очень",
+    "совсем", "более", "менее", "наиболее", "наименее",
+    # предлоги
+    "в", "во", "на", "за", "из", "со", "с", "к", "у", "от", "до", "по", "под",
+    "над", "о", "об", "при", "без", "для", "через", "сквозь", "между", "около",
+    "вокруг", "возле", "мимо", "против", "кроме", "вместо", "после", "перед",
+    "среди", "насчет", "вроде", "напротив", "внутри", "снаружи", "из-за",
+    "из-под", "благодаря", "относительно", "включая", "исключая", "вплоть",
+    "впереди", "позади", "рядом", "вблизи", "вдоль",
+    # местоимения
+    "я", "ты", "он", "она", "оно", "мы", "вы", "они", "меня", "тебя", "него",
+    "неё", "нее", "нас", "вас", "ним", "ними", "мой", "моя", "моё", "мое",
+    "мои", "твой", "твоя", "твоё", "твое", "твои", "наш", "наша", "наше",
+    "наши", "ваш", "ваша", "ваше", "ваши", "вашу", "вашему", "вашим", "их",
+    "свой", "своя", "своё", "свое", "свои", "себя", "сам", "сама", "само",
+    "сами", "самый", "самая", "самые", "кто", "что", "кого", "кому", "чего",
+    "чему", "чей", "чья", "чьё", "чье", "чьи", "этот", "эта", "это", "эти",
+    "этого", "этому", "этой", "этих", "этим", "тот", "та", "те", "того", "тому",
+    "весь", "вся", "всё", "все", "всего", "всей", "всех", "всем", "каждый",
+    "каждая", "каждое", "каждые", "любой", "любая", "любое", "любые", "такое",
+    "такая", "такой", "такие", "таких", "другой", "другие", "другого", "других",
+    "иной", "иные", "иных", "никакой", "никакие", "ничто", "ничего", "никто",
+    "что-то", "кто-то", "какой-то", "кое-что", "некий", "некие", "некоторые",
+    # числительные / количество
+    "один", "одна", "одно", "одни", "два", "две", "три", "четыре", "пять",
+    "шесть", "семь", "восемь", "девять", "десять", "двадцать", "тридцать",
+    "сорок", "пятьдесят", "сто", "тысяча", "тысячи", "несколько", "много",
+    "мало", "немного", "немало", "больше", "меньше", "пара", "пары", "раз",
+    "раза", "разы", "разов",
+    # время
+    "час", "часа", "часов", "сутка", "сутки", "суток", "сутке", "сутку",
+    "минута", "минуты", "минут", "секунда", "секунды", "секунд", "день", "дня",
+    "дней", "неделя", "недели", "недель", "месяц", "месяца", "месяцев", "год",
+    "года", "лет", "время", "времена", "момент", "пора", "сегодня", "вчера",
+    "завтра", "ночью", "утром", "вечером", "днём", "днем", "утро", "вечер",
+    "ночь", "ночи",
+    # известные ложные совпадения из постов
+    "кой", "мирный", "мирная", "мирное", "республика", "республики", "рай",
+    "рае", "голубой", "голубое", "голубого", "голубую", "мост", "моста",
+    "мосту", "мостом", "мосты", "мостов", "суш", "суша", "суши", "суше", "сушу",
+    # родовые слова / объекты инфраструктуры
+    "село", "села", "селу", "селом", "деревня", "деревни", "деревню", "улица",
+    "улицы", "улицу", "площадь", "площади", "площадью", "аэропорт", "аэропорта",
+    "шоссе", "трасса", "трассы", "дорога", "дороги", "дорогу", "дорогой",
+    "станция", "станции", "вокзал", "вокзала", "центр", "центра", "центре",
+    "поселок", "поселка", "поселке", "город", "города", "городе", "городок",
+    "район", "района", "районе", "районы", "району", "районом", "область",
+    "области", "областей", "областью", "край", "края", "краем", "краю",
+    # природа (в текстах чаще бытовое слово, чем топоним)
+    "лес", "леса", "лесу", "поле", "поля", "полю", "берег", "берега", "остров",
+    "острова", "гора", "горы", "луг", "луга", "болото", "болота", "ручей",
+    "ручья", "речка", "речки", "река", "реки", "реку", "бор", "бора", "вяз",
+    "яма", "ям", "дол", "долина", "долины", "гай", "верх", "низ", "озеро",
+    "озера", "пруд", "пруда", "море", "моря", "залив", "залива", "пролив",
+    "пролива", "бухта", "бухты", "мыс", "мыса",
+    # лексика постов про БПЛА
+    "бпла", "беспилотник", "беспилотника", "беспилотники", "беспилотников",
+    "фиксация", "фиксации", "фиксацию", "опасность", "внимание", "отбой",
+    "пролет", "пролёт", "пролеты", "пролёты", "сводка", "сводки", "радар",
+    "радары", "мониторинг", "обстановка", "данные", "информация", "работа",
+    "движение", "направление", "направления", "направлении", "сторона",
+    "стороны", "сторону", "стороне", "тревога", "ракетная", "атака", "атаки",
+    "удара", "удар", "удары", "пуск", "пуски", "запуск", "запуски", "перехват",
+    "перехвата", "падение", "падения", "поиск", "поиска", "воздушная",
+    "воздушный", "воздушного", "летит", "летят", "летела", "летели", "движется",
+    "движутся", "направляется", "направляются", "следует", "следуют", "замечен",
+    "замечены", "зафиксирован", "зафиксирована", "зафиксированы", "обнаружен",
+    "обнаружены", "уничтожен", "уничтожены", "сбит", "сбиты", "перехвачен",
+    "перехвачены", "наблюдается", "наблюдаются", "отмечается", "отмечаются",
 })
+# Авто-стоп-лист из БД: все сёла/города, чьё базовое имя — частотное русское
+# слово (например "моста", "голубое", "сутка", "ваша", "рай", "суш", "бор").
+# Заменяет ручной COMMON_WORD_MATCHES.
+STOPLIST_SETTLEMENTS = frozenset(
+    n for n in set(CITY_DB) | set(SETTLEMENT_DB) if n in COMMON_RUSSIAN_WORDS
+)
+
+# Пространственные маркеры: матч в теле принимается, если непосредственно
+# перед ним стоит такой предлог (или такая пара слов).
+_MARKER_SINGLE = frozenset({
+    'от', 'из', 'в', 'на', 'к', 'у', 'через', 'до', 'под', 'над', 'с', 'со',
+    'за', 'возле', 'около', 'мимо', 'вблизи', 'вокруг', 'при', 'из-за', 'из-под',
+})
+_MARKER_MULTI = frozenset({
+    'в сторону', 'в стороу', 'со стороны', 'в направлении', 'в направление',
+    'в районе', 'недалеко от', 'близко к', 'рядом с',
+})
+
+# Граница блока локаций (header): первый " - " или статусное слово.
+# Всё до неё — список локаций, всё после — тело поста.
+_HEADER_END_RE = re.compile(
+    r'\s+[-—]\s+|\b(опасность|фиксаци|пролет|пролёт|внимание|отбой|тревога|ракетн)'
+)
+
+
+def _header_end(text_lower):
+    m = _HEADER_END_RE.search(text_lower)
+    return m.start() if m else len(text_lower)
+
+
+def _is_common_word_name(r):
+    """Общее слово, выступившее как село/город (не регион) — подавляем всегда."""
+    if r.get("is_region"):
+        return False
+    return (r.get("name", "").lower().strip() in STOPLIST_SETTLEMENTS
+            or r.get("matched", "").lower().strip() in COMMON_RUSSIAN_WORDS)
+
+
+def _add_span(spans, r):
+    s = r.get("_match_start")
+    e = r.get("_match_end")
+    if s is not None and e is not None:
+        spans.add((s, e))
+
+
+def _body_spatial_ok(text_lower, start, accepted_spans):
+    """Принимаем матч в теле, если перед ним пространственный маркер
+    или уже принятый топоним (продолжение списка локаций)."""
+    segment = text_lower[max(0, start - 60):start]
+    seg_start = start - len(segment)
+    toks = [(m.group(), seg_start + m.start(), seg_start + m.end())
+            for m in re.finditer(r'\S+', segment)]
+    if not toks:
+        return False
+    prev_tok, ps, pe = toks[-1]
+    prev_clean = prev_tok.strip('.,;:!?()[]-«»„“”"\'')
+    if prev_clean in _MARKER_SINGLE:
+        return True
+    if len(toks) >= 2:
+        prev2_clean = toks[-2][0].strip('.,;:!?()[]-«»„“”"\'')
+        if (prev2_clean + ' ' + prev_clean) in _MARKER_MULTI:
+            return True
+    # продолжение списка: предыдущий токен — уже принятый топоним
+    # (союз "и"/"или" между элементами списка тоже считаем продолжением)
+    _span_tokens = [(ps, pe)] + ([(toks[-2][1], toks[-2][2])] if prev_clean in ('и', 'или') and len(toks) >= 2 else [])
+    for s, e in accepted_spans:
+        if s is None or e is None:
+            continue
+        for tps, tpe in _span_tokens:
+            if s <= tpe and tps <= e:
+                return True
+    return False
 
 
 def extract_locations(text, extra_context=None, include_cross_region_nonunique=False):
@@ -4240,6 +4387,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 "name": c["name"], "lat": c["lat"], "lon": c["lon"],
                 "type": "region", "matched": text[m.start():m.end()],
                 "is_region": True, "subject": c["subject"],
+                "_match_start": m.start(), "_match_end": m.end(),
             })
 
     # Match standalone "МО" (Московская область) — "в МО", "БПЛА в МО"
@@ -4272,6 +4420,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             "name": "Москва", "lat": 55.7558, "lon": 37.6173,
             "type": "region", "matched": text[m.start():m.end()],
             "is_region": True, "subject": "Московская область",
+            "_match_start": m.start(), "_match_end": m.end(),
         })
 
     # Process bare adjectives first (they often find a city in CITY_DB),
@@ -4317,6 +4466,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 "name": adj_city["name"], "lat": adj_city["lat"], "lon": adj_city["lon"],
                 "type": "region", "matched": text[idx:end],
                 "is_region": True, "subject": adj_city["subject"],
+                "_match_start": idx, "_match_end": end,
             }
             results.append(r)
             rayon_region_subjects[stem] = adj_city["subject"].lower()
@@ -4418,6 +4568,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                         "name": fallback_name, "lat": fallback_lat, "lon": fallback_lon,
                         "type": "region", "matched": text[idx:end],
                         "is_region": True, "subject": proper_subj,
+                        "_match_start": idx, "_match_end": end,
                     }
                     results.append(r)
             continue
@@ -4427,6 +4578,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             "name": c["name"], "lat": c["lat"], "lon": c["lon"],
             "type": "region", "matched": text[idx:end],
             "is_region": True, "subject": c["subject"],
+            "_match_start": idx, "_match_end": end,
         }
         results.append(r)
         # Record this rayon's subject for deduction of subsequent bare rayons
@@ -4687,21 +4839,40 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     "type": "city",
                     "matched": text[idx:end],
                     "subject": entry["subject"],
+                    "_match_start": idx, "_match_end": end,
                 }
                 results.append(r)
 
-    # Suppress false matches on common Russian words that happen to be
-    # settlement names ("рай"/"рае", "кой", "мирный", "республика",
-    # "ваш*", "сутка") — must run regardless of whether region context
-    # is present.
-    results = [
-        r for r in results
-        if not (r.get("matched", "").lower().strip() in ("рай", "рае")
-                and r.get("name") == "Рай"
-                and not r.get("is_region"))
-        if not (r.get("matched", "").lower().strip() in COMMON_WORD_MATCHES
-                and not r.get("is_region"))
-    ]
+    # --- Контекстный гейтинг (см. docs/superpowers/specs/2026-08-01-context-gating-design.md) ---
+    # Порядок приёма матча:
+    #   1) is_region / район → всегда (уже отфильтрованы по регионам выше)
+    #   2) в блоке локаций (header) → всегда
+    #   3) в теле → только рядом пространственный маркер или продолжение списка
+    # Общие слова (стоп-лист) подавляются везде, кроме явных регионов.
+    header_end = _header_end(text_lower)
+    accepted_spans = set()
+    gated_ids = set()
+    # Решение о приёме матчей принимаем слева направо (для цепочек-списков),
+    # но финальный порядок results сохраняем прежним (важно для дедупликации).
+    for r in sorted(results, key=lambda _r: _r.get("_match_start") if _r.get("_match_start") is not None else -1):
+        if _is_common_word_name(r):
+            continue
+        if r.get("is_region"):
+            gated_ids.add(id(r))
+            _add_span(accepted_spans, r)
+            continue
+        start = r.get("_match_start")
+        if start is None:
+            gated_ids.add(id(r))
+            continue
+        if start < header_end:
+            gated_ids.add(id(r))
+            _add_span(accepted_spans, r)
+            continue
+        if _body_spatial_ok(text_lower, start, accepted_spans):
+            gated_ids.add(id(r))
+            _add_span(accepted_spans, r)
+    results = [r for r in results if id(r) in gated_ids]
 
     unique = {}
     found_keys = set()
