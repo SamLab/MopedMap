@@ -38,6 +38,7 @@ for c in cities_data:
 
 SETTLEMENT_DB = {}
 SETTLEMENTS_BY_NAME_SUBJECT = {}
+SETTLEMENTS_ALL_BY_KEY = {}
 NON_UNIQUE_SETTLEMENT_NAMES = set()
 if os.path.exists(SETTLEMENTS_FILE):
     with open(SETTLEMENTS_FILE, "r", encoding="utf-8") as f:
@@ -61,6 +62,12 @@ if os.path.exists(SETTLEMENTS_FILE):
                 "name": name,
                 "subject": subj,
             }
+        SETTLEMENTS_ALL_BY_KEY.setdefault(key, []).append({
+            "lat": float(s["lat"]),
+            "lon": float(s["lon"]),
+            "name": name,
+            "subject": subj,
+        })
 # Build set of non-unique settlement names (appear in >1 subject)
 _name_subj_counts = {}
 for (lk, subj) in SETTLEMENTS_BY_NAME_SUBJECT:
@@ -85,6 +92,7 @@ for name, lat, lon, subj in _extra_settlements:
     if key not in SETTLEMENTS_BY_NAME_SUBJECT and key not in CITY_BY_NAME_SUBJECT:
         entry = {"name": name, "lat": lat, "lon": lon, "subject": subj}
         SETTLEMENTS_BY_NAME_SUBJECT[key] = entry
+        SETTLEMENTS_ALL_BY_KEY.setdefault(key, []).append(entry)
         _name_subj_counts.setdefault(lk, set()).add(subj_lower)
         if len(_name_subj_counts[lk]) > 1:
             NON_UNIQUE_SETTLEMENT_NAMES.add(lk)
@@ -4611,11 +4619,40 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 if is_overlap:
                     continue
                 # Find the variant matching one of the context subjects
+                # Reference coords: rayon-level matches already found in context
+                # (e.g. Кшенский from "Советский район") or specific settlements
+                # (is_region=False). Oblast capital region matches are NOT used —
+                # the capital is usually far from the settlement, e.g. "Петропавловка,
+                # Советский район" must pick the Петропавловка near Кшенский, not
+                # the one near Курск (which is closer to the oblast capital).
+                _refs = []
+                for ctx in all_ctx:
+                    if ctx.get("lat") is None:
+                        continue
+                    if ctx.get("is_region"):
+                        _mm = str(ctx.get("matched", "")).lower()
+                        if not re.search(r'(район|района|районе|районы|р-н|р-не|р-ны|мо|го|ао)$', _mm):
+                            continue
+                    _refs.append((ctx["lat"], ctx["lon"]))
                 entry = None
                 for cs in ctx_subjects:
                     key = (lk, cs)
-                    if key in SETTLEMENTS_BY_NAME_SUBJECT:
-                        entry = SETTLEMENTS_BY_NAME_SUBJECT[key]
+                    _cands = SETTLEMENTS_ALL_BY_KEY.get(key)
+                    if _cands:
+                        if _refs and len(_cands) > 1:
+                            _best = _cands[0]
+                            _best_d = None
+                            for _cand in _cands:
+                                _d = min(
+                                    (_cand["lat"] - _rf[0]) ** 2 + (_cand["lon"] - _rf[1]) ** 2
+                                    for _rf in _refs
+                                )
+                                if _best_d is None or _d < _best_d:
+                                    _best_d = _d
+                                    _best = _cand
+                            entry = _best
+                        else:
+                            entry = _cands[0]
                         break
                     if key in CITY_BY_NAME_SUBJECT:
                         entry = CITY_BY_NAME_SUBJECT[key]
