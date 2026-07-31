@@ -24,6 +24,7 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 - **Yaroslavl Oblast batch 2 (29.07.2026)**: Added 20 locations to REGION_ALIASES
 - **Yaroslavl Oblast batch 3 (29.07.2026)**: Added Цеденево and Ямищи to REGION_ALIASES
 - **GeoNames mass import (29.07.2026)**: Added ~17 368 settlements to settlements.json from GeoNames RU dump для Ярославской и 6 соседних областей (Тверская, Вологодская, Московская, Костромская, Ивановская, Владимирская). Использованы только ALT-записи (кириллица из alternatenames), отфильтрованы записи с латиницей и дубликаты. Из ~29k ALT → 17 368 чистых. Админ-коды GeoNames: 88 (Ярославская), 77 (Тверская), 85 (Вологодская), 47 (Московская), 37 (Костромская), 21 (Ивановская), 83 (Владимирская). Текущее покрытие: 42 917 записей всего.
+- **«Ваша»→Рязанская / «Сутка»→Ярославская false matches (01.08.2026)**: «в вашу сторону» матчилось как село Ваша (Рязанская), заголовок «Сутка» — как село Сутка (Ярославская). Вынес `COMMON_WORD_MATCHES` (frozenset) как модульный константу перед `extract_locations`; добавил формы `ваша/ваши/ваше/вашу` и `сутка/сутки/суток/сутке/сутку`. POST1 теперь даёт только 8 легитимных пар (Брянск/Курск→Калуга/Орёл/Рязань/Липецк), POST2 — только Домодедово (commit `eeacad1`)
 
 ### Done (continued)
 - **Fleeting vowel handling**: Modified `get_case_forms` for masculine consonant-ending names — tries removing last "о" or "е" before final consonants (Орёл→Орла).
