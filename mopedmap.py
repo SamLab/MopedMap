@@ -1250,6 +1250,10 @@ REGION_ALIASES = [
     {"pattern": "спасском районе", "name": "Спасск-Рязанский", "lat": 54.4, "lon": 40.38, "type": "region", "is_region": True, "subject": "Рязанская область"},
     {"pattern": "спасский р-н", "name": "Спасск-Рязанский", "lat": 54.4, "lon": 40.38, "type": "region", "is_region": True, "subject": "Рязанская область"},
     {"pattern": "спасском р-не", "name": "Спасск-Рязанский", "lat": 54.4, "lon": 40.38, "type": "region", "is_region": True, "subject": "Рязанская область"},
+    {"pattern": "алькеевский район", "name": "Базарные Матаки", "lat": 54.90528, "lon": 49.92583, "type": "region", "is_region": True, "subject": "Республика Татарстан"},
+    {"pattern": "алькеевском районе", "name": "Базарные Матаки", "lat": 54.90528, "lon": 49.92583, "type": "region", "is_region": True, "subject": "Республика Татарстан"},
+    {"pattern": "алькеевский р-н", "name": "Базарные Матаки", "lat": 54.90528, "lon": 49.92583, "type": "region", "is_region": True, "subject": "Республика Татарстан"},
+    {"pattern": "алькеевском р-не", "name": "Базарные Матаки", "lat": 54.90528, "lon": 49.92583, "type": "region", "is_region": True, "subject": "Республика Татарстан"},
     {"pattern": "старожиловский район", "name": "Старожилово", "lat": 54.233, "lon": 39.9, "type": "region", "is_region": True, "subject": "Рязанская область"},
     {"pattern": "старожиловском районе", "name": "Старожилово", "lat": 54.233, "lon": 39.9, "type": "region", "is_region": True, "subject": "Рязанская область"},
     {"pattern": "старожиловский р-н", "name": "Старожилово", "lat": 54.233, "lon": 39.9, "type": "region", "is_region": True, "subject": "Рязанская область"},
@@ -2949,6 +2953,18 @@ DISAMBIGUATION_MAP = {
         "белгородская область": [
             {"context_subject": "татарстан", "lat": 55.306, "lon": 50.119, "name": "Алексеевское", "subject": "Республика Татарстан"},
             {"context_subject": "республика татарстан", "lat": 55.306, "lon": 50.119, "name": "Алексеевское", "subject": "Республика Татарстан"},
+        ],
+    },
+    "спасский": {
+        "рязанская область": [
+            {"context_subject": "татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
+            {"context_subject": "республика татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
+        ],
+    },
+    "спасском": {
+        "рязанская область": [
+            {"context_subject": "татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
+            {"context_subject": "республика татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
         ],
     },
     "борисоглебский": {
@@ -4904,8 +4920,10 @@ def extract_directions(text):
     """Extract source→destination pairs from posts containing direction phrases.
     Returns list of (source_loc, dest_loc) tuples.
     """
-    # Split into sentences if multiple
-    sentences = re.split(r'[.!\n]+', text)
+    # Split into sentences. Period must be followed by whitespace AND a capital
+    # letter to be a sentence boundary — otherwise "р.Волга"/"г.Москва"
+    # abbreviations (period directly followed by a letter) break sentences apart.
+    sentences = re.split(r'[.!](?=\s+[А-ЯЁA-Z0-9])|\n+', text)
     pairs = []
     cardinal = {"восток", "запад", "север", "юг", "юго-восток", "юго-запад",
                 "северо-восток", "северо-запад"}
