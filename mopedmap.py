@@ -2959,12 +2959,18 @@ DISAMBIGUATION_MAP = {
         "рязанская область": [
             {"context_subject": "татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
             {"context_subject": "республика татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
+            {"context_subject": "нижегородская область", "lat": 55.85778, "lon": 45.7, "name": "Спасское", "subject": "Нижегородская область"},
+            {"context_subject": "пензенская область", "lat": 53.93333, "lon": 43.18333, "name": "Спасск", "subject": "Пензенская область"},
+            {"context_subject": "приморский край", "lat": 44.6, "lon": 132.81667, "name": "Спасск-Дальний", "subject": "Приморский край"},
         ],
     },
     "спасском": {
         "рязанская область": [
             {"context_subject": "татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
             {"context_subject": "республика татарстан", "lat": 54.96667, "lon": 49.03333, "name": "Болгар", "subject": "Республика Татарстан"},
+            {"context_subject": "нижегородская область", "lat": 55.85778, "lon": 45.7, "name": "Спасское", "subject": "Нижегородская область"},
+            {"context_subject": "пензенская область", "lat": 53.93333, "lon": 43.18333, "name": "Спасск", "subject": "Пензенская область"},
+            {"context_subject": "приморский край", "lat": 44.6, "lon": 132.81667, "name": "Спасск-Дальний", "subject": "Приморский край"},
         ],
     },
     "борисоглебский": {
@@ -6417,7 +6423,7 @@ def process_posts(posts, geojson_lookup=None):
         else:
             # Split into sentences for per-sentence type classification
             # (posts often list multiple regions with different threat types)
-            sentences = [s.strip() for s in re.split(r'[.!?]+(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
+            sentences = [s.strip() for s in re.split(r'[.!?]+(?=\s+[А-ЯЁA-Z0-9])(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
             # Pre-extract from full post for disambiguation context across sentences
             # (e.g. "Видное" as first line needs to see Crimea locations mentioned later)
             full_context = extract_locations(post)
