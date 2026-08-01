@@ -97,6 +97,14 @@ for name, lat, lon, subj in _extra_settlements:
         if len(_name_subj_counts[lk]) > 1:
             NON_UNIQUE_SETTLEMENT_NAMES.add(lk)
 
+# Major cities (CITY_DB) that share a name with settlements in other regions.
+# Without region context these should default to the major city — otherwise a
+# post like "БПЛА над Белгородом" loses the marker entirely (the name is
+# "non-unique" because e.g. a Белгород village exists in Брянская область).
+NON_UNIQUE_MAJOR_CITIES = frozenset(
+    lk for lk in NON_UNIQUE_SETTLEMENT_NAMES if lk in CITY_DB
+)
+
 def make_region_alias(alias, city_name, lat, lon, subject=None, use_city_db=True):
     if use_city_db:
         ck = city_name.lower()
@@ -4778,8 +4786,9 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         if _seen_subj & dnr_lnr:
             ctx_subjects = [s for s in ctx_subjects if s in dnr_lnr]
         # Even without context subjects, process non-unique names when include_cross_region_nonunique
-        # is set (direction extraction needs cross-region matches)
-        if ctx_subjects or include_cross_region_nonunique:
+        # is set (direction extraction needs cross-region matches), or when the name is a major
+        # city (CITY_DB) — a namesake village in another region must not drop the city marker.
+        if ctx_subjects or include_cross_region_nonunique or NON_UNIQUE_MAJOR_CITIES:
             for m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
                 matched_form = m.group(1)
                 lk = _NON_UNIQUE_TO_LK.get(matched_form) or matched_form
@@ -4841,11 +4850,13 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                         if entry is None:
                             continue
                     else:
-                        # No context: only include if cross-region is allowed
-                        if not include_cross_region_nonunique:
-                            continue
+                        # No context: prefer the major city (CITY_DB) — it is far more
+                        # likely than an obscure namesake settlement. Only fall back to a
+                        # settlement when cross-region matches are explicitly allowed.
                         if lk in CITY_DB:
                             entry = CITY_DB[lk]
+                        elif not include_cross_region_nonunique:
+                            continue
                         else:
                             for key, e in SETTLEMENTS_BY_NAME_SUBJECT.items():
                                 if key[0] == lk:
@@ -4919,6 +4930,8 @@ DIRECTION_SEPS = [
     r'\bнаправление\b',
     '→', '➡️',
     r'\bот\b',
+    r'\bсо стороны\b',
+    r'\bс стороны\b',  # typo (missing о)
 ]
 
 
@@ -4974,7 +4987,7 @@ def extract_directions(text):
         if after_lower in cardinal:
             continue
 
-        from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
+        from_sep = (text_lower[split_idx:split_idx + sep_len].strip() in ('от', 'со стороны', 'с стороны'))
 
         if from_sep:
             # "от [число]" = quantifier ("от 7 БПЛА"), not a direction
@@ -4999,7 +5012,7 @@ def extract_directions(text):
         # Extract locations from full sentence for disambiguation context
         # (so Первомайский район in "before" can see Крым in "after")
         full_context = extract_locations(sentence)
-        from_sep = (text_lower[split_idx:split_idx + sep_len].strip() == 'от')
+        from_sep = (text_lower[split_idx:split_idx + sep_len].strip() in ('от', 'со стороны', 'с стороны'))
         if from_sep:
             # "от X" → source is after "от" (origin), dest is before (target)
             srcs = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
