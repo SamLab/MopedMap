@@ -76,7 +76,7 @@ Fix disambiguation bugs, emoji/popup text cleanup, and ensure all Yaroslavl Obla
 - **Missing-from-DB entries**: Locations not in settlements.json at all (Телищево, Нижний Поселок, Кобыляево, Шалаево, Грешнево, Полесье, Любашино, Козьмодемьянск, Заволжье) added as new REGION_ALIASES entries
 
 ## Next Steps
-1. Удалить временные файлы (check_settlements.py, check_s.py, check_result.txt, rayon_debug.py)
+1. Полный прогон `python -B F:\Locator\mopedmap.py` после коммита `fed328e` (live-fetch A/B не сделан — сеть медленная/таймаутит; верификация — регресс-тесты 19/19)
 2. (опционально) Добавить Никольское и районы Ярославля, если пользователь попросит
 
 ## Critical Context
