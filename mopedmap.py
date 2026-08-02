@@ -2986,6 +2986,16 @@ DISAMBIGUATION_MAP = {
             {"context_subject": "воронежская область", "lat": 51.367, "lon": 42.083, "name": "Борисоглебск", "subject": "Воронежская область"},
         ],
     },
+    "красногорск": {
+        "__any__": [
+            {"context_subject": "удмуртия", "lat": 57.70694, "lon": 52.49694, "name": "Красногорское", "subject": "Удмуртия"},
+        ],
+    },
+    "красногорский": {
+        "__any__": [
+            {"context_subject": "удмуртия", "lat": 57.70694, "lon": 52.49694, "name": "Красногорское", "subject": "Удмуртия"},
+        ],
+    },
     "монастырщинский": {
         "смоленская область": [
             {"context_subject": "воронежская область", "lat": 49.832, "lon": 40.921, "name": "Монастырщина", "subject": "Воронежская область"},
@@ -4355,7 +4365,12 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     for nu_start, nu_end in _non_unique_spans
                 )
                 entry_name_lower = name.strip().lower()
-                if _nu_overlap and entry_name_lower in NON_UNIQUE_SETTLEMENT_NAMES and not is_region:
+                # Also skip when the entry's name is a case form of a non-unique name:
+                # e.g. settlement "Кирова" (Ярославская) is a genitive form of the city
+                # "Киров" — it must not steal the span from the second-pass resolution
+                # (else "от Кирова" wrongly resolves to Ярославская instead of Киров).
+                _nu_lk = _NON_UNIQUE_TO_LK.get(entry_name_lower) or entry_name_lower
+                if _nu_overlap and _nu_lk in NON_UNIQUE_SETTLEMENT_NAMES and not is_region:
                     start = idx + 1
                     continue
                 matched_spans.add((idx, end))
