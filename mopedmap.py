@@ -4196,7 +4196,9 @@ COMMON_RUSSIAN_WORDS = frozenset({
     "лес", "леса", "лесу", "поле", "поля", "полю", "берег", "берега", "остров",
     "острова", "гора", "горы", "луг", "луга", "болото", "болота", "ручей",
     "ручья", "речка", "речки", "река", "реки", "реку", "бор", "бора", "вяз",
-    "яма", "ям", "дол", "долина", "долины", "гай", "верх", "низ", "озеро",
+    "яма", "ям", "дол", "долина", "долины", "гай", "верх", "низ", "низко",
+    "низкий", "низкая", "низкое", "низкие", "нижний", "нижняя", "нижнее",
+    "нижние", "озеро",
     "озера", "пруд", "пруда", "море", "моря", "залив", "залива", "пролив",
     "пролива", "бухта", "бухты", "мыс", "мыса",
     # лексика постов про БПЛА
@@ -6274,6 +6276,35 @@ def is_summary_post(text):
     return False
 
 
+# Канал radar_rossia_bpla публикует сводки последствий ночных атак
+# («в результате атаки пострадал… погибли… экстренные службы») без текущих
+# координат/направления БПЛА — такие посты не нужны на карте.
+NEWS_RECAP_CHANNEL = "radar_rossia_bpla"
+NEWS_RECAP_PATTERNS = [
+    r'в результате атаки',
+    r'пострадал\w*',
+    r'погибл\w*',
+    r'поврежден\w*',
+    r'обломк\w*',
+    r'экстренные службы',
+    r'ранен\w*',
+    r'ущерб\w*',
+    r'прилет\w*',
+    r'жилой дом',
+    r'после атаки',
+    r'из-за атаки',
+]
+_DIRECTION_KW_RE = re.compile(r'в сторону|в направлен|→|➡️')
+
+
+def is_news_recap_post(text):
+    """Сводка последствий атаки (без активного направления БПЛА)."""
+    text_lower = text.lower()
+    if _DIRECTION_KW_RE.search(text_lower):
+        return False
+    return any(re.search(pat, text_lower) for pat in NEWS_RECAP_PATTERNS)
+
+
 def closest_point_on_polygon(lat, lon, polygon_coords):
     """Find closest point on polygon boundary from (lat, lon)."""
     best_lat, best_lon = lat, lon
@@ -6373,6 +6404,9 @@ def process_posts(posts, geojson_lookup=None):
         if is_summary_post(post):
             filtered += 1
             continue
+        if source == NEWS_RECAP_CHANNEL and is_news_recap_post(post):
+            filtered += 1
+            continue
         if "лпр" in source.lower() or "лпр" in post.lower():
             filtered += 1
             continue
@@ -6425,10 +6459,14 @@ def process_posts(posts, geojson_lookup=None):
                     continue
                 seen_pairs.add(key)
                 # Region-only destination: point to border instead of capital
-                # — only for oblast/krai/republic level, NOT rayon-level
+                # — only for oblast/krai/republic level, NOT rayon-level.
+                # Skip when source is INSIDE the same region: the drones are moving
+                # within the region (e.g. "от Погар, Почеп" → "Брянск, Брянская
+                # область"), so the arrow must go to the city, not to the border.
                 region_check_text = (dst.get("matched", "") + " " + dst.get("name", "") + " " + dst.get("subject", "")).lower()
                 region_check_subject = dst.get("subject", "").lower().strip()
-                if dst.get("is_region") and "район" not in dst.get("matched", "").lower() and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
+                _src_subj = (src.get("subject") or "").lower().strip()
+                if dst.get("is_region") and "район" not in dst.get("matched", "").lower() and _src_subj != region_check_subject and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
                     if geojson_lookup:
                         bp = find_border_point(region_check_subject, src["lat"], src["lon"], geojson_lookup)
                         if bp:
@@ -6508,6 +6546,12 @@ def process_posts(posts, geojson_lookup=None):
                     # Also suppress capital region markers when a more specific location exists
                     for idx, s in enumerate(survivors):
                         if not s.get("is_region") or s.get("subject", "").lower().strip() != _ss:
+                            continue
+                        # Rayon-level markers ("Спасском районе"→Спасск-Дальний) are the
+                        # specific location — never suppress them in favor of the capital
+                        # (otherwise both Владивосток and Спасск-Дальний get dropped).
+                        _mm = s.get("matched", "").lower()
+                        if re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _mm):
                             continue
                         sc = (round(s["lat"], 4), round(s["lon"], 4))
                         for ck, cv in CITY_DB.items():
