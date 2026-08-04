@@ -260,7 +260,6 @@ REGION_ALIASES = [
     {"pattern": "каменка", "name": "Каменка", "lat": 50.717, "lon": 39.417, "type": "city", "is_region": False, "subject": "Воронежская область"},
     {"pattern": "каменский район", "name": "Каменка", "lat": 50.717, "lon": 39.417, "type": "region", "is_region": True, "subject": "Воронежская область"},
     {"pattern": "каменский р-н", "name": "Каменка", "lat": 50.717, "lon": 39.417, "type": "region", "is_region": True, "subject": "Воронежская область"},
-    {"pattern": "коммунар", "name": "Коммунар", "lat": 51.13, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
     {"pattern": "беловский район", "name": "Белая", "lat": 51.05, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
     {"pattern": "беловский р-н", "name": "Белая", "lat": 51.05, "lon": 35.72, "type": "region", "is_region": True, "subject": "Курская область"},
     {"pattern": "свердловский район", "name": "Змиёвка", "lat": 52.67, "lon": 36.37, "type": "region", "is_region": True, "subject": "Орловская область"},
@@ -1032,8 +1031,10 @@ REGION_ALIASES = [
     # Московская область — районы
     {"pattern": "волоколамский район", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "волоколамском районе", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "волоколамского района", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "волоколамский р-н", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "волоколамском р-не", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "волоколамского р-на", "name": "Волоколамск", "lat": 56.03, "lon": 35.95, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "воскресенский район", "name": "Воскресенск", "lat": 55.33, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "воскресенском районе", "name": "Воскресенск", "lat": 55.33, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "воскресенский р-н", "name": "Воскресенск", "lat": 55.33, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -1060,8 +1061,10 @@ REGION_ALIASES = [
     {"pattern": "каширском р-не", "name": "Кашира", "lat": 54.84, "lon": 38.15, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "клинский район", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "клинском районе", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "клинского района", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "клинский р-н", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "клинском р-не", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "клинского р-на", "name": "Клин", "lat": 56.33, "lon": 36.73, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "коломенский район", "name": "Коломна", "lat": 55.08, "lon": 38.78, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "коломенском районе", "name": "Коломна", "lat": 55.08, "lon": 38.78, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "коломенский р-н", "name": "Коломна", "lat": 55.08, "lon": 38.78, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -2528,6 +2531,12 @@ REGION_ALIASES = [
     make_region_alias("мо", "Москва", 55.7558, 37.6173, subject="Московская область"),
     make_region_alias_with_cases("ленинградская область", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
     make_region_alias_with_cases("ленинградская обл", "Санкт-Петербург", 59.9343, 30.3351, subject="Ленинградская область"),
+    {"pattern": "тосненский район", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
+    {"pattern": "тосненском районе", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
+    {"pattern": "тосненского района", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
+    {"pattern": "тосненский р-н", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
+    {"pattern": "тосненском р-не", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
+    {"pattern": "тосненского р-на", "name": "Тосно", "lat": 59.541179, "lon": 30.875006, "type": "region", "is_region": True, "subject": "Ленинградская область"},
     make_region_alias_with_cases("краснодарский край", "Краснодар", 45.0355, 38.9753),
     make_region_alias_with_cases("ставропольский край", "Ставрополь", 45.0448, 41.9692),
     make_region_alias_with_cases("приморский край", "Владивосток", 43.1056, 131.8735),
@@ -4184,6 +4193,9 @@ COMMON_RUSSIAN_WORDS = frozenset({
     "кой", "мирный", "мирная", "мирное", "республика", "республики", "рай",
     "рае", "голубой", "голубое", "голубого", "голубую", "мост", "моста",
     "мосту", "мостом", "мосты", "мостов", "суш", "суша", "суши", "суше", "сушу",
+    # "рядом"/"зоне" → села Ряд (Тверская) и Зон (Удмуртия): частотные слова
+    "ряд", "ряда", "ряду", "ряде", "рядом", "зон", "зона", "зоны", "зоне",
+    "зону",
     # родовые слова / объекты инфраструктуры
     "село", "села", "селу", "селом", "деревня", "деревни", "деревню", "улица",
     "улицы", "улицу", "площадь", "площади", "площадью", "аэропорт", "аэропорта",
@@ -4941,6 +4953,8 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
 DIRECTION_SEPS = [
     r'\bв сторону\b',
     r'\bв стороу\b',  # typo (missing н): "в стороу Касторное"
+    r'\bв вашу сторону\b',
+    r'\bв нашу сторону\b',
     r'\bв направлении\b',
     r'\bнаправлении\b',
     r'\bв направление\b',
@@ -4950,6 +4964,14 @@ DIRECTION_SEPS = [
     r'\bсо стороны\b',
     r'\bс стороны\b',  # typo (missing о)
 ]
+
+
+def _alert_region_markers(post_text):
+    """Регионы из шапки поста (до ' - ' или статусного слова) — ими указывается
+    направление «в вашу/нашу сторону» (регионы оповещения о налёте)."""
+    m = re.search(r'\s*[-—]\s*', post_text)
+    hdr = post_text[:m.start()] if m else post_text
+    return [r for r in extract_locations(hdr) if r.get('is_region')]
 
 
 def extract_directions(text):
@@ -5021,6 +5043,10 @@ def extract_directions(text):
             rest_words = rest.split()
             if any(w in region_words for w in rest_words[:3]):
                 continue
+        elif re.search(r'\bв (вашу|нашу) сторону\b', text_lower):
+            # "от X ... в вашу/нашу сторону" — источник после "от",
+            # направление указано оборотом «в вашу/нашу сторону», не отсекаем.
+            pass
         elif text_has_ot_region:
             # Full post contains "от X области" — this indicates real source.
             # Skip arrow directions from non-"от" separators (e.g. "Липецк → Курская").
@@ -5030,7 +5056,19 @@ def extract_directions(text):
         # (so Первомайский район in "before" can see Крым in "after")
         full_context = extract_locations(sentence)
         from_sep = (text_lower[split_idx:split_idx + sep_len].strip() in ('от', 'со стороны', 'с стороны'))
-        if from_sep:
+        vashu = bool(re.search(r'\bв (вашу|нашу) сторону\b', text_lower))
+        if vashu and not from_sep:
+            # "от X ... в вашу/нашу сторону": источник — после "от" (или до
+            # разделителя, если «от» нет), цель — регионы оповещения из шапки
+            # поста (регионы, куда летят БПЛА).
+            ot_m = re.search(r'\bот\b', sentence.lower())
+            if ot_m:
+                src_text = sentence[ot_m.end():split_idx].strip()
+                srcs = extract_locations(src_text, extra_context=full_context, include_cross_region_nonunique=True)
+            else:
+                srcs = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
+            dsts = _alert_region_markers(text)
+        elif from_sep:
             # "от X" → source is after "от" (origin), dest is before (target)
             srcs = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
             dsts = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
@@ -6294,7 +6332,22 @@ NEWS_RECAP_PATTERNS = [
     r'после атаки',
     r'из-за атаки',
 ]
-_DIRECTION_KW_RE = re.compile(r'в сторону|в направлен|→|➡️')
+_DIRECTION_KW_RE = re.compile(r'в сторону|в вашу сторону|в нашу сторону|в направлен|→|➡️')
+
+
+VRV_RADAR_CHANNEL = "vrv_radar"
+VRV_RADAR_FILTER_PATTERNS = [
+    r'запрещено снимать',
+    r'запрещено выкладывать',
+    r'запрещено публиковать',
+    r'информационная тишина',
+]
+
+
+def is_vrv_radar_reminder(text):
+    """Напоминание о запрете съёмки/публикации с vrv_radar (без локаций)."""
+    text_lower = text.lower()
+    return any(re.search(pat, text_lower) for pat in VRV_RADAR_FILTER_PATTERNS)
 
 
 def is_news_recap_post(text):
@@ -6405,6 +6458,9 @@ def process_posts(posts, geojson_lookup=None):
             filtered += 1
             continue
         if source == NEWS_RECAP_CHANNEL and is_news_recap_post(post):
+            filtered += 1
+            continue
+        if source == VRV_RADAR_CHANNEL and is_vrv_radar_reminder(post):
             filtered += 1
             continue
         if "лпр" in source.lower() or "лпр" in post.lower():
