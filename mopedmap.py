@@ -1123,6 +1123,11 @@ REGION_ALIASES = [
     {"pattern": "подольском районе", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "подольский р-н", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "подольском р-не", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
+    # Троицкий АО (Новая Москва) — иначе rayon-фолбэк берёт Троицк/Челябинскую из CITY_DB
+    {"pattern": "троицкий ао", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
+    {"pattern": "троицком ао", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
+    {"pattern": "троицкого ао", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
+    {"pattern": "го троицк", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
     {"pattern": "пушкинский район", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинском районе", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинский р-н", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -4196,6 +4201,8 @@ COMMON_RUSSIAN_WORDS = frozenset({
     # "рядом"/"зоне" → села Ряд (Тверская) и Зон (Удмуртия): частотные слова
     "ряд", "ряда", "ряду", "ряде", "рядом", "зон", "зона", "зоны", "зоне",
     "зону",
+    # "смена" → село Смена (МО/Ярославская/Рязанская): «смена курса» частотно
+    "смена", "смены", "смене", "смену", "сменой",
     # родовые слова / объекты инфраструктуры
     "село", "села", "селу", "селом", "деревня", "деревни", "деревню", "улица",
     "улицы", "улицу", "площадь", "площади", "площадью", "аэропорт", "аэропорта",
@@ -4362,8 +4369,12 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                         start = idx + 1
                         continue
             # Skip if followed by район/ГО/МО/АО (RAYON_RE handles these better)
-            _nx = text_lower[end:end+12]
-            if any(_nx.startswith(' ' + sfx) for sfx in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао')):
+            # Skip if followed by район/ГО/МО/АО (RAYON_RE handles these better).
+            # Compare the FULL following word: "startswith(' мо')" would wrongly
+            # match "москва" as the abbreviation "МО" (e.g. "в Троицком АО Москвы").
+            _nx = text_lower[end:end+15]
+            _nx_words = _nx.strip().split()
+            if _nx_words and _nx_words[0] in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао'):
                 start = idx + 1
                 continue
 
