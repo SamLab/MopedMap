@@ -4992,7 +4992,10 @@ def extract_directions(text):
     # Split into sentences. Period must be followed by whitespace AND a capital
     # letter to be a sentence boundary — otherwise "р.Волга"/"г.Москва"
     # abbreviations (period directly followed by a letter) break sentences apart.
-    sentences = re.split(r'[.!](?=\s+[А-ЯЁA-Z0-9])|\n+', text)
+    # A period before a single-letter abbreviation ("г.", "р.", "п.") ending the
+    # previous sentence is ALSO a boundary: "...областей. г.Ярославль" must not
+    # merge with the first sentence (else "г.Ярославль" becomes a drone source).
+    sentences = re.split(r'[.!](?=\s+[А-ЯЁA-Z0-9])|[.!](?=\s+[а-яё]\.\s*[А-ЯЁA-Z0-9])|\n+', text)
     pairs = []
     cardinal = {"восток", "запад", "север", "юг", "юго-восток", "юго-запад",
                 "северо-восток", "северо-запад"}
@@ -5353,7 +5356,9 @@ def get_mentioned_region_subjects(post_text):
         if not entry.get("is_region"):
             continue
         p = entry["pattern"].lower()
-        if p not in text_lower:
+        # Word-boundary match, not substring: "омская область" must not match
+        # inside "костр[омская область]" (suffix of "костромская").
+        if not re.search(r'(?<!\w)' + re.escape(p) + r'(?!\w)', text_lower):
             continue
         # Only oblast/krai/republic/okrug level patterns — skip rayon-level
         if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
@@ -6556,7 +6561,7 @@ def process_posts(posts, geojson_lookup=None):
         else:
             # Split into sentences for per-sentence type classification
             # (posts often list multiple regions with different threat types)
-            sentences = [s.strip() for s in re.split(r'[.!?]+(?=\s+[А-ЯЁA-Z0-9])(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
+            sentences = [s.strip() for s in re.split(r'[.!?]+(?=\s+[А-ЯЁA-Z0-9])(?!\s*[;,])\s*|[.!?]+(?=\s+[а-яё]\.\s*[А-ЯЁA-Z0-9])(?!\s*[;,])\s*', post) if len(s.strip()) > 3]
             # Pre-extract from full post for disambiguation context across sentences
             # (e.g. "Видное" as first line needs to see Crimea locations mentioned later)
             full_context = extract_locations(post)
