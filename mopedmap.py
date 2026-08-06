@@ -170,19 +170,35 @@ def make_region_alias_with_cases(alias, city_name, lat, lon, subject=None):
     elif a.endswith("ский край"):
         stem = a[:-9]
         result.append(make_region_alias(stem + "ского края", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ском крае", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ским краем", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
     elif a.endswith("ий край"):
         stem = a[:-7]
         result.append(make_region_alias(stem + "его края", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ем крае", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "им краем", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
     # округ -> округа
     elif a.endswith("ский округ"):
         stem = a[:-10]
         result.append(make_region_alias(stem + "ского округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ском округе", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ским округом", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ский", city_name, lat, lon, subject))
     elif a.endswith("ий округ"):
         stem = a[:-8]
         result.append(make_region_alias(stem + "его округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ем округе", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "им округом", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
+    # "... автономный округ" (Ханты-Мансийский/Ямало-Ненецкий/Чукотский/Ненецкий)
+    # — простое окончание "ий округ" тут не срабатывает из-за "автономный"
+    elif a.endswith(" автономный округ"):
+        stem = a[:-len(" автономный округ")].rstrip("й")
+        result.append(make_region_alias(stem + "ого автономного округа", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "ом автономном округе", city_name, lat, lon, subject))
+        result.append(make_region_alias(stem + "им автономным округом", city_name, lat, lon, subject))
         result.append(make_region_alias(stem + "ий", city_name, lat, lon, subject))
     # республика -> республики (genitive), республику (accusative), республикой (instrumental)
     elif a.endswith("ская республика"):
@@ -2681,6 +2697,10 @@ REGION_ALIASES = [
     make_region_alias("бахмут", "Бахмут", 48.594, 38.002, "ДНР", use_city_db=False),
     make_region_alias_with_cases("ямало-ненецкий автономный округ", "Салехард", 66.5300, 66.6019),
     make_region_alias_with_cases("ханты-мансийский автономный округ", "Ханты-Мансийск", 61.0024, 69.0099),
+    # опечатка «Мантийский» (без «с») — встречается в реальных постах
+    {"pattern": "ханты-мантийский автономный округ", "name": "Ханты-Мансийск", "lat": 61.0024, "lon": 69.0099, "type": "region", "is_region": True, "subject": "Ханты-Мансийский Автономный Округ"},
+    {"pattern": "ханты-мантийского автономного округа", "name": "Ханты-Мансийск", "lat": 61.0024, "lon": 69.0099, "type": "region", "is_region": True, "subject": "Ханты-Мансийский Автономный Округ"},
+    {"pattern": "ханты-мантийском автономном округе", "name": "Ханты-Мансийск", "lat": 61.0024, "lon": 69.0099, "type": "region", "is_region": True, "subject": "Ханты-Мансийский Автономный Округ"},
     make_region_alias_with_cases("чукотский автономный округ", "Анадырь", 64.7333, 177.5167),
     make_region_alias_with_cases("еврейская автономная область", "Биробиджан", 48.7833, 132.9333),
     make_region_alias_with_cases("ненецкий автономный округ", "Нарьян-Мар", 67.6385, 53.0067),
@@ -4203,6 +4223,9 @@ COMMON_RUSSIAN_WORDS = frozenset({
     "зону",
     # "смена" → село Смена (МО/Ярославская/Рязанская): «смена курса» частотно
     "смена", "смены", "смене", "смену", "сменой",
+    # "были" → село Были (Кировская): «были фиксации» — глагол «быть»
+    "был", "была", "было", "были", "буду", "будешь", "будет", "будем",
+    "будете", "будут", "будь", "будьте", "быть",
     # родовые слова / объекты инфраструктуры
     "село", "села", "селу", "селом", "деревня", "деревни", "деревню", "улица",
     "улицы", "улицу", "площадь", "площади", "площадью", "аэропорт", "аэропорта",
