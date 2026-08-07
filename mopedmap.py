@@ -1129,6 +1129,14 @@ REGION_ALIASES = [
     {"pattern": "орехово-зуевском районе", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.97, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "орехово-зуевский р-н", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.97, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "орехово-зуевском р-не", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.97, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово-зуевский го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово-зуевского го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово-зуевском го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово - зуевский го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово - зуевского го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово - зуевском го", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово-зуевский городской округ", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "орехово-зуевского городского округа", "name": "Орехово-Зуево", "lat": 55.8, "lon": 38.96667, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "павлово-посадский район", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "павлово-посадском районе", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "павлово-посадский р-н", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -5585,6 +5593,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
             mt = item.get('matched', '').lower()
             if any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
                 continue  # explicit region reference — keep marker
+            if re.search(r'\s(мо|го|ао)$', mt):
+                continue  # rayon-level ГО/МО/АО reference — specific location, keep marker
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
                 city_name = item.get('name', '').lower().strip()
@@ -6319,6 +6329,9 @@ SUMMARY_PATTERNS = [
     r'за прошедш\w+ ноч',
     r'за прошедш\w+ сутк',
     r'за последние сутк',
+    r'за сутки.*силами пво',
+    r'за сутки.*уничтожен\w* \d+\s*(бпла|беспилотн\w*)',
+    r'за сутки.*сбит\w* \d+\s*(бпла|беспилотн\w*)',
     r'силами противовоздушной обороны',
     r'по всем вышеперечисленн',
     r'по ранее объявленн',
@@ -6395,6 +6408,26 @@ def is_news_recap_post(text):
     if _DIRECTION_KW_RE.search(text_lower):
         return False
     return any(re.search(pat, text_lower) for pat in NEWS_RECAP_PATTERNS)
+
+
+# Рекламные/паникёрские посты, раскручивающие сторонние Telegram-каналы
+# (например «Закрытая повестка») — без актуальных координат БПЛА, на карту не нужны.
+PROMO_SPAM_PATTERNS = [
+    r'закрытая повестка',
+    r'в telegram стремительно набирает популярность',
+    r'пора читать правду',
+    r'официальные сми об этом молчат',
+    r'последний шанс на быстрое окончание войны',
+    r'почему нужно снять вклады',
+    r'остаётся за рамками официальной пропаганды',
+    r'настоящая кульминация начнётся',
+]
+
+
+def is_promo_spam_post(text):
+    """Рекламный пост-накрутка канала (без локаций/направлений БПЛА)."""
+    text_lower = text.lower()
+    return any(re.search(pat, text_lower) for pat in PROMO_SPAM_PATTERNS)
 
 
 def closest_point_on_polygon(lat, lon, polygon_coords):
@@ -6500,6 +6533,9 @@ def process_posts(posts, geojson_lookup=None):
             filtered += 1
             continue
         if source == VRV_RADAR_CHANNEL and is_vrv_radar_reminder(post):
+            filtered += 1
+            continue
+        if is_promo_spam_post(post):
             filtered += 1
             continue
         if "лпр" in source.lower() or "лпр" in post.lower():
@@ -6646,7 +6682,7 @@ def process_posts(posts, geojson_lookup=None):
                         # specific location — never suppress them in favor of the capital
                         # (otherwise both Владивосток and Спасск-Дальний get dropped).
                         _mm = s.get("matched", "").lower()
-                        if re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _mm):
+                        if re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _mm) or re.search(r'\s(мо|го|ао)$', _mm):
                             continue
                         sc = (round(s["lat"], 4), round(s["lon"], 4))
                         for ck, cv in CITY_DB.items():
