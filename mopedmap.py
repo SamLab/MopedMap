@@ -4251,6 +4251,9 @@ COMMON_RUSSIAN_WORDS = frozenset({
     "нижние", "озеро",
     "озера", "пруд", "пруда", "море", "моря", "залив", "залива", "пролив",
     "пролива", "бухта", "бухты", "мыс", "мыса",
+    # "побережье" → село Побережье (Брянская): «на Черноморское побережье» — берег моря
+    "побережье", "побережья", "побережью", "побережьем", "побережий",
+    "побережьям", "побережьями", "побережьях",
     # лексика постов про БПЛА
     "бпла", "беспилотник", "беспилотника", "беспилотники", "беспилотников",
     "фиксация", "фиксации", "фиксацию", "опасность", "внимание", "отбой",
@@ -4272,6 +4275,11 @@ COMMON_RUSSIAN_WORDS = frozenset({
 STOPLIST_SETTLEMENTS = frozenset(
     n for n in set(CITY_DB) | set(SETTLEMENT_DB) if n in COMMON_RUSSIAN_WORDS
 )
+
+# Слово «море» в падежах: если топоним непосредственно предшествует ему,
+# это название моря («Азовское море», «Азовского моря»), а не село
+# (Азовское, Республика Крым).
+SEA_WORDS = frozenset({'море', 'моря', 'морю', 'морем', 'морях'})
 
 # Пространственные маркеры: матч в теле принимается, если непосредственно
 # перед ним стоит такой предлог (или такая пара слов).
@@ -4406,6 +4414,11 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             _nx = text_lower[end:end+15]
             _nx_words = _nx.strip().split()
             if _nx_words and _nx_words[0] in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао'):
+                start = idx + 1
+                continue
+            # Skip if followed by a sea word — "Азовское море"/"Азовского моря"
+            # is the sea, not the settlement Азовское (Республика Крым).
+            if not is_region and _nx_words and _nx_words[0] in SEA_WORDS:
                 start = idx + 1
                 continue
 
@@ -5080,6 +5093,10 @@ def extract_directions(text):
                 continue
             after_words = after_lower.split()
             if any(w in region_words for w in after_words[:3]):
+                continue
+            # "со стороны Азовского моря" / "от моря" — источником является море,
+            # а не населённый пункт; стрелку не строим (моря нет в БД).
+            if any(w in SEA_WORDS for w in after_words[:3]):
                 continue
         elif after_lower.startswith('от'):
             # "от X области" after a non-"от" separator (e.g. "→ от Курской области")
