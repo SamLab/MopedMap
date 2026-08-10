@@ -4215,6 +4215,27 @@ COMMON_RUSSIAN_WORDS = frozenset({
     "сорок", "пятьдесят", "сто", "тысяча", "тысячи", "несколько", "много",
     "мало", "немного", "немало", "больше", "меньше", "пара", "пары", "раз",
     "раза", "разы", "разов",
+    # порядковые числительные: села «Второй» (Воронежская), «Девятое»
+    # (Смоленская), «Десятое» (Тверская) матчатся как обычные слова
+    # («один и второй», «первый этаж»). Составные имена («Второе Никольское»)
+    # матчатся полным спаном и остаются.
+    "первый", "первая", "первое", "первые", "первого", "первой", "первых",
+    "первым", "первом", "второй", "вторая", "второе", "вторые", "второго",
+    "второй", "вторых", "вторым", "втором", "третий", "третья", "третье",
+    "третьи", "третьего", "третьей", "третьих", "третьим", "третьем",
+    "четвертый", "четвёртый", "четвертая", "четвёртая", "четвертое",
+    "четвёртое", "четвертые", "четвёртые", "четвертого", "четвёртого",
+    "четвертой", "четвёртой", "четвертых", "четвёртых", "четвертым",
+    "четвёртым", "четвертом", "четвёртом", "пятый", "пятая", "пятое",
+    "пятые", "пятого", "пятой", "пятых", "пятым", "пятом", "шестой",
+    "шестая", "шестое", "шестые", "шестого", "шестой", "шестых", "шестым",
+    "шестом", "седьмой", "седьмая", "седьмое", "седьмые", "седьмого",
+    "седьмой", "седьмых", "седьмым", "седьмом", "восьмой", "восьмая",
+    "восьмое", "восьмые", "восьмого", "восьмой", "восьмых", "восьмым",
+    "восьмом", "девятый", "девятая", "девятое", "девятые", "девятого",
+    "девятой", "девятых", "девятым", "девятом", "десятый", "десятая",
+    "десятое", "десятые", "десятого", "десятой", "десятых", "десятым",
+    "десятом",
     # время
     "час", "часа", "часов", "сутка", "сутки", "суток", "сутке", "сутку",
     "минута", "минуты", "минут", "секунда", "секунды", "секунд", "день", "дня",
@@ -5029,7 +5050,59 @@ def _alert_region_markers(post_text):
     return [r for r in extract_locations(hdr) if r.get('is_region')]
 
 
-def extract_directions(text):
+# «стык X и Y областей» — фраза, обозначающая точку на границе двух регионов
+_STYK_RE = re.compile(
+    r'(?:на\s+)?стык[аеи]?\s+(.+?)\s+и\s+(.+?)\s+'
+    r'(?:област\w*|кра\w*|республик\w*|округов?\w*|районов?\w*|ао|мо|го)\b',
+    re.IGNORECASE
+)
+
+
+def _polygon_vertices(feat):
+    """Все вершины границы региона (lat, lon) из GeoJSON-фичи."""
+    geom = feat.get('geometry') if feat else None
+    if not geom:
+        return []
+    coords = geom.get('coordinates', [])
+    verts = []
+    def _walk(c):
+        if c and isinstance(c[0], list):
+            for sub in c:
+                _walk(sub)
+        elif len(c) >= 2 and isinstance(c[0], (int, float)):
+            verts.append((c[1], c[0]))  # [lon, lat] → (lat, lon)
+    _walk(coords)
+    return verts
+
+
+def _make_styk_junction(region_locs, dst_locs, geojson_lookup=None):
+    """Точка на границе между регионами из фразы «стык X и Y областей».
+    При наличии цели (в сторону Z) берём вершину общей границы, ближайшую
+    к цели; без геометрии — середина между координатами маркеров регионов."""
+    verts = []
+    for l in region_locs:
+        v = []
+        if geojson_lookup and l.get("subject"):
+            feat = find_geojson_feature(l["subject"].lower(), geojson_lookup)
+            if feat:
+                v = _polygon_vertices(feat)
+        verts.append(v)
+    if all(v for v in verts):
+        shared = [p for p in verts[0]
+                  if any(abs(p[0] - q[0]) <= 0.011 and abs(p[1] - q[1]) <= 0.011
+                         for q in verts[1])]
+        if shared:
+            if dst_locs:
+                dl = dst_locs[0]
+                return min(shared, key=lambda p: (p[0] - dl["lat"]) ** 2 + (p[1] - dl["lon"]) ** 2)
+            return (sum(p[0] for p in shared) / len(shared),
+                    sum(p[1] for p in shared) / len(shared))
+    lats = [l["lat"] for l in region_locs]
+    lons = [l["lon"] for l in region_locs]
+    return (sum(lats) / len(lats), sum(lons) / len(lons))
+
+
+def extract_directions(text, geojson_lookup=None):
     """Extract source→destination pairs from posts containing direction phrases.
     Returns list of (source_loc, dest_loc) tuples.
     """
@@ -5137,6 +5210,24 @@ def extract_directions(text):
         else:
             srcs = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
             dsts = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
+
+        # «стык X и Y областей» — единая точка на границе регионов:
+        # одна стрелка от стыка к цели вместо стрелок из столиц регионов
+        styk_m = _STYK_RE.search(sentence)
+        if styk_m:
+            styk_text = sentence[styk_m.start():styk_m.end()]
+            styk_locs = [l for l in extract_locations(styk_text, extra_context=full_context) if l.get("is_region")]
+            if len(styk_locs) >= 2:
+                jlat, jlon = _make_styk_junction(styk_locs, dsts, geojson_lookup)
+                junction = {
+                    "lat": jlat, "lon": jlon,
+                    "name": styk_text, "matched": styk_text,
+                    "is_region": True, "type": "region",
+                    "_match_start": styk_m.start(), "_match_end": styk_m.end(),
+                }
+                # Регионы стыка остаются как fill-only маркеры (заливка регионов),
+                # а стрелку рисуем только от точки стыка
+                srcs = [junction] + [{**l, "_fill_only": True} for l in styk_locs]
 
         for s in srcs:
             for d in dsts:
@@ -5818,6 +5909,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                                 continue
                             if other.get('type') == 'clear':
                                 continue
+                            if other.get('no_marker'):
+                                continue  # скрытые/ложные маркеры не держат заливку
                             if other.get('is_region') or other.get('subject'):
                                 other_rn = other.get('subject', '').lower().strip() if other.get('subject') else None
                                 if not other_rn:
@@ -6400,6 +6493,13 @@ NEWS_RECAP_PATTERNS = [
     r'жилой дом',
     r'после атаки',
     r'из-за атаки',
+    # официальные сводки последствий («[История] Сети / Последнее (...)»):
+    # глава региона/служба отчитывается о последствиях, активных направлений нет
+    r'на (моём|моем) личном контроле',
+    r'призываю не распространять',
+    r'следите за дальнейшими оповещениями',
+    r'приближаться к обломкам',
+    r'на месте происшествия',
 ]
 _DIRECTION_KW_RE = re.compile(r'в сторону|в вашу сторону|в нашу сторону|в направлен|→|➡️')
 
@@ -6420,7 +6520,9 @@ def is_vrv_radar_reminder(text):
 
 
 def is_news_recap_post(text):
-    """Сводка последствий атаки (без активного направления БПЛА)."""
+    """Сводка последствий атаки / официальное сообщение (без активного
+    направления БПЛА). Применяется ко ВСЕМ каналам; посты с направлением
+    («в сторону/в направлении/→») не фильтруются — активные пролёты остаются."""
     text_lower = text.lower()
     if _DIRECTION_KW_RE.search(text_lower):
         return False
@@ -6546,7 +6648,7 @@ def process_posts(posts, geojson_lookup=None):
         if is_summary_post(post):
             filtered += 1
             continue
-        if source == NEWS_RECAP_CHANNEL and is_news_recap_post(post):
+        if is_news_recap_post(post):
             filtered += 1
             continue
         if source == VRV_RADAR_CHANNEL and is_vrv_radar_reminder(post):
@@ -6575,14 +6677,16 @@ def process_posts(posts, geojson_lookup=None):
             continue
 
         # Try direction parsing first
-        dir_pairs = extract_directions(post)
+        dir_pairs = extract_directions(post, geojson_lookup=geojson_lookup)
         if dir_pairs:
             # Filter source locations by post region (avoids false rayon matches like Красногорский→Брянская when post mentions Марий Эл).
             # Uses explicit oblast/krai/republic mentions only — rayon patterns ("Каменский район"→Тульская/Воронежская) would
             # pollute the set and let wrong-region pairs through.
             _mentioned = get_mentioned_region_subjects(post)
             if _mentioned:
-                _fp = [(s, d) for s, d in dir_pairs if not s.get("subject") or s["subject"].strip().lower() in _mentioned]
+                # Fill-only источники (регионы из фразы «стык X и Y областей»)
+                # упомянуты явно — не отсекаем их фильтром ложно-региональных пар
+                _fp = [(s, d) for s, d in dir_pairs if s.get("_fill_only") or not s.get("subject") or s["subject"].strip().lower() in _mentioned]
                 if _fp:
                     dir_pairs = _fp
             # Suppress region markers when a specific settlement exists in same subject+destination
@@ -6623,10 +6727,13 @@ def process_posts(posts, geojson_lookup=None):
                     "lat": src["lat"], "lon": src["lon"],
                     "name": src["name"], "type": post_type,
                     "text": original_post[:5000] + ("..." if len(original_post) > 5000 else ""),
-                    "direction": [dst["lat"], dst["lon"]],
-                    "dest_name": dst["name"],
                     "source": source, "time": post_time,
                 }
+                # Fill-only источники (регионы из фразы «стык X и Y областей»)
+                # остаются как заливка регионов, без стрелки
+                if not src.get("_fill_only"):
+                    m["direction"] = [dst["lat"], dst["lon"]]
+                    m["dest_name"] = dst["name"]
                 if src.get("is_region"):
                     m["is_region"] = True
                 if src.get("subject"):
