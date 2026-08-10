@@ -3925,6 +3925,11 @@ for name_lower, c in SETTLEMENT_DB.items():
 
 ALL_PATTERNS.sort(key=lambda x: -x[0])
 
+# Префиксы паттернов (до 3 символов) для быстрого предфильтра в extract_locations:
+# паттерн может совпасть, только если его первые символы присутствуют в тексте
+# как n-грамма (1-3 символа). Порядок итерации ALL_PATTERNS не меняется.
+ALL_PATTERNS_PREFIX = [p[:3] if len(p) >= 3 else p for _, p, _ in ALL_PATTERNS]
+
 # Build reverse lookup: rayon adjective form → correct city data
 # Maps "борисовском" → {"name": "Борисовка", "lat": 50.6, "lon": 36.017, "subject": "Белгородская область"}
 RAYON_ADJ_TO_CITY = {}
@@ -3940,6 +3945,21 @@ for _, pattern, entry in ALL_PATTERNS:
                 "subject": entry["subject"],
             }
             break
+
+# Pre-filtered list of oblast/krai/republic/okrug-level is_region patterns
+# for get_mentioned_region_subjects — avoids scanning all 173k patterns per post.
+REGION_MENTION_PATTERNS = []
+for _, _, entry in ALL_PATTERNS:
+    if not entry.get("is_region"):
+        continue
+    p = entry["pattern"].lower()
+    if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
+                                   'край', 'края', 'краем', 'краю',
+                                   'республик', 'республика', 'республику',
+                                   'округ', 'округе', 'ао',
+                                   'автономный', 'автономная')):
+        continue
+    REGION_MENTION_PATTERNS.append((p, entry["subject"].strip().lower()))
 
 # Combined regex for non-unique settlement names (matched only when region context resolves them)
 if NON_UNIQUE_SETTLEMENT_NAMES:
@@ -4377,6 +4397,17 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     matched_spans = set()
     results = []
 
+    # Предфильтр паттернов: паттерн может совпасть, только если его первые
+    # символы (1-3) присутствуют в тексте как n-грамма. Пропускаем только
+    # заведомо невозможные паттерны — порядок итерации сохраняется.
+    _pool = set()
+    for _i in range(len(text_lower)):
+        _pool.add(text_lower[_i])
+        if _i + 1 < len(text_lower):
+            _pool.add(text_lower[_i:_i + 2])
+        if _i + 2 < len(text_lower):
+            _pool.add(text_lower[_i:_i + 3])
+
     # Pre-compute non-unique compound spans — these MUST override individual
     # word matches to prevent the compound from being blocked in the second pass
     _non_unique_spans = set()
@@ -4384,7 +4415,9 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         for _nu_m in NON_UNIQUE_SETTLEMENT_RE.finditer(text_lower):
             _non_unique_spans.add((_nu_m.start(), _nu_m.end()))
 
-    for _, pattern, entry in ALL_PATTERNS:
+    for _pfx, (_, pattern, entry) in zip(ALL_PATTERNS_PREFIX, ALL_PATTERNS):
+        if _pfx not in _pool:
+            continue
         if isinstance(entry, dict) and "type" in entry:
             name = entry["name"]
             lat = entry["lat"]
@@ -5491,22 +5524,11 @@ def get_mentioned_region_subjects(post_text):
     """
     text_lower = post_text.lower()
     subjects = set()
-    for _, _, entry in ALL_PATTERNS:
-        if not entry.get("is_region"):
-            continue
-        p = entry["pattern"].lower()
+    for p, subject in REGION_MENTION_PATTERNS:
         # Word-boundary match, not substring: "омская область" must not match
         # inside "костр[омская область]" (suffix of "костромская").
-        if not re.search(r'(?<!\w)' + re.escape(p) + r'(?!\w)', text_lower):
-            continue
-        # Only oblast/krai/republic/okrug level patterns — skip rayon-level
-        if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
-                                       'край', 'края', 'краем', 'краю',
-                                       'республик', 'республика', 'республику',
-                                       'округ', 'округе', 'ао',
-                                       'автономный', 'автономная')):
-            continue
-        subjects.add(entry["subject"].strip().lower())
+        if re.search(r'(?<!\w)' + re.escape(p) + r'(?!\w)', text_lower):
+            subjects.add(subject)
     return subjects
 
 
