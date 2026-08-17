@@ -4085,7 +4085,7 @@ for _, _, entry in ALL_PATTERNS:
     if not any(kw in p for kw in ('область', 'области', 'областью', 'областей',
                                    'край', 'края', 'краем', 'краю',
                                    'республик', 'республика', 'республику',
-                                   'округ', 'округе', 'ао',
+                                   'округ', 'округе',
                                    'автономный', 'автономная')):
         continue
     REGION_MENTION_PATTERNS.append((p, entry["subject"].strip().lower()))
@@ -4598,11 +4598,15 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             # Skip if followed by район/ГО/МО/АО (RAYON_RE handles these better).
             # Compare the FULL following word: "startswith(' мо')" would wrongly
             # match "москва" as the abbreviation "МО" (e.g. "в Троицком АО Москвы").
+            # Don't skip if the pattern itself IS a full rayon compound (e.g. "троицкий ао",
+            # "войновский го") — the skip is only for standalone adjectives.
             _nx = text_lower[end:end+15]
             _nx_words = _nx.strip().split()
             if _nx_words and _nx_words[0] in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао'):
-                start = idx + 1
-                continue
+                _pat_last = pattern.strip().split()[-1] if pattern.strip() else ''
+                if _pat_last not in ('район', 'районе', 'р-н', 'р-не', 'мо', 'го', 'ао'):
+                    start = idx + 1
+                    continue
             # Skip if followed by a sea word — "Азовское море"/"Азовского моря"
             # is the sea, not the settlement Азовское (Республика Крым).
             if not is_region and _nx_words and _nx_words[0] in SEA_WORDS:
