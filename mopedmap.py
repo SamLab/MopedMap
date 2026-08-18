@@ -1154,6 +1154,13 @@ REGION_ALIASES = [
     {"pattern": "троицком ао", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
     {"pattern": "троицкого ао", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
     {"pattern": "го троицк", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
+    {"pattern": "ао троицк", "name": "Троицк", "lat": 55.467, "lon": 37.3, "type": "region", "is_region": True, "subject": "Москва"},
+    # г.Москва — явный маркер столицы; CITY_DB entry не-юник (GeoNames-тёзки), нужен is_region для контекста
+    {"pattern": "г.москва", "name": "Москва", "lat": 55.7558, "lon": 37.6178, "type": "region", "is_region": True, "subject": "Москва"},
+    # Богородский округ (Московская) — иначе «Богородском» → Нижегородская
+    {"pattern": "богородский округ", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "богородском округе", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "богородского округа", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинский район", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинском районе", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинский р-н", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
