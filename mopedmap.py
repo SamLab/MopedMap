@@ -1161,6 +1161,9 @@ REGION_ALIASES = [
     {"pattern": "богородский округ", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "богородском округе", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "богородского округа", "name": "Ногинск", "lat": 55.85, "lon": 38.43333, "type": "region", "is_region": True, "subject": "Московская область"},
+    # Дмитровский МО (Московская) — иначе RAYON_ADJ_TO_CITY last-wins берёт Орловскую
+    {"pattern": "дмитровский мо", "name": "Дмитров", "lat": 56.35, "lon": 37.52, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "дмитровском мо", "name": "Дмитров", "lat": 56.35, "lon": 37.52, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинский район", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинском районе", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "пушкинский р-н", "name": "Пушкино", "lat": 56.02, "lon": 37.85, "type": "region", "is_region": True, "subject": "Московская область"},
