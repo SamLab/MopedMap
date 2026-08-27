@@ -5791,7 +5791,7 @@ def build_region_feed(posts_data, max_items=20):
                 rn = (CITY_DB[cn].get("subject") or "").strip().lower()
         return rn
 
-    posts = {}  # (norm-text, region) -> {"time","sources","regions","text","pinned"}
+    posts = {}  # norm-text -> {"time","sources","regions","text","pinned"}
     for item in posts_data:
         rn = _region_of(item)
         if rn not in TRACKED_REGIONS:
@@ -5815,9 +5815,7 @@ def build_region_feed(posts_data, max_items=20):
             p["pinned"] = True
 
     items = list(posts.values())
-    items.sort(key=lambda p: (0 if p["pinned"] else 1,),
-               reverse=False)
-    # стабильная сортировка: pinned уже отделены; внутри — по времени desc
+    # pinned сверху, внутри — по времени desc
     pinned = [p for p in items if p["pinned"]]
     others = [p for p in items if not p["pinned"]]
     pinned.sort(key=lambda p: p["time"], reverse=True)
