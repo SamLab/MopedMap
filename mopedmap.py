@@ -5526,10 +5526,16 @@ def simplify_coords(coords, precision=2):
 
 def load_region_geojson():
     """Download and simplify GeoJSON, return dict name_lower→feature."""
+    _t_start = time.time()
     lookup = {}
     try:
+        _t0 = time.time()
         r = requests.get(GEOJSON_URL, timeout=60)
+        _t_dl = time.time() - _t0
+        _t0 = time.time()
         data = r.json()
+        _t_json = time.time() - _t0
+        print(f"  GeoJSON: скачивание {_t_dl:.2f}s, парсинг JSON {_t_json:.2f}s")
     except Exception:
         print("  Не удалось загрузить GeoJSON регионов — используем статические полигоны")
     else:
@@ -5556,6 +5562,7 @@ def load_region_geojson():
             lookup[name_lower] = feat
     if STATIC_GEOJSON_FEATURES:
         print(f"  Всего регионов: {len(lookup)} (включая статические)")
+    print(f"  GeoJSON: всего load_region_geojson {time.time() - _t_start:.2f}s")
     return lookup
 
 
