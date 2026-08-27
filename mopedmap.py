@@ -6301,7 +6301,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
     feed_data = build_region_feed(posts_data)
-    feed_json = json.dumps(feed_data, ensure_ascii=False)
+    feed_json = json.dumps(feed_data, ensure_ascii=False).replace("</", "<\\/")
 
     region_features = list(region_map.values())
     region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
