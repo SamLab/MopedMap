@@ -5648,6 +5648,8 @@ REGION_GEOJSON_MAP = {
 
 def find_geojson_feature(region_name_lower, geojson_lookup):
     """Match a region alias to GeoJSON feature by name."""
+    if not geojson_lookup:
+        return None
     nl = region_name_lower.strip()
     # Direct match
     if nl in geojson_lookup:
@@ -6298,6 +6300,8 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                 region_map[rn] = feat_copy
 
     markers_json = json.dumps(posts_data, ensure_ascii=False)
+    feed_data = build_region_feed(posts_data)
+    feed_json = json.dumps(feed_data, ensure_ascii=False)
 
     region_features = list(region_map.values())
     region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
@@ -6333,6 +6337,14 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .header .info {{ font-size: 11px; color: #777; margin-left: auto; }}
 .legend {{ background: rgba(255, 255, 255, 0.95); padding: 12px 16px; border-radius: 10px; color: #333; font-size: 13px; border: 1px solid #ccc; }}
 .legend i {{ width: 12px; height: 12px; display: inline-block; border-radius: 50%; margin-right: 6px; }}
+.region-feed {{ position: absolute; top: 56px; right: 12px; z-index: 1000; width: 320px; max-height: 42vh; background: rgba(255,255,255,0.97); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 1px solid #ccc; font-size: 12px; color: #333; display: flex; flex-direction: column; overflow: hidden; }}
+.region-feed-toggle {{ padding: 8px 12px; cursor: pointer; background: #fff; border-bottom: 1px solid #eee; font-weight: bold; color: #d32f2f; user-select: none; }}
+.region-feed-body {{ overflow-y: auto; max-height: calc(42vh - 34px); }}
+.region-feed-item {{ padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }}
+.region-feed-item.pinned {{ background: #fff7e6; border-left: 3px solid #d32f2f; }}
+.region-feed-item-meta {{ font-size: 11px; color: #666; margin-bottom: 2px; }}
+.region-feed-item-meta b.yar {{ color: #d32f2f; }}
+.region-feed-item-text {{ font-size: 12px; color: #222; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
 .popup-text {{ font-size: 12px; max-height: 500px; overflow-y: auto; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }}
 .leaflet-popup-content {{ max-width: 600px !important; }}
 .leaflet-tile-pane {{ filter: saturate(0.77); }}
@@ -6352,6 +6364,10 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
+<div class="region-feed" id="region-feed" style="display:none">
+  <div class="region-feed-toggle" id="region-feed-toggle">▶ Посты: Яр. область + соседи</div>
+  <div class="region-feed-body" id="region-feed-body" style="display:none"></div>
+</div>
 <div class="footer">
   <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
   <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
@@ -6392,6 +6408,37 @@ setInterval(function() {{
 L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
+
+const feed = {feed_json};
+(function() {{
+  const panel = document.getElementById('region-feed');
+  if (!feed || feed.length === 0) {{ return; }}
+  panel.style.display = '';
+  const body = document.getElementById('region-feed-body');
+  const toggle = document.getElementById('region-feed-toggle');
+  const html = feed.map(f => {{
+    const yar = f.pinned ? '<b class="yar">Яр</b> ' : '';
+    const regions = (f.regions || []).join(', ');
+    const sources = (f.sources || []).join(' / ');
+    return '<div class="region-feed-item' + (f.pinned ? ' pinned' : '') + '">' +
+      '<div class="region-feed-item-meta">' + yar + '<b>' + (f.time||'') + '</b> · ' + sources +
+      (regions ? ' · ' + regions : '') + '</div>' +
+      '<div class="region-feed-item-text"></div></div>';
+  }}).join('');
+  body.innerHTML = html;
+  // заполнить text безопасно
+  const items = body.querySelectorAll('.region-feed-item-text');
+  feed.forEach((f, i) => {{ if (items[i]) items[i].textContent = f.text; }});
+  toggle.addEventListener('click', function() {{
+    if (body.style.display === 'none') {{
+      body.style.display = '';
+      toggle.textContent = '▼ Посты: Яр. область + соседи';
+    }} else {{
+      body.style.display = 'none';
+      toggle.textContent = '▶ Посты: Яр. область + соседи';
+    }}
+  }});
+}})();
 
 const styleMap = {{
   danger: {{ color: '#a83232', size: 12, glow: null }},
