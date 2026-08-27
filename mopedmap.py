@@ -7,6 +7,7 @@ import webbrowser
 import time
 import traceback
 import html as html_module
+from concurrent.futures import ThreadPoolExecutor
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CITIES_FILE = os.path.join(BASE_DIR, "cities.json")
@@ -4328,15 +4329,33 @@ def fetch_radarmap_api(hours_filter=None):
     return posts
 
 
+def _fetch_posts_parallel(jobs, max_workers):
+    """Запустить каждый callable в пуле потоков, сохранить порядок index."""
+    results = {}
+    def run(index, fn):
+        try:
+            results[index] = list(fn())
+        except Exception:
+            results[index] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = [pool.submit(run, idx, fn) for idx, fn in jobs]
+        for fut in futures:
+            fut.result()
+    ordered = []
+    for idx, _fn in sorted(jobs, key=lambda p: p[0]):
+        ordered.extend(results.get(idx, []))
+    return ordered
+
+
 def fetch_all(hours_filter=None):
     window = hours_filter if hours_filter is not None else HOURS_FILTER
     print(f"Загрузка постов из Telegram (окно {window}ч)...")
-    all_posts = []
-    for ch in CHANNELS:
-        posts = fetch_channel(ch["url"], ch["name"], hours_filter)
-        all_posts.extend(posts)
-    api_posts = fetch_radarmap_api(hours_filter)
-    all_posts.extend(api_posts)
+    jobs = []
+    for i, ch in enumerate(CHANNELS):
+        jobs.append((i, lambda h=hours_filter, u=ch["url"], n=ch["name"]: fetch_channel(u, n, h)))
+    jobs.append((len(CHANNELS), lambda h=hours_filter: fetch_radarmap_api(h)))
+    workers = min(os.cpu_count() or 1, len(jobs))
+    all_posts = _fetch_posts_parallel(jobs, max_workers=workers)
     print(f"Всего загружено: {len(all_posts)} постов")
     return all_posts
 
