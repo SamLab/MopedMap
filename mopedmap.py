@@ -5798,7 +5798,7 @@ def build_region_feed(posts_data, max_items=20):
             continue
         raw_text = item.get("text") or ""
         norm = " ".join(sanitize_popup_text(raw_text).split()).strip()
-        key = (norm.lower(), rn) if norm else ("", id(item))
+        key = norm.lower() if norm else id(item)
         p = posts.get(key)
         if p is None:
             p = {"time": item.get("time", ""), "sources": [], "regions": [],
