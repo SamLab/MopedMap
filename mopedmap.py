@@ -5768,6 +5768,74 @@ def sanitize_popup_text(text):
     return t.strip()
 
 
+TRACKED_REGIONS = frozenset({
+    "ярославская область", "тверская область", "вологодская область",
+    "костромская область", "ивановская область",
+    "владимирская область", "московская область",
+})
+
+
+def build_region_feed(posts_data, max_items=20):
+    """Собирает ленту постов по Ярославской области и 6 соседним регионам.
+
+    Берёт итоговые маркеры карты (posts_data), оставляет те, чей регион —
+    один из TRACKED_REGIONS, группирует по тексту поста (дедуп каналов),
+    объединяет источники, сортирует: Ярославская область (pinned) сверху,
+    затем по времени desc. Возвращает до max_items записей.
+    """
+    def _region_of(item):
+        rn = (item.get("subject") or "").strip().lower()
+        if not rn:
+            cn = item.get("name", "").strip().lower()
+            if cn in CITY_DB:
+                rn = (CITY_DB[cn].get("subject") or "").strip().lower()
+        return rn
+
+    posts = {}  # (norm-text, region) -> {"time","sources","regions","text","pinned"}
+    for item in posts_data:
+        rn = _region_of(item)
+        if rn not in TRACKED_REGIONS:
+            continue
+        raw_text = item.get("text") or ""
+        norm = " ".join(sanitize_popup_text(raw_text).split()).strip()
+        key = (norm.lower(), rn) if norm else ("", id(item))
+        p = posts.get(key)
+        if p is None:
+            p = {"time": item.get("time", ""), "sources": [], "regions": [],
+                 "text": norm, "pinned": False}
+            posts[key] = p
+        if item.get("time", "") and item["time"] > p["time"]:
+            p["time"] = item["time"]
+        src = (item.get("source") or "").strip()
+        if src and src not in p["sources"]:
+            p["sources"].append(src)
+        if rn and rn not in p["regions"]:
+            p["regions"].append(rn)
+        if rn == "ярославская область":
+            p["pinned"] = True
+
+    items = list(posts.values())
+    items.sort(key=lambda p: (0 if p["pinned"] else 1,),
+               reverse=False)
+    # стабильная сортировка: pinned уже отделены; внутри — по времени desc
+    pinned = [p for p in items if p["pinned"]]
+    others = [p for p in items if not p["pinned"]]
+    pinned.sort(key=lambda p: p["time"], reverse=True)
+    others.sort(key=lambda p: p["time"], reverse=True)
+    ordered = pinned + others
+
+    result = []
+    for p in ordered[:max_items]:
+        result.append({
+            "time": p["time"],
+            "sources": p["sources"],
+            "regions": p["regions"],
+            "text": (p["text"][:180] + ("…" if len(p["text"]) > 180 else "")),
+            "pinned": p["pinned"],
+        })
+    return result
+
+
 def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
