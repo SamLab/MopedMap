@@ -6371,7 +6371,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .region-feed-item.pinned {{ background: #fff7e6; border-left: 3px solid #d32f2f; }}
 .region-feed-item-meta {{ font-size: 11px; color: #666; margin-bottom: 2px; }}
 .region-feed-item-meta b.yar {{ color: #d32f2f; }}
-.region-feed-item-text {{ font-size: 12px; color: #222; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
+  .region-feed-item-text {{ font-size: 12px; color: #222; line-height: 1.35; word-wrap: break-word; white-space: normal; }}
 .popup-text {{ font-size: 12px; max-height: 500px; overflow-y: auto; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }}
 .leaflet-popup-content {{ max-width: 600px !important; }}
 .leaflet-tile-pane {{ filter: saturate(0.77); }}
