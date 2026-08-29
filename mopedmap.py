@@ -6171,6 +6171,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                 clear_types = {'danger', 'attention', 'aviation', 'interception'}
             else:
                 clear_types = {'rocket', 'danger', 'aviation', 'attention', 'interception'}
+            # Отбой по БПЛА / общий отбой снимает и заливку от фиксаций (sighting),
+            # но только если фиксации НЕ новее отбоя (учитывается в скане other_type ниже)
+            sighting_cleared = 'ракетн' not in clear_text
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
                 cn = item.get('name', '').lower().strip()
@@ -6178,7 +6181,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                     rn = CITY_DB[cn].get('subject', '').lower().strip()
             if rn and rn in region_map:
                 at = region_map[rn]['properties'].get('alert_type', '')
-                if at in clear_types:
+                if at in clear_types or (at == 'sighting' and sighting_cleared):
                     fill_time = region_map[rn]['properties'].get('popup_time', '')
                     if parse_post_time(item.get('time', '')) >= parse_post_time(fill_time):
                         # Check if other active (non-cleared) threats remain for this region
@@ -6197,6 +6200,11 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
                                     if other_cn in CITY_DB:
                                         other_rn = CITY_DB[other_cn].get('subject', '').lower().strip()
                                 if other_rn == rn and other.get('type') not in clear_types:
+                                    if other.get('type') == 'sighting' and sighting_cleared:
+                                        # Фиксации (sighting) удерживают красную заливку
+                                        # только если они НОВЕЕ отбоя; иначе отбой снимает её
+                                        if parse_post_time(other.get('time', '')) <= parse_post_time(item.get('time', '')):
+                                            continue
                                     if other_type is None or type_priority.get(other.get('type'), 99) < type_priority.get(other_type, 99):
                                         other_type = other.get('type')
                         if other_type:
