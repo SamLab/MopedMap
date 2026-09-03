@@ -1144,6 +1144,14 @@ REGION_ALIASES = [
     {"pattern": "павлово-посадском р-не", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "павлово-посадский", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "павловском посадском", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово-посадский го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово-посадского го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово-посадском го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово - посадский го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово - посадского го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово - посадском го", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово - посадский городской округ", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
+    {"pattern": "павлово - посадского городского округа", "name": "Павловский Посад", "lat": 55.783, "lon": 38.65, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "подольский район", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "подольском районе", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
     {"pattern": "подольского района", "name": "Подольск", "lat": 55.43, "lon": 37.54, "type": "region", "is_region": True, "subject": "Московская область"},
@@ -2870,6 +2878,17 @@ DISAMBIGUATION_MAP = {
         "ярославская область": [
             {"context_subject": "тамбовская область", "lat": 53.25, "lon": 40.283, "name": "Первомайский", "subject": "Тамбовская область"},
             {"context_subject": "республика крым", "lat": 45.717, "lon": 33.856, "name": "Первомайское", "subject": "Республика Крым"},
+        ],
+    },
+    "павлово": {
+        "нижегородская область": [
+            {
+                "context_subject": "московская область",
+                "lat": 55.783,
+                "lon": 38.65,
+                "name": "Павловский Посад",
+                "subject": "Московская область",
+            },
         ],
     },
     "петровское": {
@@ -4938,9 +4957,7 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     #     from another result points elsewhere, reassign ---
     for r in results:
         nl = r["name"].lower()
-        # Also check by matched text (e.g., "красногвардейский" for rayon patterns)
         matched_key = r.get("matched", "").lower().strip()
-        # Strip "район"/"р-н" from matched for key lookup
         for suffix in (" район", " р-н", " районе", " р-не"):
             if matched_key.endswith(suffix):
                 matched_key = matched_key[:-len(suffix)]
@@ -5166,7 +5183,19 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                             continue
                         # With known context, only allow CITY_DB cross-region entries
                         if lk in CITY_DB:
-                            entry = CITY_DB[lk]
+                            # Check DISAMBIGUATION_MAP before using raw CITY_DB entry
+                            if lk in DISAMBIGUATION_MAP:
+                                _cur_subj = CITY_DB[lk].get("subject", "").lower()
+                                _candidates = DISAMBIGUATION_MAP[lk].get(_cur_subj) or DISAMBIGUATION_MAP[lk].get("__any__")
+                                if _candidates:
+                                    if not isinstance(_candidates, list):
+                                        _candidates = [_candidates]
+                                    for _de in _candidates:
+                                        if _de["context_subject"] in ctx_subjects:
+                                            entry = _de
+                                            break
+                            if entry is None:
+                                entry = CITY_DB[lk]
                         if entry is None:
                             continue
                     else:
