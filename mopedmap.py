@@ -5895,7 +5895,7 @@ def build_region_feed(posts_data, max_items=20):
             "time": p["time"],
             "sources": p["sources"],
             "regions": p["regions"],
-            "text": (p["text"][:180] + ("…" if len(p["text"]) > 180 else "")),
+            "text": p["text"],
             "pinned": p["pinned"],
         })
     return result
