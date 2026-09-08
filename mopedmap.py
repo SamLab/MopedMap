@@ -6503,6 +6503,12 @@ const feed = {feed_json};
   // заполнить text безопасно
   const items = body.querySelectorAll('.region-feed-item-text');
   feed.forEach((f, i) => {{ if (items[i]) items[i].textContent = f.text; }});
+  // На ПК (тонкий курсор/широкий экран) панель развёрнута по умолчанию, на смартфоне — свёрнута
+  const expandable = window.matchMedia && (window.matchMedia('(pointer: fine)').matches || window.matchMedia('(min-width: 768px)').matches);
+  if (expandable) {{
+    body.style.display = '';
+    toggle.textContent = '▼ Посты: Яр. область + соседи';
+  }}
   toggle.addEventListener('click', function() {{
     if (body.style.display === 'none') {{
       body.style.display = '';
