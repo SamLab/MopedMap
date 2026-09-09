@@ -6601,14 +6601,14 @@ const feed = {feed_json};
 }})();
 
 const styleMap = {{
-  danger: {{ color: '#a83232', size: 16, glow: null }},
-  aviation: {{ color: '#2a6a90', size: 16, glow: null }},
-  sighting: {{ color: '#555555', size: 18, glow: null }},
+  danger: {{ color: '#a83232', size: 12, glow: null }},
+  aviation: {{ color: '#2a6a90', size: 12, glow: null }},
+  sighting: {{ color: '#555555', size: 14, glow: null }},
   clear: {{ color: '#22c55e', size: 14, glow: null }},
-  attention: {{ color: '#8a6830', size: 14, glow: null }},
-  interception: {{ color: '#333333', size: 14, glow: null }},
-  rocket: {{ color: '#6d4a9e', size: 18, glow: null }},
-  info: {{ color: '#4a6ebb', size: 10, glow: null }},
+  attention: {{ color: '#8a6830', size: 10, glow: null }},
+  interception: {{ color: '#333333', size: 10, glow: null }},
+  rocket: {{ color: '#6d4a9e', size: 14, glow: null }},
+  info: {{ color: '#4a6ebb', size: 8, glow: null }},
   history: {{ color: '#999999', size: 0, glow: null }}
 }};
 
@@ -6795,7 +6795,11 @@ function buildRegionPopup(p) {{
 }}
 
 function renderAll() {{
-  if (regionLayer) regionLayer.setStyle(regionStyle);
+  if (regionLayer) {{
+    regionLayer.eachLayer(function (rl) {{
+      if (rl.feature) rl.setStyle(regionStyle(rl.feature));
+    }});
+  }}
   markerLayer.clearLayers();
   arrowLayer.clearLayers();
   const vis = visibleItems();
