@@ -6406,7 +6406,25 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
     feed_data = build_region_feed(posts_data)
     feed_json = json.dumps(feed_data, ensure_ascii=False).replace("</", "<\\/")
 
-    region_features = list(region_map.values())
+    # Статистика каналов для панели «Каналы» (дедуп по нормализованному тексту поста)
+    channel_counts = {}
+    ch_seen = set()
+    for m in posts_data:
+        if m.get("no_marker"):
+            continue
+        src = (m.get("source") or "?").strip()
+        raw = m.get("text") or ""
+        norm = " ".join(sanitize_popup_text(raw).split()).strip().lower()
+        if not norm or norm in ch_seen:
+            continue
+        ch_seen.add(norm)
+        channel_counts[src] = channel_counts.get(src, 0) + 1
+    channel_json = json.dumps(channel_counts, ensure_ascii=False)
+
+    region_features = []
+    for rm_key, feat in region_map.items():
+        feat["properties"]["_key"] = rm_key
+        region_features.append(feat)
     region_geojson = json.dumps({'type': 'FeatureCollection', 'features': region_features}, ensure_ascii=False)
 
     districts_geojson = ""
@@ -6428,6 +6446,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None):
 <title>YarLocator — Карта угроз</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #222; display: flex; flex-direction: column; height: 100vh; }}
@@ -6458,6 +6479,20 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .district-tooltip.leaflet-tooltip {{ background: rgba(255,255,255,0.85); border: none; color: #555; font-size: 11px; padding: 1px 5px; border-radius: 3px; box-shadow: 0 0 3px rgba(0,0,0,0.1); }}
 .leaflet-popup-content-wrapper {{ max-height: 80vh; overflow-y: auto; }}
 .leaflet-popup-content {{ max-height: 75vh; overflow-y: auto; }}
+.lg-item {{ cursor: pointer; user-select: none; }}
+.lg-item.hidden-type {{ opacity: 0.4; text-decoration: line-through; }}
+.timefilter button {{ background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 1px 6px; font-size: 11px; cursor: pointer; color: #555; }}
+.timefilter button.active {{ background: #d32f2f; color: #fff; border-color: #d32f2f; }}
+#chStats-panel span {{ display: inline-block; }}
+.region-marker-list {{ margin-top: 8px; border-top: 1px solid #eee; padding-top: 6px; max-height: 220px; overflow-y: auto; }}
+.region-marker-row {{ display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #333; padding: 2px 0; }}
+.marker-cluster-small {{ background-color: rgba(217, 49, 49, 0.35); }}
+.marker-cluster-small div {{ background-color: rgba(217, 49, 49, 0.9); }}
+.marker-cluster-medium {{ background-color: rgba(211, 47, 47, 0.42); }}
+.marker-cluster-medium div {{ background-color: rgba(211, 47, 47, 0.92); }}
+.marker-cluster-large {{ background-color: rgba(160, 32, 32, 0.5); }}
+.marker-cluster-large div {{ background-color: rgba(160, 32, 32, 0.95); }}
+.marker-cluster div {{ color: #fff; }}
 @media (max-width:600px) {{ .header {{ font-size: 12px; }} .info {{ font-size: 10px; }} .header h1 {{ font-size: 13px; }} #dist-info {{ font-size: 11px !important; }} .legend {{ display: none !important; }} }}
 
 </style>
@@ -6465,7 +6500,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <body>
 <div class="header">
   <h1>YarLocator <span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
-  <span class="info">Угрозы БПЛА | {len(posts_data)} точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
+  <span class="info">Угрозы БПЛА | <span id="pt-count">{len(posts_data)}</span> точек | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
 <div class="region-feed" id="region-feed" style="display:none">
@@ -6473,19 +6508,28 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <div class="region-feed-body" id="region-feed-body" style="display:none"></div>
 </div>
 <div class="footer">
-  <span class="dot" style="color:#e94560">●</span> Опасность БПЛА
-  <span class="dot" style="color:#06b6d4">●</span> Авиационная опасность
-  <span style="color:#000000;font-size:14px">◆</span> Фиксация
-  <span class="dot" style="color:#eab308">●</span> Внимание
-  <span style="color:#000000;font-size:14px;font-weight:bold">✕</span> Перехват
-  <span class="dot" style="color:#a855f7">●</span> Ракетная опасность
-  <span class="dot" style="color:#6a7a5a">●</span> Отбой
-  <span class="dot" style="color:#60a5fa">●</span> Инфо
-  <span style="color:#22c55e;font-size:14px">✚</span> Молнии (30 мин)
+  <span class="lg-item" data-ltype="danger" title="Клик — скрыть/показать"><span class="dot" style="color:#e94560">●</span> Опасность БПЛА</span>
+  <span class="lg-item" data-ltype="aviation" title="Клик — скрыть/показать"><span class="dot" style="color:#06b6d4">●</span> Авиационная опасность</span>
+  <span class="lg-item" data-ltype="sighting" title="Клик — скрыть/показать"><span style="color:#000000;font-size:14px">◆</span> Фиксация</span>
+  <span class="lg-item" data-ltype="attention" title="Клик — скрыть/показать"><span class="dot" style="color:#eab308">●</span> Внимание</span>
+  <span class="lg-item" data-ltype="interception" title="Клик — скрыть/показать"><span style="color:#000000;font-size:14px;font-weight:bold">✕</span> Перехват</span>
+  <span class="lg-item" data-ltype="rocket" title="Клик — скрыть/показать"><span class="dot" style="color:#a855f7">●</span> Ракетная опасность</span>
+  <span class="lg-item" data-ltype="clear" title="Клик — скрыть/показать"><span class="dot" style="color:#22c55e">●</span> Отбой</span>
+  <span class="lg-item" data-ltype="info" title="Клик — скрыть/показать"><span class="dot" style="color:#60a5fa">●</span> Инфо</span>
+  <span class="timefilter" title="Фильтр по времени"><button data-min="30">30м</button><button data-min="60">1ч</button><button data-min="240">4ч</button></span>
+  <span id="chStats-toggle" title="Показать каналы" style="cursor:pointer">☰ Каналы</span>
   <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
 </div>
+<div id="chStats-panel" style="display:none;padding:6px 12px;background:#fff;border-top:1px solid #ddd;font-size:11px;color:#555"></div>
 <script>
 const PC = window.innerWidth >= 1024;
+const LS_KEY = 'yarlocator_ls_v1';
+function lsSave(s) {{ try {{ localStorage.setItem(LS_KEY, JSON.stringify(s)); }} catch (e) {{}} }}
+function lsLoad() {{ try {{ const r = localStorage.getItem(LS_KEY); if (r) return JSON.parse(r); }} catch (e) {{}} return null; }}
+let st = Object.assign({{ timeMinutes: 240, hiddenTypes: [], panelOpen: undefined, legendOpen: false, lightning: true, view: null }}, lsLoad() || {{}});
+if (!Array.isArray(st.hiddenTypes)) st.hiddenTypes = [];
+if (typeof st.timeMinutes !== 'number' || st.timeMinutes < 30) st.timeMinutes = 240;
+const hiddenIt = new Set(st.hiddenTypes);
 const map = L.map('map', {{ center: PC ? [54.63, 39.73] : [56.74, 38.86], zoom: 6, zoomControl: true, attributionControl: false }});
 
 map.createPane('lightning-0');
@@ -6512,6 +6556,7 @@ setInterval(function() {{
 L.control.attribution({{ prefix: false }}).addTo(map);
 
 const data = {markers_json};
+const channelStats = {channel_json};
 
 const feed = {feed_json};
 (function() {{
@@ -6534,8 +6579,9 @@ const feed = {feed_json};
   const items = body.querySelectorAll('.region-feed-item-text');
   feed.forEach((f, i) => {{ if (items[i]) items[i].textContent = f.text; }});
   // На ПК (тонкий курсор/широкий экран) панель развёрнута по умолчанию, на смартфоне — свёрнута
-  const expandable = window.matchMedia && (window.matchMedia('(pointer: fine)').matches || window.matchMedia('(min-width: 768px)').matches);
-  if (expandable) {{
+  const defaultOpen = window.matchMedia && (window.matchMedia('(pointer: fine)').matches || window.matchMedia('(min-width: 768px)').matches);
+  const wantOpen = st.panelOpen !== undefined ? st.panelOpen : defaultOpen;
+  if (wantOpen) {{
     body.style.display = '';
     toggle.textContent = '▼ Посты: Яр. область + соседи';
   }}
@@ -6543,10 +6589,13 @@ const feed = {feed_json};
     if (body.style.display === 'none') {{
       body.style.display = '';
       toggle.textContent = '▼ Посты: Яр. область + соседи';
+      st.panelOpen = true;
     }} else {{
       body.style.display = 'none';
       toggle.textContent = '▶ Посты: Яр. область + соседи';
+      st.panelOpen = false;
     }}
+    lsSave(st);
   }});
 }})();
 
@@ -6591,9 +6640,7 @@ L.geoJSON(regionGeoJSON, {{
   onEachFeature: function(feature, layer) {{
     const p = feature.properties;
     if (p.popup_text) {{
-      const label = typeLabel[p.alert_type] || p.alert_type || '';
-      let html = `<div class="popup-name">${{p.popup_name || ''}}</div><div class="popup-text">${{p.popup_text}}</div><div class="popup-source">${{label}}${{p.popup_source ? ' · ' + p.popup_source : ''}}${{p.popup_time ? ' · ' + p.popup_time : ''}}</div>`;
-      layer.bindPopup(html);
+      layer.bindPopup(function() {{ return buildRegionPopup(p); }});
     }}
   }}
 }}).addTo(map);
@@ -6650,146 +6697,235 @@ lightningCtrl.onAdd = function() {{
   div.innerHTML = '<label style="cursor:pointer"><input type="checkbox" id="lightning-cb" checked> <span style="font-size:16px">⛈</span></label>';
   L.DomEvent.disableClickPropagation(div);
   const cb = div.querySelector('#lightning-cb');
+  cb.checked = st.lightning !== false;
+  function applyLightning() {{
+    if (cb.checked) {{
+      if (!map.hasLayer(lightningGroup)) lightningGroup.addTo(map);
+    }} else map.removeLayer(lightningGroup);
+  }}
+  applyLightning();
   cb.addEventListener('change', function() {{
-    if (this.checked) lightningGroup.addTo(map);
-    else map.removeLayer(lightningGroup);
+    st.lightning = cb.checked;
+    lsSave(st);
+    applyLightning();
   }});
   return div;
 }};
 lightningCtrl.addTo(map);
 
-data.forEach(item => {{
+function tEpoch(s) {{
+  const m = String(s || '').match(/(\\d+)/g);
+  if (!m || m.length < 5) return 0;
+  return Date.UTC(+m[2], +m[1] - 1, +m[0], +m[3], +m[4]) - 3 * 3600 * 1000;
+}}
+function inTimeWindow(item) {{
+  if (st.timeMinutes >= 240) return true;
+  const t = tEpoch(item.time);
+  if (!t) return true;
+  return t >= Date.now() - st.timeMinutes * 60000;
+}}
+function itemVisible(item) {{
+  if (item.no_marker) return false;
+  if (!inTimeWindow(item)) return false;
+  return !hiddenIt.has(item.type);
+}}
+function visibleItems() {{ return data.filter(itemVisible); }}
+
+const markerLayer = L.markerClusterGroup({{
+  maxClusterRadius: 40, disableClusteringAtZoom: 9,
+  spiderfyOnMaxZoom: true, showCoverageOnHover: false
+}}).addTo(map);
+const arrowLayer = L.layerGroup().addTo(map);
+
+function markerDiv(item) {{
   const s = styleMap[item.type] || styleMap.info;
-
-  if (item.no_marker) return;
-
   const size = s.size;
-  const glow = s.glow ? `box-shadow:0 0 ${{s.size > 12 ? 10 : 6}}px ${{s.glow}};` : '';
-  const border = '2px solid #333';
-  const extraGlow = glow;
+  if (item.type === 'clear') {{
+    return '<div style="width:' + size + 'px;height:' + size + 'px;border:2px solid #22c55e;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center"><span style="color:#22c55e;font-size:' + (size - 4) + 'px;font-weight:bold;line-height:1">✔</span></div>';
+  }}
+  if (item.type === 'interception') {{
+    return '<div style="background:' + s.color + ';width:' + size + 'px;height:' + size + 'px;border:2px solid #333;border-radius:2px;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:' + (size - 4) + 'px;font-weight:bold;line-height:1">✕</span></div>';
+  }}
   const shape = item.type === 'sighting'
     ? 'clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);border-radius:0;'
     : 'border-radius:50%;';
-  const html = item.type === 'interception'
-    ? `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};border-radius:2px;${{extraGlow}};display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:${{size-4}}px;font-weight:bold;line-height:1">✕</span></div>`
-    : `<div style="background:${{s.color}};width:${{size}}px;height:${{size}}px;border:${{border}};${{shape}}${{extraGlow}}"></div>`;
+  return '<div style="background:' + s.color + ';width:' + size + 'px;height:' + size + 'px;border:2px solid #333;' + shape + '"></div>';
+}}
 
-  const zOffset = (item.type === 'sighting' || item.type === 'interception') ? 2000 : 0;
-  const marker = L.marker([item.lat, item.lon], {{
-    icon: L.divIcon({{ html, className: '', iconSize: [size + 8, size + 8] }}),
-    zIndexOffset: zOffset
-  }}).addTo(map);
+function buildPopup(item) {{
+  let html = '<div class="popup-name">' + item.name + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type) + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + '</div>';
+  if (item.direction) html += '<div class="popup-source">→ ' + (item.dest_name || '?') + '</div>';
+  return html;
+}}
 
-  let popupHtml = `<div class="popup-name">${{item.name}}</div><div class="popup-text">${{item.text}}</div><div class="popup-source">${{typeLabel[item.type] || item.type}}${{item.source ? ' · ' + item.source : ''}}${{item.time ? ' · ' + item.time : ''}}</div>`;
-  if (item.direction) {{
-    popupHtml += `<div class="popup-source">→ ${{item.dest_name || '?'}}</div>`;
+function buildRegionPopup(p) {{
+  const label = typeLabel[p.alert_type] || p.alert_type || '';
+  let html = '<div class="popup-name">' + (p.popup_name || '') + '</div><div class="popup-text">' + (p.popup_text || '') + '</div><div class="popup-source">' + label + (p.popup_source ? ' · ' + p.popup_source : '') + (p.popup_time ? ' · ' + p.popup_time : '') + '</div>';
+  const key = (p._key || '').toLowerCase().trim();
+  if (key) {{
+    const rows = [];
+    data.forEach(it => {{
+      if (it.no_marker || it.cleared || it._fill_only) return;
+      if (!inTimeWindow(it)) return;
+      if (hiddenIt.has(it.type)) return;
+      const mk = (it.subject || '').toLowerCase().trim();
+      const mn = (it.name || '').toLowerCase().trim();
+      if (mk !== key && mn !== key) return;
+      rows.push({{ name: it.name || '', time: it.time || '', type: it.type || '' }});
+    }});
+    if (rows.length) {{
+      rows.sort((a, b) => (a.time > b.time ? -1 : a.time < b.time ? 1 : 0));
+      html += '<div class="region-marker-list"><b>Маркеры в регионе (' + rows.length + '):</b>';
+      rows.slice(0, 40).forEach(r => {{
+        html += '<div class="region-marker-row"><span>' + r.name + ' · ' + (typeLabel[r.type] || r.type) + '</span><span style="color:#888">' + r.time + '</span></div>';
+      }});
+      if (rows.length > 40) html += '<div style="color:#888">…ещё ' + (rows.length - 40) + '</div>';
+      html += '</div>';
+    }}
   }}
-  marker.bindPopup(popupHtml);
+  return html;
+}}
 
-  bounds.push([item.lat, item.lon]);
-}});
+function renderAll() {{
+  markerLayer.clearLayers();
+  arrowLayer.clearLayers();
+  const vis = visibleItems();
+  vis.forEach(item => {{
+    const s = styleMap[item.type] || styleMap.info;
+    const size = s.size;
+    const zOffset = (item.type === 'sighting' || item.type === 'interception') ? 2000 : 0;
+    const marker = L.marker([item.lat, item.lon], {{
+      icon: L.divIcon({{ html: markerDiv(item), className: '', iconSize: [size + 8, size + 8] }}),
+      zIndexOffset: zOffset
+    }});
+    marker.bindPopup(buildPopup(item));
+    markerLayer.addLayer(marker);
+    if (item.direction) {{
+      const from = [item.lat, item.lon];
+      const to = item.direction;
+      const color = s.color;
+      arrowLayer.addLayer(L.polyline([from, to], {{ color: color, weight: 3, opacity: 0.75, dashArray: '6, 5' }}));
+      const midLat = (from[0] + to[0]) / 2;
+      const midLon = (from[1] + to[1]) / 2;
+      const angle = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI;
+      const arrowSvg = '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + (angle - 90) + 'deg)"><polygon points="0,0 14,7 0,14" fill="' + color + '" opacity="0.9"/></svg>';
+      arrowLayer.addLayer(L.marker([midLat, midLon], {{
+        icon: L.divIcon({{ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }}),
+        interactive: true
+      }}).bindPopup('<div class="popup-name">' + item.name + ' → ' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + '</div>'));
+      arrowLayer.addLayer(L.circleMarker(to, {{
+        radius: 6, color: '#333', weight: 2, fill: true, fillColor: color, fillOpacity: 0.25, dashArray: '3, 4', opacity: 0.8
+      }}).bindTooltip(item.dest_name || '?', {{ permanent: false, direction: 'top', offset: [0, -4], className: 'dest-tooltip' }}).bindPopup('<div class="popup-name">' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">→ ' + item.name + ' (' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + ')</div>'));
+    }}
+  }});
 
-// Draw direction arrows
-data.filter(item => item.direction).forEach(item => {{
-  const from = [item.lat, item.lon];
-  const to = item.direction;
-  const s = styleMap[item.type] || styleMap.info;
-  const color = s.color;
-
-  L.polyline([from, to], {{
-    color, weight: 3, opacity: 0.75, dashArray: '6, 5'
-  }}).addTo(map);
-
-  // Arrow at midpoint
-  const midLat = (from[0] + to[0]) / 2;
-  const midLon = (from[1] + to[1]) / 2;
-  const angle = Math.atan2(to[1] - from[1], to[0] - from[0]) * 180 / Math.PI;
-  const arrowSvg = '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + (angle - 90) + 'deg)"><polygon points="0,0 14,7 0,14" fill="' + color + '" opacity="0.9"/></svg>';
-  L.marker([midLat, midLon], {{
-    icon: L.divIcon({{ html: arrowSvg, className: '', iconSize: [14, 14], iconAnchor: [7, 7] }}),
-    interactive: true
-  }}).addTo(map).bindPopup('<div class="popup-name">' + item.name + ' → ' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + '</div>');
-
-  L.circleMarker(to, {{
-    radius: 6, color: '#333', weight: 2, fill: true, fillColor: color,
-    fillOpacity: 0.25, dashArray: '3, 4', opacity: 0.8
-  }}).addTo(map).bindTooltip(item.dest_name || '?', {{
-    permanent: false, direction: 'top', offset: [0, -4],
-    className: 'dest-tooltip'
-  }}).bindPopup('<div class="popup-name">' + (item.dest_name || '?') + '</div><div class="popup-text">' + (item.text || '') + '</div><div class="popup-source">→ ' + item.name + ' (' + (typeLabel[item.type] || item.type || '') + (item.source ? ' · ' + item.source : '') + (item.time ? ' · ' + item.time : '') + ')</div>');
-}});
-
-if (bounds.length > 0) {{
-  map.setView(PC ? [54.63, 39.73] : [56.74, 38.86], 6);
+  let minDist = Infinity, minDistCity = Infinity, closestItem = null, closestCity = null;
+  vis.forEach(item => {{
+    if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention' || item.type === 'sighting' || item.type === 'interception') {{
+      if (!item.cleared) {{
+        const d = map.distance(YAROSLAVL_COORDS, [item.lat, item.lon]);
+        if (d < minDist) {{ minDist = d; closestItem = item; }}
+        if (!item.is_region && d < minDistCity) {{ minDistCity = d; closestCity = item; }}
+      }}
+    }}
+  }});
+  const useItem = closestCity || closestItem;
+  const distEl = document.getElementById('dist-info');
+  if (useItem) {{
+    const distKm = ((closestCity ? minDistCity : minDist) / 1000).toFixed(0);
+    let ago = '';
+    const ct = tEpoch(useItem.time);
+    if (ct) {{ const mins = Math.round((Date.now() - ct) / 60000); if (mins > 0) ago = ', ' + mins + ' мин назад'; }}
+    const subjText = useItem.subject ? ', ' + useItem.subject : '';
+    distEl.textContent = 'ближайшая опасность: ' + distKm + ' км (' + useItem.name + subjText + ago + ')';
+  }} else {{
+    distEl.textContent = '';
+  }}
+  const cnt = document.getElementById('pt-count');
+  if (cnt) cnt.textContent = vis.length;
 }}
 
 const YAROSLAVL_COORDS = [57.553026, 39.850545];
-// Permanent blue star marker at Yaroslavl
 const starIcon = L.divIcon({{
   html: '<div style="width:14px;height:14px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#2196f3;border:1px solid #1565c0"></div>',
   className: '', iconSize: [14, 14], iconAnchor: [7, 7]
 }});
 L.marker(YAROSLAVL_COORDS, {{ icon: starIcon, zIndexOffset: 1000 }}).addTo(map).bindPopup('Ярославль - постоянный маркер');
-// Closest threat to Yaroslavl
-const yarLatLng = L.latLng(YAROSLAVL_COORDS);
-let minDist = Infinity;
-let minDistCity = Infinity;
-let closestItem = null;
-let closestCity = null;
-data.forEach(item => {{
-  if (item.type === 'danger' || item.type === 'rocket' || item.type === 'aviation' || item.type === 'attention' || item.type === 'sighting' || item.type === 'interception') {{
-    if (!item.cleared) {{
-      const d = map.distance(yarLatLng, [item.lat, item.lon]);
-      if (d < minDist) {{ minDist = d; closestItem = item; }}
-      if (!item.is_region && d < minDistCity) {{ minDistCity = d; closestCity = item; }}
-    }}
-  }}
-}});
-// Prefer city-level marker (distance from actual location), fall back to region
-const useItem = closestCity || closestItem;
-if (useItem) {{
-  const distKm = ((closestCity ? minDistCity : minDist) / 1000).toFixed(0);
-  let ago = '';
-  const closestTime = useItem.time || '';
-  if (closestTime) {{
-    const [dd, mm, yyyy, hh, mi] = closestTime.match(/(\\d+)/g);
-    const postDate = new Date(+yyyy, +mm - 1, +dd, +hh, +mi);
-    const mins = Math.round((Date.now() - postDate) / 60000);
-    if (mins > 0) ago = `, ${{mins}} мин назад`;
-  }}
-  const subjText = useItem.subject ? `, ${{useItem.subject}}` : '';
-  document.getElementById('dist-info').textContent = `ближайшая опасность: ${{distKm}} км (${{useItem.name}}${{subjText}}${{ago}})`;
+
+function toggleType(t) {{
+  if (hiddenIt.has(t)) hiddenIt.delete(t); else hiddenIt.add(t);
+  st.hiddenTypes = Array.from(hiddenIt);
+  lsSave(st);
+  renderAll();
+  syncLegendUI();
 }}
+
+function setTime(min) {{
+  st.timeMinutes = min;
+  lsSave(st);
+  document.querySelectorAll('.timefilter button').forEach(b => b.classList.toggle('active', +b.dataset.min === min));
+  renderAll();
+}}
+
+function syncLegendUI() {{
+  document.querySelectorAll('[data-ltype]').forEach(el => {{
+    const t = el.dataset.ltype;
+    el.classList.toggle('hidden-type', hiddenIt.has(t));
+  }});
+}}
+
+if (st.view && st.view.lat) map.setView([st.view.lat, st.view.lng], st.view.zoom);
+else map.setView(PC ? [54.63, 39.73] : [56.74, 38.86], 6);
+map.on('moveend', function() {{
+  const c = map.getCenter();
+  st.view = {{ lat: c.lat, lng: c.lng, zoom: map.getZoom() }};
+  lsSave(st);
+}});
 
 const legendCtrl = L.control({{ position: 'bottomright' }});
 legendCtrl.onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
   div.style.cursor = 'pointer';
-  div.innerHTML = '<span id="legend-toggle"><b>▶ Легенда</b></span><div id="legend-body" style="display:none;margin-top:4px"><b>Легенда</b><br>' +
-    '<i style="background:#e94560"></i> Опасность БПЛА<br>' +
-    '<i style="background:#06b6d4"></i> Авиационная опасность<br>' +
-    '<i style="background:#f5a623"></i> Фиксация<br>' +
-    '<i style="background:#4ade80"></i> Отбой<br>' +
-    '<i style="background:#eab308"></i> Внимание<br>' +
-    '<i style="background:#f97316"></i> Перехват<br>' +
-    '<i style="background:#a855f7"></i> Ракетная опасность<br>' +
-    '<hr style="border-color:#333;margin:6px 0">' +
-    '<span style="display:inline-block;width:12px;height:12px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#333;border:2px solid #00f5ff;vertical-align:middle;margin-right:6px"></span> Ярославль и область' +
-    '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span></div>';
-  div.onclick = function() {{
-    const body = div.querySelector('#legend-body');
-    const toggle = div.querySelector('#legend-toggle');
-    if (body.style.display === 'none') {{
-      body.style.display = '';
-      toggle.textContent = '▼ Легенда';
-    }} else {{
-      body.style.display = 'none';
-      toggle.textContent = '▶ Легенда';
+  const items = [['danger', '#e94560', 'Опасность БПЛА'], ['aviation', '#06b6d4', 'Авиационная опасность'], ['sighting', '#f5a623', 'Фиксация'], ['clear', '#22c55e', 'Отбой'], ['attention', '#eab308', 'Внимание'], ['interception', '#f97316', 'Перехват'], ['rocket', '#a855f7', 'Ракетная опасность'], ['info', '#8b8b8b', 'Инфо']];
+  let body = '<b>Легенда (клик — скрыть/показать)</b><br>';
+  items.forEach(it => {{ body += '<span data-ltype="' + it[0] + '" style="cursor:pointer;display:inline-block;white-space:nowrap"><i style="background:' + it[1] + '"></i>' + it[2] + '</span><br>'; }});
+  body += '<hr style="border-color:#333;margin:6px 0">' + '<span style="display:inline-block;width:12px;height:12px;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#333;border:2px solid #00f5ff;vertical-align:middle;margin-right:6px"></span> Ярославль и область' + '<br><span style="font-size:11px;color:#888">Заливка = область в опасности</span>';
+  div.innerHTML = '<span id="legend-toggle"><b>' + (st.legendOpen ? '▼' : '▶') + ' Легенда</b></span><div id="legend-body" style="' + (st.legendOpen ? '' : 'display:none') + ';margin-top:4px">' + body + '</div>';
+  div.onclick = function(ev) {{
+    ev.preventDefault();
+    const trg = ev.target.closest('span');
+    if (trg && trg.dataset && trg.dataset.ltype) {{
+      toggleType(trg.dataset.ltype);
+      return;
     }}
+    const b = div.querySelector('#legend-body');
+    const to = div.querySelector('#legend-toggle');
+    if (b.style.display === 'none') {{ b.style.display = ''; to.textContent = '▼ Легенда'; st.legendOpen = true; }}
+    else {{ b.style.display = 'none'; to.textContent = '▶ Легенда'; st.legendOpen = false; }}
+    lsSave(st);
   }};
   return div;
 }};
 legendCtrl.addTo(map);
+
+document.querySelectorAll('.lg-item').forEach(el => el.addEventListener('click', function(ev) {{ ev.preventDefault(); toggleType(el.dataset.ltype); }}));
+document.querySelectorAll('.timefilter button').forEach(b => {{
+  if (+b.dataset.min === st.timeMinutes) b.classList.add('active');
+  b.addEventListener('click', function() {{ setTime(+b.dataset.min); }});
+}});
+document.getElementById('chStats-toggle').addEventListener('click', function() {{
+  const p = document.getElementById('chStats-panel');
+  if (p.style.display === 'none') {{
+    let h = '';
+    const entries = Object.keys(channelStats || {{}}).map(k => [k, channelStats[k]]).sort((a, b) => b[1] - a[1]);
+    entries.forEach(e => {{ h += '<span>' + e[0] + ': ' + e[1] + '</span> &nbsp; '; }});
+    p.innerHTML = h ? h : '<span style="color:#999">нет данных</span>';
+    p.style.display = '';
+  }} else p.style.display = 'none';
+}});
+
+syncLegendUI();
+renderAll();
 </script>
 </body>
 </html>"""
