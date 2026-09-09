@@ -6622,17 +6622,17 @@ const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 // Draw region polygon fills
 function regionStyle(feature) {{
   const alertType = feature.properties.alert_type || 'danger';
+  if (hiddenIt.has(alertType)) {{
+    return {{
+      color: '#999999', fillColor: 'transparent',
+      fillOpacity: 0, weight: 1, opacity: 0.15
+    }};
+  }}
   if (alertType === 'history') {{
     return {{
       color: '#999999', fillColor: 'transparent',
       fillOpacity: 0, weight: 1, opacity: 0.4,
       interactive: true
-    }};
-  }}
-  if (hiddenIt.has(alertType)) {{
-    return {{
-      color: '#999999', fillColor: 'transparent',
-      fillOpacity: 0, weight: 1, opacity: 0.15
     }};
   }}
   const s = styleMap[alertType] || styleMap.danger;
