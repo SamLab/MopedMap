@@ -6481,6 +6481,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 .leaflet-popup-content {{ max-height: 75vh; overflow-y: auto; }}
 .lg-item {{ cursor: pointer; user-select: none; }}
 .lg-item.hidden-type {{ opacity: 0.4; text-decoration: line-through; }}
+.lg-box {{ display: inline-block; width: 14px; height: 14px; line-height: 14px; margin-right: 5px; border: 1px solid #777; border-radius: 3px; text-align: center; font-size: 11px; font-weight: bold; vertical-align: middle; background: #fff; }}
 .timefilter button {{ background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 1px 6px; font-size: 11px; cursor: pointer; color: #555; }}
 .timefilter button.active {{ background: #d32f2f; color: #fff; border-color: #d32f2f; }}
 #chStats-panel span {{ display: inline-block; }}
@@ -6600,14 +6601,14 @@ const feed = {feed_json};
 }})();
 
 const styleMap = {{
-  danger: {{ color: '#a83232', size: 12, glow: null }},
-  aviation: {{ color: '#2a6a90', size: 12, glow: null }},
-  sighting: {{ color: '#555555', size: 14, glow: null }},
-  clear: {{ color: '#22c55e', size: 10, glow: null }},
-  attention: {{ color: '#8a6830', size: 10, glow: null }},
-  interception: {{ color: '#333333', size: 10, glow: null }},
-  rocket: {{ color: '#6d4a9e', size: 14, glow: null }},
-  info: {{ color: '#4a6ebb', size: 8, glow: null }},
+  danger: {{ color: '#a83232', size: 16, glow: null }},
+  aviation: {{ color: '#2a6a90', size: 16, glow: null }},
+  sighting: {{ color: '#555555', size: 18, glow: null }},
+  clear: {{ color: '#22c55e', size: 14, glow: null }},
+  attention: {{ color: '#8a6830', size: 14, glow: null }},
+  interception: {{ color: '#333333', size: 14, glow: null }},
+  rocket: {{ color: '#6d4a9e', size: 18, glow: null }},
+  info: {{ color: '#4a6ebb', size: 10, glow: null }},
   history: {{ color: '#999999', size: 0, glow: null }}
 }};
 
@@ -6619,24 +6620,31 @@ const regionGeoJSON = {region_geojson};
 const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 
 // Draw region polygon fills
-L.geoJSON(regionGeoJSON, {{
-  style: function(feature) {{
-    const alertType = feature.properties.alert_type || 'danger';
-    if (alertType === 'history') {{
-      return {{
-        color: '#999999', fillColor: 'transparent',
-        fillOpacity: 0, weight: 1, opacity: 0.4,
-        interactive: true
-      }};
-    }}
-    const s = styleMap[alertType] || styleMap.danger;
-    const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
+function regionStyle(feature) {{
+  const alertType = feature.properties.alert_type || 'danger';
+  if (alertType === 'history') {{
     return {{
-      color: fillColor, fillColor: fillColor,
-      fillOpacity: alertType === 'clear' ? 0 : 0.1,
-      weight: 1.5, opacity: 0.35
+      color: '#999999', fillColor: 'transparent',
+      fillOpacity: 0, weight: 1, opacity: 0.4,
+      interactive: true
     }};
-  }},
+  }}
+  if (hiddenIt.has(alertType)) {{
+    return {{
+      color: '#999999', fillColor: 'transparent',
+      fillOpacity: 0, weight: 1, opacity: 0.15
+    }};
+  }}
+  const s = styleMap[alertType] || styleMap.danger;
+  const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
+  return {{
+    color: fillColor, fillColor: fillColor,
+    fillOpacity: alertType === 'clear' ? 0 : 0.1,
+    weight: 1.5, opacity: 0.35
+  }};
+}}
+const regionLayer = L.geoJSON(regionGeoJSON, {{
+  style: regionStyle,
   onEachFeature: function(feature, layer) {{
     const p = feature.properties;
     if (p.popup_text) {{
@@ -6773,7 +6781,7 @@ function buildRegionPopup(p) {{
       if (mk !== key && mn !== key) return;
       rows.push({{ name: it.name || '', time: it.time || '', type: it.type || '' }});
     }});
-    if (rows.length) {{
+    if (rows.length >= 2) {{
       rows.sort((a, b) => (a.time > b.time ? -1 : a.time < b.time ? 1 : 0));
       html += '<div class="region-marker-list"><b>Маркеры в регионе (' + rows.length + '):</b>';
       rows.slice(0, 40).forEach(r => {{
@@ -6787,6 +6795,7 @@ function buildRegionPopup(p) {{
 }}
 
 function renderAll() {{
+  if (regionLayer) regionLayer.setStyle(regionStyle);
   markerLayer.clearLayers();
   arrowLayer.clearLayers();
   const vis = visibleItems();
@@ -6870,7 +6879,18 @@ function setTime(min) {{
 function syncLegendUI() {{
   document.querySelectorAll('[data-ltype]').forEach(el => {{
     const t = el.dataset.ltype;
-    el.classList.toggle('hidden-type', hiddenIt.has(t));
+    const hidden = hiddenIt.has(t);
+    el.classList.toggle('hidden-type', hidden);
+    let box = el.querySelector('.lg-box');
+    if (!box) {{
+      box = document.createElement('span');
+      box.className = 'lg-box';
+      el.insertBefore(box, el.firstChild);
+    }}
+    box.textContent = hidden ? '✕' : '✓';
+    box.style.color = hidden ? '#e94560' : '#22c55e';
+    box.title = hidden ? 'Тип скрыт — клик показать' : 'Тип виден — клик скрыть';
+    el.title = hidden ? 'Тип скрыт — клик показать' : 'Тип виден — клик скрыть';
   }});
 }}
 
@@ -6893,8 +6913,8 @@ legendCtrl.onAdd = function() {{
   div.innerHTML = '<span id="legend-toggle"><b>' + (st.legendOpen ? '▼' : '▶') + ' Легенда</b></span><div id="legend-body" style="' + (st.legendOpen ? '' : 'display:none') + ';margin-top:4px">' + body + '</div>';
   div.onclick = function(ev) {{
     ev.preventDefault();
-    const trg = ev.target.closest('span');
-    if (trg && trg.dataset && trg.dataset.ltype) {{
+    const trg = ev.target.closest('[data-ltype]');
+    if (trg) {{
       toggleType(trg.dataset.ltype);
       return;
     }}
