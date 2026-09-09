@@ -4830,9 +4830,28 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         if is_overlap:
             continue
         adj_suffix = adj_suffix
+        # Collect existing region subjects from results to prefer matching region
+        _existing_region_subjs = set()
+        for r in results:
+            if r.get("is_region") and r.get("subject"):
+                _s = r["subject"].lower().strip()
+                _existing_region_subjs.add(_s)
+                # Also register short republic forms ("республика башкортостан" →
+                # "башкортостан") so CITY_DB towns with short subject match
+                if _s.startswith("республика "):
+                    _existing_region_subjs.add(_s[len("республика "):])
         # First try RAYON_ADJ_TO_CITY (most accurate — from REGION_ALIASES)
         adj_form = stem + adj_suffix
-        adj_city = RAYON_ADJ_TO_CITY.get(adj_form)
+        # Bare adjective that is ALSO a city in CITY_DB: if the city's region is
+        # already mentioned in results, prefer the city over the rayon-centre guess
+        # (e.g. "Октябрьский, Республика Башкортостан" → город Октябрьский/Башкортостан,
+        # not Прямицыно/Курская via RAYON_ADJ_TO_CITY['октябрьский']).
+        _adjectival_city = None
+        if is_bare:
+            _ac = CITY_DB.get(adj_form)
+            if _ac and (_ac.get("subject") or "").lower().strip() in _existing_region_subjs:
+                _adjectival_city = _ac
+        adj_city = RAYON_ADJ_TO_CITY.get(adj_form) if not _adjectival_city else None
         if adj_city:
             # Check consistency with other successful rayon matches
             if rayon_region_subjects:
@@ -4849,6 +4868,17 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
             }
             results.append(r)
             rayon_region_subjects[stem] = adj_city["subject"].lower()
+            continue
+        if _adjectival_city:
+            matched_spans.add((idx, end))
+            r = {
+                "name": _adjectival_city["name"], "lat": _adjectival_city["lat"], "lon": _adjectival_city["lon"],
+                "type": "city", "matched": text[idx:end],
+                "_match_start": idx, "_match_end": end,
+            }
+            if _adjectival_city.get("subject"):
+                r["subject"] = _adjectival_city["subject"]
+            results.append(r)
             continue
         # Fall back to prefix search in CITY_DB
         city_prefixes = [stem]
