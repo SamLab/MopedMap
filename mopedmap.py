@@ -6620,8 +6620,29 @@ const regionGeoJSON = {region_geojson};
 const districtsGeoJSON = {districts_geojson if districts_geojson else 'null'};
 
 // Draw region polygon fills
+const typePriority = {{ rocket: 0, danger: 1, aviation: 2, interception: 3, attention: 4, sighting: 5, info: 6, clear: 7, history: 8 }};
+let regionFill = {{}};
+
+function computeRegionFill() {{
+  regionFill = {{}};
+  visibleItems().forEach(it => {{
+    if (it.no_marker || it.cleared) return;
+    const t = it.type;
+    if (t === 'clear' || t === 'history') return;
+    if (!Object.prototype.hasOwnProperty.call(typePriority, t)) return;
+    const key = (it.subject || it.name || '').toLowerCase().trim();
+    if (!key) return;
+    const prev = regionFill[key];
+    if (!prev || typePriority[t] < typePriority[prev.type] ||
+        (typePriority[t] === typePriority[prev.type] && tEpoch(it.time) > tEpoch(prev.time))) {{
+      regionFill[key] = it;
+    }}
+  }});
+}}
+
 function regionStyle(feature) {{
-  const alertType = feature.properties.alert_type || 'danger';
+  const p = feature.properties || {{}};
+  const alertType = p.alert_type || 'danger';
   if (hiddenIt.has(alertType)) {{
     return {{
       color: '#999999', fillColor: 'transparent',
@@ -6635,14 +6656,28 @@ function regionStyle(feature) {{
       interactive: true
     }};
   }}
-  const s = styleMap[alertType] || styleMap.danger;
-  const fillColor = (alertType === 'sighting') ? styleMap.danger.color : s.color;
+  if (alertType === 'clear') {{
+    return {{
+      color: '#999999', fillColor: 'transparent',
+      fillOpacity: 0, weight: 1, opacity: 0.15
+    }};
+  }}
+  const key = (p._key || '').toLowerCase().trim();
+  const fill = regionFill[key];
+  if (!fill) {{
+    return {{
+      color: '#999999', fillColor: 'transparent',
+      fillOpacity: 0, weight: 1, opacity: 0.15
+    }};
+  }}
+  const s = styleMap[fill.type] || styleMap.danger;
+  const fillColor = (fill.type === 'sighting') ? styleMap.danger.color : s.color;
   return {{
     color: fillColor, fillColor: fillColor,
-    fillOpacity: alertType === 'clear' ? 0 : 0.1,
-    weight: 1.5, opacity: 0.35
+    fillOpacity: 0.1, weight: 1.5, opacity: 0.35
   }};
 }}
+computeRegionFill();
 const regionLayer = L.geoJSON(regionGeoJSON, {{
   style: regionStyle,
   onEachFeature: function(feature, layer) {{
@@ -6795,6 +6830,7 @@ function buildRegionPopup(p) {{
 }}
 
 function renderAll() {{
+  computeRegionFill();
   if (regionLayer) {{
     regionLayer.eachLayer(function (rl) {{
       if (rl.feature) rl.setStyle(regionStyle(rl.feature));
