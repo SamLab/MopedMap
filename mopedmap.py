@@ -5456,11 +5456,19 @@ def extract_directions(text, geojson_lookup=None):
             if any(w in SEA_WORDS for w in after_words[:3]):
                 continue
         elif after_lower.startswith('от'):
-            # "от X области" after a non-"от" separator (e.g. "→ от Курской области")
-            # → real source is after "от", the arrow is misleading.
+            # "…в направлении/→ от ЛНР/Курска/Харькова" — реальный источник
+            # после «от» (конкретная локация), цель — текст до разделителя.
+            # "от X области/края/района" (e.g. "→ от Курской области") — источник
+            # не конкретный, стрелка ложная → скипаем всю пару.
             rest = after_lower[len('от'):].strip()
             rest_words = rest.split()
+            if not rest_words:
+                continue
             if any(w in region_words for w in rest_words[:3]):
+                continue
+            if any(c.isdigit() for c in rest_words[0]):
+                continue
+            if any(w in SEA_WORDS for w in rest_words[:3]):
                 continue
         elif re.search(r'\bв (вашу|нашу) сторону\b', text_lower):
             # "от X ... в вашу/нашу сторону" — источник после "от",
@@ -5490,6 +5498,10 @@ def extract_directions(text, geojson_lookup=None):
         elif from_sep:
             # "от X" → source is after "от" (origin), dest is before (target)
             srcs = extract_locations(after, extra_context=full_context, include_cross_region_nonunique=True)
+            dsts = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
+        elif after_lower.startswith('от'):
+            # «в направлении от ЛНР»: источник — после «от» (origin), цель — before
+            srcs = extract_locations(after[len('от'):], extra_context=full_context, include_cross_region_nonunique=True)
             dsts = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
         else:
             srcs = extract_locations(before, extra_context=full_context, include_cross_region_nonunique=True)
