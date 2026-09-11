@@ -5931,7 +5931,7 @@ def build_region_feed(posts_data, max_items=20):
     return result
 
 
-def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, night_kills=None):
+def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, night_kills=None, day_kills=None):
     if filename is None:
         filename = os.environ.get("OUTPUT_FILE", "mopedmap.html")
     # Keep only the latest post per city
@@ -6501,7 +6501,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <body>
 <div class="header">
   <h1><span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
-  <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills} бпла" if night_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
+  <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills} бпла" if night_kills else ""}{f" | За день {day_kills} бпла" if day_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
 <div class="region-feed" id="region-feed" style="display:none">
@@ -7090,12 +7090,24 @@ NIGHT_KILLS_RE = re.compile(
     r'(?:уничтожен\w*|сбит\w*|перехвачен\w*)'
     r'(?:\s+и\s+(?:уничтожен\w*|сбит\w*|перехвачен\w*))?'
     r'\s+(\d[\d\s]{0,9})\s*'
-    r'(?:бпла|беспилотн\w+)'
+    r'(?:\S+\s+)?(?:бпла|беспилотн\w+)'
+)
+
+DAY_KILLS_RE = re.compile(
+    r'в течение дня'
+    r'.{0,120}?'
+    r'дежурными (?:силами|средствами) пво'
+    r'.{0,120}?'
+    r'(?:было\s+)?'
+    r'(?:уничтожен\w*|сбит\w*|перехвачен\w*)'
+    r'(?:\s+и\s+(?:уничтожен\w*|сбит\w*|перехвачен\w*))?'
+    r'\s+(\d[\d\s]{0,9})\s*'
+    r'(?:\S+\s+)?(?:бпла|беспилотн\w+)'
 )
 
 
-def extract_night_kills(posts):
-    """Вернуть число сбитых за ночь БПЛА из свежайшей сводки канала locatorru, либо None."""
+def _extract_recap_number(posts, regex):
+    """Вернуть число из свежайшей recap-сводки канала locatorru, либо None."""
     best = None
     best_dt = None
     for post_item in posts or []:
@@ -7106,7 +7118,7 @@ def extract_night_kills(posts):
         text = post_item[0]
         if not text:
             continue
-        mo = NIGHT_KILLS_RE.search(re.sub(r'\s+', ' ', str(text).lower()))
+        mo = regex.search(re.sub(r'\s+', ' ', str(text).lower()))
         if not mo:
             continue
         dt = post_item[3] if len(post_item) >= 4 else None
@@ -7115,6 +7127,16 @@ def extract_night_kills(posts):
             raw_num = mo.group(1)
             best = int(''.join(ch for ch in raw_num if ch.isdigit()))
     return best
+
+
+def extract_night_kills(posts):
+    """Вернуть число сбитых за ночь БПЛА из свежайшей сводки канала locatorru, либо None."""
+    return _extract_recap_number(posts, NIGHT_KILLS_RE)
+
+
+def extract_day_kills(posts):
+    """Вернуть число сбитых за день БПЛА из свежайшей сводки МО канала locatorru, либо None."""
+    return _extract_recap_number(posts, DAY_KILLS_RE)
 
 
 # Канал radar_rossia_bpla публикует сводки последствий ночных атак
@@ -7537,7 +7559,8 @@ def main():
             display_markers.append(m)
 
     filename = generate_html(display_markers, geojson_lookup=geojson_lookup, history=history,
-                             night_kills=extract_night_kills(posts))
+                             night_kills=extract_night_kills(posts),
+                             day_kills=extract_day_kills(posts))
     abs_path = os.path.abspath(filename)
     print(f"\nСгенерирована карта: file://{abs_path}")
     print(f"Локаций на карте: {len(display_markers)}")
