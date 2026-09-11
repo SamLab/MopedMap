@@ -6501,7 +6501,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <body>
 <div class="header">
   <h1>YarLocator <span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
-  <span class="info">Угрозы БПЛА | <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills}" if night_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
+  <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills} бпла" if night_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
 <div class="region-feed" id="region-feed" style="display:none">
