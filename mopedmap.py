@@ -6500,7 +6500,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </head>
 <body>
 <div class="header">
-  <h1>YarLocator <span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
+  <h1><span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
   <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills} бпла" if night_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
 </div>
 <div id="map"></div>
@@ -6886,7 +6886,7 @@ function renderAll() {{
     const ct = tEpoch(useItem.time);
     if (ct) {{ const mins = Math.round((Date.now() - ct) / 60000); if (mins > 0) ago = ', ' + mins + ' мин назад'; }}
     const subjText = useItem.subject ? ', ' + useItem.subject : '';
-    distEl.textContent = 'ближайшая опасность: ' + distKm + ' км (' + useItem.name + subjText + ago + ')';
+    distEl.textContent = 'Опасность для Ярославля в ' + distKm + ' км (' + useItem.name + subjText + ago + ')';
   }} else {{
     distEl.textContent = '';
   }}
