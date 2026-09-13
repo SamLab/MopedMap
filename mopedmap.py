@@ -4262,7 +4262,7 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'Радар Чувашия\s*[-–—]\s*', '', clean).strip()
     clean = re.sub(r'Радар Ярославская область\s*[-–—]\s*', '', clean).strip()
     clean = re.sub(r'Подписаться', '', clean).strip()
-    clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F.,!?\-:;()ё№«»]+', ' ', clean)
+    clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F\u2190-\u21FF\u27A1\uFE0F.,!?\-:;()ё№«»]+', ' ', clean)
     clean = re.sub(r'Мы в MAX.*', '', clean).strip()
     # Insert space between lowercase-uppercase Cyrillic transitions (no-space formatting)
     clean = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', clean)
@@ -4425,15 +4425,6 @@ def fetch_all(hours_filter=None):
     all_posts = _fetch_posts_parallel(jobs, max_workers=workers)
     print(f"Всего загружено: {len(all_posts)} постов")
     return all_posts
-
-WORD_CHARS = set("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789абвгдеёжзийклмнопрстуфхцчшщъыьэюя")
-
-
-def is_word_boundary(text, idx):
-    if idx <= 0:
-        return True
-    return text[idx - 1] not in WORD_CHARS
-
 
 # ── Контекстный гейтинг топонимов ─────────────────────────────────────
 # Частотные русские слова, которые в постах про БПЛА никогда не являются
@@ -5369,9 +5360,7 @@ DIRECTION_SEPS = [
     r'\bв вашу сторону\b',
     r'\bв нашу сторону\b',
     r'\bв направлении\b',
-    r'\bнаправлении\b',
     r'\bв направление\b',
-    r'\bнаправление\b',
     '→', '➡️',
     r'\bот\b',
     r'\bсо стороны\b',
