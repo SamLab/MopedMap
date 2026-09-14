@@ -39,7 +39,7 @@ jobs:
         run: |
           rm -rf /tmp/ghpages
           mkdir /tmp/ghpages
-          cp index.html yaroslavl_districts.geojson /tmp/ghpages/
+          cp index.html yaroslavl_districts.geojson state.json /tmp/ghpages/
           echo "" > /tmp/ghpages/.nojekyll
           cd /tmp/ghpages
           git init
