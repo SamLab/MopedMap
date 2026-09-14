@@ -7067,8 +7067,134 @@ document.getElementById('chStats-toggle').addEventListener('click', function() {
   }} else p.style.display = 'none';
 }});
 
+// ── Звуковое оповещение о событиях в Ярославской области ────────────
+const SOUND_TYPES = {{ danger: true, rocket: true, aviation: true, attention: true, sighting: true, interception: true }};
+const SOUND_PRIORITY = {{ rocket: 0, danger: 1, aviation: 2, interception: 3, attention: 4, sighting: 5 }};
+const YAR_BBOX = {{ n: 58.9, s: 56.05, e: 40.95, w: 37.4 }};
+function isYarSubject(s) {{ return String(s || '').toLowerCase().indexOf('ярослав') !== -1; }}
+function inYarBBox(lat, lon) {{ return YAR_BBOX.s <= lat && lat <= YAR_BBOX.n && YAR_BBOX.w <= lon && lon <= YAR_BBOX.e; }}
+function yarEvents() {{
+  return visibleItems().filter(function(it) {{
+    if (!SOUND_TYPES[it.type]) return false;
+    if (it.cleared || it.no_marker || it._fill_only) return false;
+    if (isYarSubject(it.subject)) return true;
+    if (it.direction && Array.isArray(it.direction) && it.direction.length >= 2 &&
+        inYarBBox(it.direction[0], it.direction[1])) return true;
+    return false;
+  }});
+}}
+function yarFp(it) {{ return it.type + '|' + (it.name || '') + '|' + (it.time || ''); }}
+function loadSoundSeen() {{ try {{ const v = JSON.parse(localStorage.getItem('yar_sound_seen') || '{{}}'); return (v && typeof v === 'object') ? v : {{}}; }} catch (e) {{ return {{}}; }} }}
+function saveSoundSeen(v) {{ try {{ localStorage.setItem('yar_sound_seen', JSON.stringify(v)); }} catch (e) {{}} }}
+let audioCtx = null;
+let soundEnabled = !!st.soundEnabled;
+function ensureAudio() {{
+  if (audioCtx) {{ if (audioCtx.state === 'suspended') audioCtx.resume().catch(function() {{}}); return; }}
+  try {{ const AC = window.AudioContext || window.webkitAudioContext; if (AC) audioCtx = new AC(); }} catch (e) {{ audioCtx = null; }}
+}}
+function playTone(freqFrom, freqTo, dur, gainMax, type) {{
+  if (!audioCtx || audioCtx.state !== 'running') return;
+  try {{
+    const t0 = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = type || 'sawtooth';
+    osc.frequency.setValueAtTime(freqFrom, t0);
+    if (freqTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqTo), t0 + dur);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gainMax, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.05);
+  }} catch (e) {{}}
+}}
+function siren() {{
+  playTone(520, 740, 0.8, 0.18, 'sawtooth');
+  playTone(740, 520, 0.8, 0.18, 'sawtooth');
+}}
+function beep() {{
+  playTone(880, 880, 0.12, 0.15, 'square');
+  setTimeout(function() {{ playTone(880, 880, 0.12, 0.15, 'square'); }}, 180);
+}}
+function playForType(t) {{ if (t === 'rocket' || t === 'danger' || t === 'aviation') siren(); else beep(); }}
+function bestNewSound(items) {{
+  let best = null;
+  items.forEach(function(it) {{ if (!best || SOUND_PRIORITY[it.type] < SOUND_PRIORITY[best.type]) best = it; }});
+  return best;
+}}
+function checkSound() {{
+  if (!soundEnabled) return;
+  const seen = loadSoundSeen();
+  const cur = yarEvents();
+  const now = Date.now();
+  const newItems = cur.filter(function(it) {{ return !seen[yarFp(it)]; }});
+  let dirty = false;
+  Object.keys(seen).forEach(function(fp) {{
+    const tm = tEpoch(fp.split('|').slice(-1)[0]);
+    if (tm && now - tm > 6 * 3600 * 1000) {{ delete seen[fp]; dirty = true; }}
+  }});
+  cur.forEach(function(it) {{ const fp = yarFp(it); if (!seen[fp]) {{ seen[fp] = 1; dirty = true; }} }});
+  if (dirty) saveSoundSeen(seen);
+  if (newItems.length) {{ const b = bestNewSound(newItems); if (b) playForType(b.type); }}
+}}
+
+const soundToggle = document.getElementById('sound-toggle');
+function renderSoundToggleUI() {{
+  if (!soundToggle) return;
+  soundToggle.style.opacity = soundEnabled ? '1' : '0.55';
+  soundToggle.title = soundEnabled ? 'Звук включён — клик выключить' : 'Звук выключен — клик включить';
+}}
+if (soundToggle) soundToggle.addEventListener('click', function() {{
+  soundEnabled = !soundEnabled;
+  st.soundEnabled = soundEnabled;
+  lsSave(st);
+  renderSoundToggleUI();
+  if (soundEnabled) {{
+    ensureAudio();
+    if (audioCtx && audioCtx.state === 'running') siren();
+    const seen = loadSoundSeen();
+    yarEvents().forEach(function(it) {{ seen[yarFp(it)] = 1; }});
+    saveSoundSeen(seen);
+  }}
+}});
+function unlockAudioOnce() {{ ensureAudio(); window.removeEventListener('pointerdown', unlockAudioOnce); window.removeEventListener('keydown', unlockAudioOnce); }}
+window.addEventListener('pointerdown', unlockAudioOnce);
+window.addEventListener('keydown', unlockAudioOnce);
+renderSoundToggleUI();
+
+// ── Опрос state.json (обновление без перезагрузки) ───────────────────
+function pollState() {{
+  fetch('state.json?v=' + Date.now(), {{ cache: 'no-store' }})
+    .then(function(r) {{ if (!r.ok) throw new Error(String(r.status)); return r.json(); }})
+    .then(function(s) {{
+      pollFailCount = 0;
+      if (s.generated_at && s.generated_at === lastGeneratedAt) return;
+      lastGeneratedAt = s.generated_at || lastGeneratedAt;
+      if (Array.isArray(s.markers)) data = s.markers;
+      if (Array.isArray(s.feed)) feed = s.feed;
+      if (s.channels) channelStats = s.channels;
+      renderAll();
+      refreshFeedUI();
+      renderHeaderTail(s);
+      checkSound();
+    }})
+    .catch(function() {{
+      pollFailCount++;
+      if (pollFailCount >= 5) {{
+        const el = document.getElementById('hdr-tail');
+        if (el && el.textContent.indexOf('Связь') === -1) el.textContent += ' | Связь с данными потеряна';
+      }}
+    }})
+    .then(function() {{ schedulePoll(); }});
+}}
+function schedulePoll() {{
+  const delay = document.hidden ? 120000 : 60000;
+  setTimeout(pollState, delay);
+}}
+function startPolling() {{ pollState(); }}
+
 syncLegendUI();
 renderAll();
+startPolling();
 </script>
 </body>
 </html>"""
