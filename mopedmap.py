@@ -6629,12 +6629,11 @@ const data = {markers_json};
 let channelStats = {channel_json};
 
 let feed = {feed_json};
-(function() {{
+function refreshFeedUI() {{
   const panel = document.getElementById('region-feed');
-  if (!feed || feed.length === 0) {{ return; }}
-  panel.style.display = '';
+  if (!feed || feed.length === 0) {{ if (panel) panel.style.display = 'none'; return; }}
+  if (panel) panel.style.display = '';
   const body = document.getElementById('region-feed-body');
-  const toggle = document.getElementById('region-feed-toggle');
   const html = feed.map(f => {{
     const yar = f.pinned ? '<b class="yar">Яр</b> ' : '';
     const regions = (f.regions || []).join(', ');
@@ -6645,9 +6644,13 @@ let feed = {feed_json};
       '<div class="region-feed-item-text"></div></div>';
   }}).join('');
   body.innerHTML = html;
-  // заполнить text безопасно
   const items = body.querySelectorAll('.region-feed-item-text');
   feed.forEach((f, i) => {{ if (items[i]) items[i].textContent = f.text; }});
+}}
+
+(function() {{
+  const body = document.getElementById('region-feed-body');
+  const toggle = document.getElementById('region-feed-toggle');
   // На ПК (тонкий курсор/широкий экран) панель развёрнута по умолчанию, на смартфоне — свёрнута
   const defaultOpen = window.matchMedia && (window.matchMedia('(pointer: fine)').matches || window.matchMedia('(min-width: 768px)').matches);
   const wantOpen = st.panelOpen !== undefined ? st.panelOpen : defaultOpen;
@@ -6667,7 +6670,18 @@ let feed = {feed_json};
     }}
     lsSave(st);
   }});
+  refreshFeedUI();
 }})();
+
+function renderHeaderTail(s) {{
+  const el = document.getElementById('hdr-tail');
+  if (!el) return;
+  let t = '';
+  if (s.night_kills) t += ' | За ночь ' + s.night_kills + ' бпла';
+  if (s.day_kills) t += ' | За день ' + s.day_kills + ' бпла';
+  t += ' | ' + (s.generated_at || lastGeneratedAt || '');
+  el.textContent = t;
+}}
 
 const styleMap = {{
   danger: {{ color: '#a83232', size: 12, glow: null }},
