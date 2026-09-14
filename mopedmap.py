@@ -6475,6 +6475,16 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
         channel_counts[src] = channel_counts.get(src, 0) + 1
     channel_json = json.dumps(channel_counts, ensure_ascii=False)
 
+    now_msk_str = (datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')
+    state_obj = {
+        "generated_at": now_msk_str + " МСК",
+        "night_kills": night_kills,
+        "day_kills": day_kills,
+        "markers": posts_data,
+        "feed": feed_data,
+        "channels": channel_counts,
+    }
+
     region_features = []
     for rm_key, feat in region_map.items():
         feat["properties"]["_key"] = rm_key
@@ -6496,7 +6506,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="300">
+<meta http-equiv="refresh" content="1800">
 <title>YarLocator — Карта угроз</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -6555,7 +6565,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 <body>
 <div class="header">
   <h1><span id="dist-info" style="font-size:12px;color:#d32f2f;font-weight:normal"></span></h1>
-  <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек{f" | За ночь {night_kills} бпла" if night_kills else ""}{f" | За день {day_kills} бпла" if day_kills else ""} | {(datetime.now(timezone.utc) + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')} МСК</span>
+  <span class="info">На карте <span id="pt-count">{len(posts_data)}</span> точек<span id="hdr-tail">{f" | За ночь {night_kills} бпла" if night_kills else ""}{f" | За день {day_kills} бпла" if day_kills else ""} | {now_msk_str} МСК</span></span>
 </div>
 <div id="map"></div>
 <div class="region-feed" id="region-feed" style="display:none">
@@ -6573,7 +6583,8 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   <span class="lg-item" data-ltype="info" title="Клик — скрыть/показать"><span class="dot" style="color:#60a5fa">●</span> Инфо</span>
   <span class="timefilter" title="Фильтр по времени"><button data-min="30">30м</button><button data-min="60">1ч</button><button data-min="240">4ч</button></span>
   <span id="chStats-toggle" title="Показать каналы" style="cursor:pointer">☰ Каналы</span>
-  <span style="margin-left:auto;color:#999">Обновление каждые 5 мин · данные за 4 часа</span>
+  <span id="sound-toggle" title="Звук выключен — клик включить" style="cursor:pointer;opacity:0.55">🔔</span>
+  <span style="margin-left:auto;color:#999">Обновление каждые ~1 мин · данные за 4 часа</span>
 </div>
 <div id="chStats-panel" style="display:none;padding:6px 12px;background:#fff;border-top:1px solid #ddd;font-size:11px;color:#555"></div>
 <script>
@@ -6610,10 +6621,14 @@ setInterval(function() {{
 
 L.control.attribution({{ prefix: false }}).addTo(map);
 
-const data = {markers_json};
-const channelStats = {channel_json};
+const GENERATED_AT = "{now_msk_str}";
+let lastGeneratedAt = GENERATED_AT;
+let pollFailCount = 0;
 
-const feed = {feed_json};
+const data = {markers_json};
+let channelStats = {channel_json};
+
+let feed = {feed_json};
 (function() {{
   const panel = document.getElementById('region-feed');
   if (!feed || feed.length === 0) {{ return; }}
@@ -7045,6 +7060,9 @@ renderAll();
 </html>"""
     with open(filename, "w", encoding="utf-8") as f:
         f.write(html_content)
+    state_path = os.path.join(os.path.dirname(os.path.abspath(filename)), "state.json")
+    with open(state_path, "w", encoding="utf-8") as f:
+        json.dump(state_obj, f, ensure_ascii=False)
     return os.path.abspath(filename)
 
 
