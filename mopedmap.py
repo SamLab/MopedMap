@@ -4558,6 +4558,19 @@ STOPLIST_SETTLEMENTS = frozenset(
 # (Азовское, Республика Крым).
 SEA_WORDS = frozenset({'море', 'моря', 'морю', 'морем', 'морях'})
 
+# Слова дороги/магистрали в падежах: если топоним непосредственно предшествует
+# им, это название дороги («Киевская трасса», «Киевского шоссе», «Каширское
+# шоссе»), а не населённый пункт (село Киевская/Вологодская и т.п.).
+ROAD_KIND_WORDS = frozenset({
+    'трасса', 'трассы', 'трассе', 'трассу', 'трассой',
+    'шоссе',
+    'дорога', 'дороги', 'дороге', 'дорогу', 'дорогой',
+    'проспект', 'проспекта', 'проспекте', 'проспекту', 'проспектом',
+    'улица', 'улицы', 'улице', 'улицу', 'улицей',
+    'бульвар', 'бульвара', 'бульваре', 'бульвару', 'бульваром',
+    'переулок', 'переулка', 'переулке', 'переулку', 'переулком',
+})
+
 # Пространственные маркеры: матч в теле принимается, если непосредственно
 # перед ним стоит такой предлог (или такая пара слов).
 _MARKER_SINGLE = frozenset({
@@ -4712,9 +4725,13 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     continue
             # Skip if followed by a sea word — "Азовское море"/"Азовского моря"
             # is the sea, not the settlement Азовское (Республика Крым).
-            if not is_region and _nx_words and _nx_words[0] in SEA_WORDS:
-                start = idx + 1
-                continue
+            # Same for road names: "Киевская трасса"/"Киевского шоссе" is the
+            # road, not the settlement Киевская (Вологодская область).
+            if not is_region and _nx_words:
+                _nxw = _nx_words[0].strip(",.()\"';:!?")
+                if _nxw in SEA_WORDS or _nxw in ROAD_KIND_WORDS:
+                    start = idx + 1
+                    continue
 
             is_overlap = any(
                 not (end <= s_start or s_end <= idx)
