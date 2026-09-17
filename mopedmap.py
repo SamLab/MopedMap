@@ -5197,6 +5197,16 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
 
     # --- Match non-unique settlement names only when region context resolves them ---
     if NON_UNIQUE_SETTLEMENT_RE:
+        # Rebuild matched_spans from the results that survived region filtering.
+        # A stale span from a filtered-out result (e.g. settlement "Шуй"/Тыва whose
+        # genitive form "шуя" collides with the city Шуя and was auto-removed for
+        # the wrong region) must not block the second-pass resolution of the
+        # non-unique name on the same span — else г. Шуя is lost entirely.
+        matched_spans = {
+            (r.get("_match_start"), r.get("_match_end"))
+            for r in results
+            if r.get("_match_start") is not None and r.get("_match_end") is not None
+        }
         all_ctx = results
         if extra_context:
             all_ctx = results + extra_context
