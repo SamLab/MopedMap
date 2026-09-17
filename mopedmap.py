@@ -6735,10 +6735,11 @@ let regionFill = {{}};
 
 function computeRegionFill() {{
   regionFill = {{}};
-  visibleItems().forEach(it => {{
+  data.forEach(it => {{
     if (it.no_marker || it.cleared) return;
     const t = it.type;
     if (t === 'clear' || t === 'history') return;
+    if (hiddenIt.has(t)) return;
     if (!Object.prototype.hasOwnProperty.call(typePriority, t)) return;
     const key = (it.subject || it.name || '').toLowerCase().trim();
     if (!key) return;
