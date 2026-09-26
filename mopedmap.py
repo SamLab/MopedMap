@@ -4618,6 +4618,15 @@ def _body_spatial_ok(text_lower, start, accepted_spans):
             for m in re.finditer(r'\S+', segment)]
     if not toks:
         return False
+    # Сокращения «г.», «п.», «с.» перед топонимом: «г.Ярославль» в «и на
+    # г.Ярославль» или «в сторону г.Нерехта» — токен «г» поглощал бы
+    # пространственный маркер («на», «в сторону»), и город терялся при гейтинге.
+    # Пропускаем такие одиночные аббревиатуры и смотрим на предшествующий токен.
+    _ABBR_TOKENS = frozenset({'г', 'п', 'с', 'д', 'р', 'пос', 'дер', 'хут', 'ст', 'ул'})
+    while len(toks) >= 2 and toks[-1][0].strip('.,;:!?()[]-«»„“”"\'').lower() in _ABBR_TOKENS:
+        toks.pop()
+    if not toks:
+        return False
     prev_tok, ps, pe = toks[-1]
     prev_clean = prev_tok.strip('.,;:!?()[]-«»„“”"\'')
     if prev_clean in _MARKER_SINGLE:
@@ -5250,44 +5259,56 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                 if is_overlap:
                     continue
                 # Find the variant matching one of the context subjects
-                # Reference coords: rayon-level matches already found in context
-                # (e.g. Кшенский from "Советский район") or specific settlements
-                # (is_region=False). Oblast capital region matches are NOT used —
-                # the capital is usually far from the settlement, e.g. "Петропавловка,
-                # Советский район" must pick the Петропавловка near Кшенский, not
-                # the one near Курск (which is closer to the oblast capital).
-                _refs = []
-                for ctx in all_ctx:
-                    if ctx.get("lat") is None:
-                        continue
-                    if ctx.get("is_region"):
-                        _mm = str(ctx.get("matched", "")).lower()
-                        if not re.search(r'(район|района|районе|районы|р-н|р-не|р-ны|мо|го|ао)$', _mm):
-                            continue
-                    _refs.append((ctx["lat"], ctx["lon"]))
+                # City-preference: если имя — крупный город (CITY_DB) и его собственный
+                # регион присутствует в контексте, берём город, а не тёзку-село.
+                # Без этого «Иваново» в посте «Шуя, Ивановская область … в сторону
+                # Иваново» резолвится в село Иваново/Костромская область: порядок
+                # ctx_subjects следует ALL_PATTERNS (длинный region-паттерн
+                # «костромской области» попадает раньше «ивановской области»),
+                # а SETTLEMENTS_ALL_BY_KEY выигрывает у CITY_BY_NAME_SUBJECT.
                 entry = None
-                for cs in ctx_subjects:
-                    key = (lk, cs)
-                    _cands = SETTLEMENTS_ALL_BY_KEY.get(key)
-                    if _cands:
-                        if _refs and len(_cands) > 1:
-                            _best = _cands[0]
-                            _best_d = None
-                            for _cand in _cands:
-                                _d = min(
-                                    (_cand["lat"] - _rf[0]) ** 2 + (_cand["lon"] - _rf[1]) ** 2
-                                    for _rf in _refs
-                                )
-                                if _best_d is None or _d < _best_d:
-                                    _best_d = _d
-                                    _best = _cand
-                            entry = _best
-                        else:
-                            entry = _cands[0]
-                        break
-                    if key in CITY_BY_NAME_SUBJECT:
-                        entry = CITY_BY_NAME_SUBJECT[key]
-                        break
+                if lk in CITY_DB:
+                    _city_subj = (CITY_DB[lk].get("subject") or "").lower().strip()
+                    if _city_subj in ctx_subjects:
+                        entry = CITY_DB[lk]
+                if entry is None:
+                    # Reference coords: rayon-level matches already found in context
+                    # (e.g. Кшенский from "Советский район") or specific settlements
+                    # (is_region=False). Oblast capital region matches are NOT used —
+                    # the capital is usually far from the settlement, e.g. "Петропавловка,
+                    # Советский район" must pick the Петропавловка near Кшенский, not
+                    # the one near Курск (which is closer to the oblast capital).
+                    _refs = []
+                    for ctx in all_ctx:
+                        if ctx.get("lat") is None:
+                            continue
+                        if ctx.get("is_region"):
+                            _mm = str(ctx.get("matched", "")).lower()
+                            if not re.search(r'(район|района|районе|районы|р-н|р-не|р-ны|мо|го|ао)$', _mm):
+                                continue
+                        _refs.append((ctx["lat"], ctx["lon"]))
+                    for cs in ctx_subjects:
+                        key = (lk, cs)
+                        _cands = SETTLEMENTS_ALL_BY_KEY.get(key)
+                        if _cands:
+                            if _refs and len(_cands) > 1:
+                                _best = _cands[0]
+                                _best_d = None
+                                for _cand in _cands:
+                                    _d = min(
+                                        (_cand["lat"] - _rf[0]) ** 2 + (_cand["lon"] - _rf[1]) ** 2
+                                        for _rf in _refs
+                                    )
+                                    if _best_d is None or _d < _best_d:
+                                        _best_d = _d
+                                        _best = _cand
+                                entry = _best
+                            else:
+                                entry = _cands[0]
+                            break
+                        if key in CITY_BY_NAME_SUBJECT:
+                            entry = CITY_BY_NAME_SUBJECT[key]
+                            break
                 if entry is None:
                     if ctx_subjects:
                         if not include_cross_region_nonunique:
