@@ -7495,6 +7495,48 @@ def is_memo_post(text):
     return any(re.search(pat, text_lower) for pat in MEMO_PATTERNS)
 
 
+# Рекрутинговые объявления о службе по контракту («миллионы на руки», перечень
+# взводов/батальонов/рот, «выплаты гарантированы», «краповые береты»,
+# контактный телефон) — реклама, без текущих координат/направлений БПЛА.
+# В заголовке поста часто случайное топонимное слово («Рука»→Тульская,
+# «Полное»→Курская), что давало ложные маркеры с типом rocket («Зенитно-ракетный»).
+RECRUIT_AD_PATTERNS = [
+    r'на руки сраз',
+    r'по отношени\w+ на контракт',
+    r'на контракт',
+    r'специальность по отношени\w*',
+    r'покупаем вам билет',
+    r'полное сопровждени\w*',
+    r'краповыми? беретами?',
+    r'ветераны спецназа',
+    r'выплаты гарантирован',
+    r'президентом',
+    r'армия не ищет слабых',
+    r'создаёт победителей',
+    r'\+\d{10,}',
+]
+
+RECRUIT_AD_UNITS = [
+    r'[вз]звод\s+бпла',
+    r'мотострелковые батальоны',
+    r'танковый батальон',
+    r'миномётная батарея',
+    r'разведывательная рота',
+    r'рота материального обеспечения',
+    r'рота управления',
+    r'стрелковая рота',
+    r'ремонтная рота',
+    r'комендантский взвод',
+]
+
+
+def is_recruit_ad_post(text):
+    """Реклама набора по контракту (перечень воинских подразделений/выплат)."""
+    text_lower = text.lower()
+    return (any(re.search(pat, text_lower) for pat in RECRUIT_AD_PATTERNS)
+            and any(re.search(pat, text_lower) for pat in RECRUIT_AD_UNITS))
+
+
 def closest_point_on_polygon(lat, lon, polygon_coords):
     """Find closest point on polygon boundary from (lat, lon)."""
     best_lat, best_lon = lat, lon
@@ -7601,6 +7643,9 @@ def process_posts(posts, geojson_lookup=None):
             filtered += 1
             continue
         if is_promo_spam_post(post):
+            filtered += 1
+            continue
+        if is_recruit_ad_post(post):
             filtered += 1
             continue
         if is_memo_post(post):
