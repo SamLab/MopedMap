@@ -7582,9 +7582,11 @@ def closest_point_on_polygon(lat, lon, polygon_coords):
 # Fixed state border points for regions where polygon's closest point
 # falls on internal (oblast-to-oblast) boundary instead of international border.
 # Key = region subject lowercase, value = (lat, lon)
+# Примечание: Брянская область НЕ входит — полигон корректно даёт её
+# госграницу с Украиной (проверено: Чернигов→(52.11, 31.78)), а фиксированная
+# точка на стыке Брянской/Курской уводки стрелку Чернигов→Брянская в Курскую.
 STATE_BORDER_POINTS = {
     "курская область": (51.229707, 35.116505),
-    "брянская область": (51.229707, 35.116505),
 }
 
 
