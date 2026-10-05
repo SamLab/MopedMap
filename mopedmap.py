@@ -5978,6 +5978,12 @@ def sanitize_popup_text(text):
     t = re.sub(r'[^·\n]{1,40}\s*·\s*\w+\s*·\s*\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}', '', t).strip()
     t = re.sub(r'@\w+\s*', '', t).strip()
     t = re.sub(r'Подписаться', '', t).strip()
+    # Ссылки-приглашения в MAX (приходят только в display_text: clean_message_text
+    # обрезает пост по 📡 раньше ссылки, поэтому фильтр «max.ru/join/» в process_posts
+    # их не ловит). Убираем вместе со всей строкой-ссылкой.
+    t = re.sub(r'[ \t]*https?://max\.ru/\S*', '', t)
+    t = re.sub(r'[ \t]*\bmax\.ru/\S*', '', t)
+    t = re.sub(r'[ \t]+\n', '\n', t)
     t = re.sub(r'\n{3,}', '\n\n', t)
     return t.strip()
 
