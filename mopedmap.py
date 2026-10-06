@@ -5423,7 +5423,11 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         name_key = r["name"].lower()
         has_radius = bool(r.get("is_region"))
         item_key = (name_key, has_radius)
-        coord_key = round(r["lat"], 1), round(r["lon"], 1)
+        # 0.1° (~11 км) был слишком грубо: Апрелевка (55.533/37.05) и Селятино
+        # (55.515/36.977) — разные НП в ~5 км — схлопывались в один маркер.
+        # 0.001° (~110 м) сохраняет дедуп одного места с полем неточности
+        # разных источников, но не теряет соседние населённые пункты.
+        coord_key = round(r["lat"], 3), round(r["lon"], 3)
         if item_key in found_keys:
             continue
         found_keys.add(item_key)
