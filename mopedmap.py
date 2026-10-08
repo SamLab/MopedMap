@@ -7686,11 +7686,15 @@ STATE_BORDER_POINTS = {
 }
 
 
-def find_border_point(region_name, src_lat, src_lon, geojson_lookup):
+def find_border_point(region_name, src_lat, src_lon, geojson_lookup, use_state_points=True):
     """Find closest border point of region from source coordinates.
-    Returns (lat, lon) or None."""
+    Returns (lat, lon) or None.
+    use_state_points=True — учитывать фиксированные точки госграницы
+    (STATE_BORDER_POINTS); False — только полигонную динамику (для
+    источников ВНУТРИ РФ, где стрелка должна идти на вход в область,
+    а не на госграницу)."""
     rn = region_name.strip().lower()
-    if rn in STATE_BORDER_POINTS:
+    if use_state_points and rn in STATE_BORDER_POINTS:
         return STATE_BORDER_POINTS[rn]
     feat = find_geojson_feature(region_name, geojson_lookup)
     if not feat:
@@ -7822,7 +7826,13 @@ def process_posts(posts, geojson_lookup=None):
                 _src_subj = (src.get("subject") or "").lower().strip()
                 if dst.get("is_region") and "район" not in dst.get("matched", "").lower() and _src_subj != region_check_subject and (_REGION_DEST_KW.search(region_check_text) or region_check_subject in REGION_GEOJSON_MAP):
                     if geojson_lookup:
-                        bp = find_border_point(region_check_subject, src["lat"], src["lon"], geojson_lookup)
+                        # Фиксированные точки госграницы осмысленны только для
+                        # источников ВНЕ РФ (Харьков/Чернигов и т.п. — их субъект
+                        # не имеет полигона в гео-слое). Для источников внутри РФ
+                        # (Бирюч → Курская область) стрелка должна идти на вход
+                        # в область (полигонная динамика), а не на госграницу.
+                        use_state = not find_geojson_feature(_src_subj, geojson_lookup) if _src_subj else False
+                        bp = find_border_point(region_check_subject, src["lat"], src["lon"], geojson_lookup, use_state_points=use_state)
                         if bp:
                             dst = {**dst, "lat": bp[0], "lon": bp[1], "name": dst.get("subject", dst["name"])}
                 m = {
