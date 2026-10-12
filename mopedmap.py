@@ -7949,6 +7949,43 @@ def process_posts(posts, geojson_lookup=None):
                                     if any(oc != sc for oc in _all_coords):
                                         _drop_indices.add(idx)
                                     break
+                    # When the group has a concrete rayon-level marker ("ГО Клин", "АО Троицк"),
+                    # suppress the capital point markers (region reference on capital coords like
+                    # "Московская область" → 55.7558/37.6178, or the capital city itself "Москва")
+                    # so the map shows the specific location, not the capital.  Москва is special:
+                    # CITY_DB['москва'] has subject 'Москва' (not 'Московская область'), so the
+                    # CITY_DB loop above never matches it — handle via group-capital coords logic.
+                    _rayon_coords = set()
+                    for s in _group:
+                        _smm = (s.get("matched") or "").lower()
+                        if s.get("is_region") and (
+                                re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _smm) or
+                                re.search(r'\b(мо|го|ао)\b', _smm)):
+                            _rayon_coords.add((round(s["lat"], 4), round(s["lon"], 4)))
+                    if _rayon_coords:
+                        _cap_coords = set()
+                        for s in _group:
+                            _smm = (s.get("matched") or "").lower()
+                            if s.get("is_region"):
+                                if _smm == _ss:
+                                    _cap_coords.add((round(s["lat"], 4), round(s["lon"], 4)))
+                                continue
+                            # plain city: the capital city of the subject (e.g. 'Москва' in group 'москва')
+                            _cn = s.get("name", "").lower().strip()
+                            if _cn == _ss and _cn in CITY_DB:
+                                _cap_coords.add((round(s["lat"], 4), round(s["lon"], 4)))
+                        if _cap_coords:
+                            for idx, s in enumerate(survivors):
+                                if s.get("subject", "").lower().strip() != _ss:
+                                    continue
+                                _smm = (s.get("matched") or "").lower()
+                                if s.get("is_region") and (
+                                        re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _smm) or
+                                        re.search(r'\b(мо|го|ао)\b', _smm)):
+                                    continue
+                                sc = (round(s["lat"], 4), round(s["lon"], 4))
+                                if sc in _cap_coords and any(rc != sc for rc in _rayon_coords):
+                                    _drop_indices.add(idx)
                 survivors = [s for i, s in enumerate(survivors) if i not in _drop_indices]
 
                 for loc in survivors:
