@@ -6275,7 +6275,7 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
             mt = item.get('matched', '').lower()
             if any(t in mt for t in ('область', 'край', 'республика', 'район', 'р-н')):
                 continue  # explicit region reference — keep marker
-            if re.search(r'\s(мо|го|ао)$', mt):
+            if re.search(r'\b(мо|го|ао)\b', mt):
                 continue  # rayon-level ГО/МО/АО reference — specific location, keep marker
             rn = item.get('subject', '').lower().strip() if item.get('subject') else None
             if not rn:
@@ -7937,8 +7937,10 @@ def process_posts(posts, geojson_lookup=None):
                         # Rayon-level markers ("Спасском районе"→Спасск-Дальний) are the
                         # specific location — never suppress them in favor of the capital
                         # (otherwise both Владивосток and Спасск-Дальний get dropped).
+                        # ГО/МО/АО forms may be prefix ("ГО Клин") or suffix ("Клин ГО",
+                        # "Троицкий АО") — match with word boundaries both ways.
                         _mm = s.get("matched", "").lower()
-                        if re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _mm) or re.search(r'\s(мо|го|ао)$', _mm):
+                        if re.search(r'(район|районе|районы|р-н|р-не|р-ны)$', _mm) or re.search(r'\b(мо|го|ао)\b', _mm):
                             continue
                         sc = (round(s["lat"], 4), round(s["lon"], 4))
                         for ck, cv in CITY_DB.items():
