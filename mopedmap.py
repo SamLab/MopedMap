@@ -7663,6 +7663,38 @@ def is_recruit_ad_post(text):
             and any(re.search(pat, text_lower) for pat in RECRUIT_AD_UNITS))
 
 
+# Посты-апелляции о донатах/поддержке канала («существуем на донаты»,
+# «поддержать проект», «реквизиты для перевода», «юридическое сопровождение») —
+# организационный текст без текущих координат/направлений БПЛА. В таких постах
+# обычные слова матчатся как сёла GeoNames («Дело»/Вологодская, «Конец»/Вологодская,
+# «Белый»/Тверская), давая ложные маркеры.
+DONATION_PATTERNS = [
+    r'существуем на донат',
+    r'жив[её]м на донат',
+    r'на донатах?\b',
+    r'принимаем донаты',
+    r'поддержать (наш |этот )?проект',
+    r'поддержите (наш )?(проект|канал|нас)',
+    r'поддержка проекта',
+    r'реквизиты для',
+    r'сбор (средств|донат|денег)',
+    r'перевести (донат|средства|деньги)',
+    r'юридическое сопровождени',
+]
+
+
+def is_donation_post(text):
+    """Донатный/организационный пост канала (без локаций БПЛА)."""
+    text_lower = text.lower()
+    if _DIRECTION_KW_RE.search(text_lower):
+        return False
+    # Не трогаем посты с threat-лексикой (боевые пролёты/фиксации) — донатный
+    # призыв может быть припиской в конце боевого поста.
+    if re.search(r'бпла|беспилот|фиксац|пролёт|пролет|ракет|пво|сбит|обстрел|атак', text_lower):
+        return False
+    return any(re.search(pat, text_lower) for pat in DONATION_PATTERNS)
+
+
 def closest_point_on_polygon(lat, lon, polygon_coords):
     """Find closest point on polygon boundary from (lat, lon)."""
     best_lat, best_lon = lat, lon
@@ -7781,6 +7813,9 @@ def process_posts(posts, geojson_lookup=None):
             filtered += 1
             continue
         if is_memo_post(post):
+            filtered += 1
+            continue
+        if is_donation_post(post):
             filtered += 1
             continue
         if "лпр" in source.lower() or "лпр" in post.lower():
