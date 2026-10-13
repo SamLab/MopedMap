@@ -5018,7 +5018,14 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
         _adjectival_city = None
         if is_bare:
             _ac = CITY_DB.get(adj_form)
-            if _ac and (_ac.get("subject") or "").lower().strip() in _existing_region_subjs:
+            if _ac and (
+                (_ac.get("subject") or "").lower().strip() in _existing_region_subjs
+                # Bare adjectival form that is ALSO a known major city (CITY_DB ∩
+                # NON_UNIQUE_MAJOR_CITIES): "Жуковский", "Октябрьский" etc. are cities,
+                # while the rayon-centre guess from RAYON_ADJ_TO_CITY may point to a
+                # random namesake district in another region (Жуковский→Жуковка/Брянская).
+                or adj_form in NON_UNIQUE_MAJOR_CITIES
+            ):
                 _adjectival_city = _ac
         adj_city = RAYON_ADJ_TO_CITY.get(adj_form) if not _adjectival_city else None
         if adj_city:
