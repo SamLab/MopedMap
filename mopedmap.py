@@ -5392,6 +5392,26 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     _city_subj = (CITY_DB[lk].get("subject") or "").lower().strip()
                     if _city_subj in ctx_subjects:
                         entry = CITY_DB[lk]
+                # Явный префикс «г.»/«город» перед non-unique именем означает город,
+                # а не тёзку-село: «БПЛА от г.Иваново в сторону г.Ярославль,
+                # Ярославская область» — источник именно город Иваново/Ивановская,
+                # хотя регион-контекст поста содержит только Ярославскую (цель).
+                # Без этого село Иваново/Ярославская выигрывало у CITY_DB-города.
+                if entry is None and lk in CITY_DB:
+                    _pre = text_lower[max(0, idx - 6):idx]
+                    if (re.search(r'(?:^|[\s,;:(«"\'\-])г\.\s*$', _pre)
+                            or re.search(r'(?:^|[\s,;:(«"\'\-])город[ае]?\s+$', _pre)):
+                        _cands = DISAMBIGUATION_MAP.get(lk, {})
+                        _dis = _cands.get(_city_subj) or _cands.get("__any__")
+                        if _dis:
+                            if not isinstance(_dis, list):
+                                _dis = [_dis]
+                            for _de in _dis:
+                                if _de.get("context_subject") in ctx_subjects:
+                                    entry = _de
+                                    break
+                        if entry is None:
+                            entry = CITY_DB[lk]
                 if entry is None:
                     # Reference coords: rayon-level matches already found in context
                     # (e.g. Кшенский from "Советский район") or specific settlements
