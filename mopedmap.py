@@ -47,12 +47,20 @@ if os.path.exists(SETTLEMENTS_FILE):
     for s in settlements_data:
         name = s["name"].strip()
         lk = name.lower()
+        # Импортированные из OSM СНТ Ярославской области: флаг происхождения (snt)
+        # и «родовое имя» (snt_ctx) — см. snt_loader.py.
+        _snt_extra = {}
+        if s.get("snt"):
+            _snt_extra["snt"] = True
+            if s.get("snt_ctx"):
+                _snt_extra["snt_ctx"] = True
         if lk not in CITY_DB:
             SETTLEMENT_DB[lk] = {
                 "lat": float(s["lat"]),
                 "lon": float(s["lon"]),
                 "name": name,
                 "subject": s["subject"],
+                **_snt_extra,
             }
         subj = s["subject"].strip()
         key = (lk, subj.lower())
@@ -62,12 +70,14 @@ if os.path.exists(SETTLEMENTS_FILE):
                 "lon": float(s["lon"]),
                 "name": name,
                 "subject": subj,
+                **_snt_extra,
             }
         SETTLEMENTS_ALL_BY_KEY.setdefault(key, []).append({
             "lat": float(s["lat"]),
             "lon": float(s["lon"]),
             "name": name,
             "subject": subj,
+            **_snt_extra,
         })
 # Build set of non-unique settlement names (appear in >1 subject)
 _name_subj_counts = {}
@@ -4716,6 +4726,33 @@ def _is_common_word_name(r):
             or r.get("matched", "").lower().strip() in COMMON_RUSSIAN_WORDS)
 
 
+_SNT_MARKER_WORDS = frozenset({
+    "снт", "снот", "снп", "сдт", "сот", "днт", "днп", "дск", "тсн",
+    "кп", "к/п", "ст", "садоводство",
+})
+_SNT_MARKER_PHRASES = (
+    "садоводческое товарищество", "садовое товарищество",
+    "коллективный сад", "дачный посёлок", "садовые участки",
+)
+_SNT_STRIP = ' \t.,:;!?()[]{}«»"\'“”№-–—'
+
+
+def _snt_context_ok(text_lower, start):
+    """Есть ли слово-маркер (СНТ/СТ/… или «садоводческое товарищество») прямо
+    перед матчем родового имени СНТ («СНТ Наука», «СНТ "Наука"»)."""
+    if start is None or start <= 0:
+        return False
+    window = text_lower[max(0, start - 45):start]
+    window = window.rstrip(_SNT_STRIP)
+    for ph in _SNT_MARKER_PHRASES:
+        if window.endswith(ph):
+            return True
+    toks = window.split()
+    if not toks:
+        return False
+    return toks[-1].strip(_SNT_STRIP).lower() in _SNT_MARKER_WORDS
+
+
 def _add_span(spans, r):
     s = r.get("_match_start")
     e = r.get("_match_end")
@@ -4889,6 +4926,11 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     ck = name.lower()
                     if ck in CITY_DB:
                         r["subject"] = CITY_DB[ck]["subject"]
+                if isinstance(entry, dict):
+                    if entry.get("snt"):
+                        r["snt"] = True
+                    if entry.get("snt_ctx"):
+                        r["snt_ctx"] = True
                 results.append(r)
                 break
             start = idx + 1
@@ -5496,6 +5538,11 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                     "subject": entry["subject"],
                     "_match_start": idx, "_match_end": end,
                 }
+                if isinstance(entry, dict):
+                    if entry.get("snt"):
+                        r["snt"] = True
+                    if entry.get("snt_ctx"):
+                        r["snt_ctx"] = True
                 results.append(r)
 
     # --- Контекстный гейтинг (см. docs/superpowers/specs/2026-08-01-context-gating-design.md) ---
@@ -5510,6 +5557,13 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
     # Решение о приёме матчей принимаем слева направо (для цепочек-списков),
     # но финальный порядок results сохраняем прежним (важно для дедупликации).
     for r in sorted(results, key=lambda _r: _r.get("_match_start") if _r.get("_match_start") is not None else -1):
+        # Родовое имя СНТ («Наука», «Русь»): принимаем только при слове-маркере
+        # рядом («СНТ Наука»). Это перекрывает авто-стоп-лист (напр. «берега»).
+        if r.get("snt_ctx"):
+            if _snt_context_ok(text_lower, r.get("_match_start")):
+                gated_ids.add(id(r))
+                _add_span(accepted_spans, r)
+            continue
         if _is_common_word_name(r):
             continue
         if r.get("is_region"):
@@ -6054,6 +6108,21 @@ def filter_locations_by_post_region(locations, post_text):
         return locations
     filtered = [loc for loc in locations if loc.get("subject", "").strip().lower() in mentioned_subjects]
     return filtered if filtered else locations
+
+
+def _filter_snt_by_region(locations, mentioned_subjects):
+    """Убрать импортированные СНТ Ярославской области, если в посте явно назван
+    другой регион (oblast/krai/republic), а Ярославская — нет.
+
+    Отличие от filter_locations_by_post_region: работает жёстко, без fallback
+    «если всё отфильтровалось — вернуть исходное», поэтому одиночное Ярославское
+    СНТ в посте про Курскую область не воскресает.
+    """
+    if not mentioned_subjects:
+        return locations
+    if "ярославская область" in mentioned_subjects:
+        return locations
+    return [loc for loc in locations if not loc.get("snt")]
 
 
 def parse_post_time(time_str):
@@ -7873,7 +7942,10 @@ def process_posts(posts, geojson_lookup=None):
             # Uses explicit oblast/krai/republic mentions only — rayon patterns ("Каменский район"→Тульская/Воронежская) would
             # pollute the set and let wrong-region pairs through.
             _mentioned = get_mentioned_region_subjects(post)
-            if _mentioned:
+            # Импортированные СНТ Ярославской области не показываем в постах про другой регион
+            if _mentioned and "ярославская область" not in _mentioned:
+                dir_pairs = [(s, d) for s, d in dir_pairs if not s.get("snt")]
+            if dir_pairs and _mentioned:
                 # Fill-only источники (регионы из фразы «стык X и Y областей»)
                 # упомянуты явно — не отсекаем их фильтром ложно-региональных пар
                 _fp = [(s, d) for s, d in dir_pairs if s.get("_fill_only") or not s.get("subject") or s["subject"].strip().lower() in _mentioned]
@@ -7945,6 +8017,8 @@ def process_posts(posts, geojson_lookup=None):
             # (e.g. "Видное" as first line needs to see Crimea locations mentioned later)
             full_context = extract_locations(post)
             full_context = filter_locations_by_post_region(full_context, post)
+            _mentioned_post = get_mentioned_region_subjects(post)
+            full_context = _filter_snt_by_region(full_context, _mentioned_post)
             # Use post-level type as fallback for info sentences (e.g. "Рыбинск, Ярославская область. Фиксации БПЛА")
             for sentence in sentences:
                 sent_type = classify_post(sentence)
@@ -7953,6 +8027,8 @@ def process_posts(posts, geojson_lookup=None):
                 locations = extract_locations(sentence, extra_context=full_context)
                 # Filter by oblast explicitly mentioned in the post to avoid false matches
                 locations = filter_locations_by_post_region(locations, post)
+                # Импортированные СНТ Ярославской области не показываем в постах про другой регион
+                locations = _filter_snt_by_region(locations, _mentioned_post)
                 # Dedup locations in same sentence by proximity (< 5 km), keep longest name
                 survivors = []
                 for loc in locations:
