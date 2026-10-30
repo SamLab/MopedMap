@@ -5571,6 +5571,64 @@ def extract_locations(text, extra_context=None, include_cross_region_nonunique=F
                         r["snt_ctx"] = True
                 results.append(r)
 
+    # --- Proximity refinement for ambiguous same-name settlements ---
+    # Non-unique names are resolved in text order, so in "Лучинское, Корюково,
+    # Ярославская область" the first Лучинское was taken from settlements.json
+    # before Корюково was known — landing ~90 km away. If the same subject has an
+    # unambiguous neighbouring location (Корюково here), prefer the candidate
+    # closest to it. Only anchors within ~15 km are used, and unambiguous names
+    # only, so the Петропавловка/Советский район logic is not disturbed.
+    if NON_UNIQUE_SETTLEMENT_RE:
+        _anchor_srcs = results + (extra_context or [])
+        _anchors_by_subject = {}
+        for _a in _anchor_srcs:
+            if _a.get("lat") is None or _a.get("lon") is None:
+                continue
+            _as = (_a.get("subject") or "").lower().strip()
+            if not _as:
+                continue
+            if _a.get("is_region"):
+                # Only rayon-level region markers are useful anchors; oblast
+                # capitals are usually far from listed villages.
+                if not re.search(r'(район|района|районе|районы|р-н|р-не|р-ны|мо|го|ао)$',
+                                 str(_a.get("matched", "")).lower()):
+                    continue
+            else:
+                _alk = (_a.get("name") or "").lower().strip()
+                _acands = SETTLEMENTS_ALL_BY_KEY.get((_alk, _as))
+                if _acands and len(_acands) > 1:
+                    continue  # ambiguous name — not a reliable anchor
+            _anchors_by_subject.setdefault(_as, []).append((_a["lat"], _a["lon"]))
+        for _r in results:
+            if _r.get("is_region") or _r.get("lat") is None:
+                continue
+            _rs = (_r.get("subject") or "").lower().strip()
+            _rlk = (_r.get("name") or "").lower().strip()
+            _cands = SETTLEMENTS_ALL_BY_KEY.get((_rlk, _rs))
+            if not _cands or len(_cands) < 2:
+                continue
+            _anchors = _anchors_by_subject.get(_rs)
+            if not _anchors:
+                continue
+            _cur_d = min(
+                (_r["lat"] - _a[0]) ** 2 + (_r["lon"] - _a[1]) ** 2
+                for _a in _anchors
+            )
+            _best = min(
+                _cands,
+                key=lambda _c: min(
+                    (_c["lat"] - _a[0]) ** 2 + (_c["lon"] - _a[1]) ** 2
+                    for _a in _anchors
+                ),
+            )
+            _best_d = min(
+                (_best["lat"] - _a[0]) ** 2 + (_best["lon"] - _a[1]) ** 2
+                for _a in _anchors
+            )
+            if _best_d < _cur_d and _best_d <= 0.02:
+                _r["lat"] = _best["lat"]
+                _r["lon"] = _best["lon"]
+
     # --- Контекстный гейтинг (см. docs/superpowers/specs/2026-08-01-context-gating-design.md) ---
     # Порядок приёма матча:
     #   1) is_region / район → всегда (уже отфильтрованы по регионам выше)
@@ -6500,8 +6558,12 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
             if other_subj == item_subj:
                 item['no_marker'] = True
                 break
-    # Suppress settlement markers (not in CITY_DB) when an explicit region reference
-    # for the same subject exists — the region fill + capital marker is sufficient
+    # Suppress settlement markers (not in CITY_DB) when the SAME POST also has an
+    # explicit region reference for the same subject — the region fill + capital
+    # marker is sufficient. Scoped to the same post text: a region-only post from
+    # another channel/time must not hide specific settlements reported separately
+    # (e.g. "Ярославская область - пока не видим БПЛА" hiding later "Лучинское,
+    # Корюково, Ярославская область - опасность по БПЛА").
     for item in posts_data:
         if item.get('is_region') or item.get('no_marker'):
             continue
@@ -6511,8 +6573,9 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
         rn = item.get('subject', '').lower().strip() if item.get('subject') else None
         if not rn:
             continue
+        item_text = item.get('text', '')
         for other in posts_data:
-            if other is item or other.get('no_marker'):
+            if other is item or other.get('no_marker') or other.get('text') != item_text:
                 continue
             if other.get('is_region') and other.get('subject', '').lower().strip() == rn:
                 mt = other.get('matched', '').lower()
@@ -6523,7 +6586,11 @@ def generate_html(posts_data, filename=None, geojson_lookup=None, history=None, 
     # Priority at same coordinates
     coord_items = {}
     for item in posts_data:
-        key = (round(item.get('lat', 0), 1), round(item.get('lon', 0), 1))
+        # 0.1° (~11 км) was too coarse: a regional-capital sighting (Ярославль,
+        # 57.617/39.85) and a nearby settlement danger (Корюково, 57.554/39.874,
+        # ~7 км) collapsed into one key, so "sighting hides danger" hid the
+        # settlement. 0.001° (~110 м) groups only genuinely co-located markers.
+        key = (round(item.get('lat', 0), 3), round(item.get('lon', 0), 3))
         coord_items.setdefault(key, []).append(item)
     for key, items in coord_items.items():
         types = {it.get('type') for it in items}
@@ -8055,14 +8122,26 @@ def process_posts(posts, geojson_lookup=None):
                 locations = filter_locations_by_post_region(locations, post)
                 # Импортированные СНТ Ярославской области не показываем в постах про другой регион
                 locations = _filter_snt_by_region(locations, _mentioned_post)
-                # Dedup locations in same sentence by proximity (< 5 km), keep longest name
+                # Dedup locations in same sentence: collapse repeated mentions of the
+                # same place and overlapping textual matches, keeping the longest name.
+                # Distance alone must NOT merge distinct settlements — Лучинское and
+                # Корюково are ~1.4 km apart yet are two different locations.
                 survivors = []
                 for loc in locations:
                     dup = False
+                    _ls, _le = loc.get("_match_start"), loc.get("_match_end")
                     for i, existing in enumerate(survivors):
                         dlat = loc["lat"] - existing["lat"]
                         dlon = loc["lon"] - existing["lon"]
-                        if (dlat * dlat + dlon * dlon) < 0.002:  # ~5 km at 58°N
+                        close = (dlat * dlat + dlon * dlon) < 0.002  # ~5 km at 58°N
+                        _es, _ee = existing.get("_match_start"), existing.get("_match_end")
+                        overlap = (_ls is not None and _le is not None
+                                   and _es is not None and _ee is not None
+                                   and _ls < _ee and _es < _le)
+                        same_name = loc["name"].strip().lower() == existing["name"].strip().lower()
+                        same_point = (round(loc["lat"], 4) == round(existing["lat"], 4)
+                                      and round(loc["lon"], 4) == round(existing["lon"], 4))
+                        if overlap or (close and (same_name or same_point)):
                             existing_len = len(existing.get("matched", existing["name"]))
                             new_len = len(loc.get("matched", loc["name"]))
                             if new_len > existing_len:
