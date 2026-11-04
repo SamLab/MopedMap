@@ -7886,6 +7886,43 @@ def is_donation_post(text):
     return any(re.search(pat, text_lower) for pat in DONATION_PATTERNS)
 
 
+# Приветственные/объявительные посты (праздничные поздравления, обращения
+# команды канала, общие пожелания) без активных направлений БПЛА — на карту не
+# нужны. Обычные слова в таких текстах («Будущее», «Надежда», «Свобода» и т.п.)
+# ложно matchsятся как топонимы из settlements.json и дают маркеры в пустоте.
+GREETING_PATTERNS = [
+    r'днем народного единства',
+    r'день народного единства',
+    r'праздником',
+    r'поздравляю',
+    r'поздравляем',
+    r'с днем ',
+    r'с наступившим',
+    r'с прошедшим',
+    r'счастливого',
+    r'мир, согласие',
+    r'согласие и благополучие',
+    r'одна страна',
+    r'одна история',
+    r'общее будущее',
+    r'с уважением,?\s*команда',
+    r'команда «',
+    r'одна страна\. одна история\. общее будущее',
+]
+
+
+def is_greeting_or_announcement_post(text):
+    """Поздравление/обращение без актуальных направлений БПЛА.
+
+    Не фильтруем посты с направлением движения («в сторону/в направлении/→»)
+    — активные пролёты остаются на карте даже если в тексте есть пожелания.
+    """
+    text_lower = text.lower()
+    if _DIRECTION_KW_RE.search(text_lower):
+        return False
+    return any(re.search(pat, text_lower) for pat in GREETING_PATTERNS)
+
+
 def closest_point_on_polygon(lat, lon, polygon_coords):
     """Find closest point on polygon boundary from (lat, lon)."""
     best_lat, best_lon = lat, lon
@@ -8007,6 +8044,9 @@ def process_posts(posts, geojson_lookup=None):
             filtered += 1
             continue
         if is_donation_post(post):
+            filtered += 1
+            continue
+        if is_greeting_or_announcement_post(post):
             filtered += 1
             continue
         if "лпр" in source.lower() or "лпр" in post.lower():
