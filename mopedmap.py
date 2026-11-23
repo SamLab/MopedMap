@@ -4358,6 +4358,18 @@ CHANNELS = [
 
 CHANNEL_PRIORITY = {ch["name"]: ch.get("priority", 2) for ch in CHANNELS}
 
+# Канал «Радар ВРВ» дописывает в конце постов «Карта опасностей - radar-vrv.ru».
+# Приписка не несёт координат, но попадает в разбор локаций и в текст попапа.
+VRV_RADAR_FOOTER_RE = re.compile(
+    r'(?:карта\s+опасностей[^\n]{0,40}?|https?://(?:www\.)?)?radar-vrv\.ru[^\n]*',
+    re.IGNORECASE,
+)
+
+
+def strip_vrv_radar_footer(text):
+    """Удалить приписку «Карта опасностей - radar-vrv.ru» из текста поста."""
+    return VRV_RADAR_FOOTER_RE.sub('', text).strip()
+
 
 def clean_message_text(raw, channel=""):
     clean = raw.replace('<br>', '\n').replace('<br/>', '\n')
@@ -4392,6 +4404,8 @@ def clean_message_text(raw, channel=""):
     clean = re.sub(r'Подписаться', '', clean).strip()
     clean = re.sub(r'[^\x20-\x7E\u0400-\u04FF\u0500-\u052F\u2190-\u21FF\u27A1\uFE0F.,!?\-:;()ё№«»]+', ' ', clean)
     clean = re.sub(r'Мы в MAX.*', '', clean).strip()
+    if channel == VRV_RADAR_CHANNEL:
+        clean = strip_vrv_radar_footer(clean)
     # Insert space between lowercase-uppercase Cyrillic transitions (no-space formatting)
     clean = re.sub(r'([а-яё])([А-ЯЁ])', r'\1 \2', clean)
     return clean.strip()
@@ -4461,6 +4475,8 @@ def fetch_channel(url, name, hours_filter=None):
             display = re.sub(r'Мы в MAX[^\n]*', '', display).strip()
             display = re.sub(r'Радар\.РФ[^\n]*', '', display).strip()
             display = re.sub(r'radar\.RF[^\n]*', '', display).strip()
+            if name == VRV_RADAR_CHANNEL:
+                display = strip_vrv_radar_footer(display)
             display = re.sub(r'🔎[^\n]*Радар[^\n]*Россия[^\n]*', '', display).strip()
             display = re.sub(r'&#x[0-9a-fA-F]+;', '', display)
             display = re.sub(r'&#\d+;', '', display)
